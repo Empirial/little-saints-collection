@@ -3,14 +3,17 @@ import { Card } from "@/components/ui/card";
 import heroImage from "@/assets/hero-image.jpg";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
+import Navbar from "@/components/Navbar";
 
 const Index = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
+      
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-16">
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
@@ -19,15 +22,15 @@ const Index = () => {
         </div>
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <p className="font-inter text-lg md:text-xl text-muted-foreground mb-4 uppercase tracking-wider">
+          <p className="font-inter text-sm md:text-base text-foreground/70 mb-4 uppercase tracking-widest">
             Deuteronomy 6:6-9
           </p>
-          <h1 className="font-fredoka text-6xl md:text-8xl font-bold text-foreground mb-8 leading-tight">
+          <h1 className="font-fredoka text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-8 leading-tight drop-shadow-lg">
             Get It For Your<br />Child Today
           </h1>
-          <div className="inline-block bg-accent text-accent-foreground rounded-full px-8 py-4 mb-8 shadow-xl">
-            <p className="font-fredoka text-3xl md:text-4xl font-bold">R270</p>
-            <p className="font-inter text-sm md:text-base">9 Great Quality A4 Poster (350mg Paper)</p>
+          <div className="inline-block bg-primary text-primary-foreground rounded-full px-10 py-5 mb-8 shadow-2xl">
+            <p className="font-fredoka text-4xl md:text-5xl font-bold">R270</p>
+            <p className="font-inter text-sm md:text-base opacity-90">9 Great Quality A4 Posters (350gsm Paper)</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <Button 
