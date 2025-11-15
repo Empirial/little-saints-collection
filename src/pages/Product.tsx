@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import poster1 from "@/assets/poster-1.jpg";
 import poster2 from "@/assets/poster-2.jpg";
 import poster3 from "@/assets/poster-3.jpg";
@@ -12,13 +10,13 @@ import poster7 from "@/assets/poster-7.jpg";
 import poster8 from "@/assets/poster-8.jpg";
 import poster9 from "@/assets/poster-9.jpg";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
 
 const Product = () => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedBundle, setSelectedBundle] = useState("9posters");
+  const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
 
   const posters = [
     { id: 1, image: poster1, title: "The Bible Timeline" },
@@ -32,30 +30,39 @@ const Product = () => {
     { id: 9, image: poster9, title: "Seven Days of Creation" },
   ];
 
-  const bundles = [
-    { 
-      id: "9posters", 
-      label: "Complete Set - 9 Posters", 
-      price: 270.00, 
-      originalPrice: 270.00, 
-      shipping: "Free Delivery in SA",
-      badge: "Best Value!" 
-    },
-    { 
-      id: "6posters", 
-      label: "Starter Set - 6 Posters", 
-      price: 195.00, 
-      originalPrice: 210.00, 
-      shipping: "Free Delivery in SA" 
-    },
-    { 
-      id: "3posters", 
-      label: "Mini Set - 3 Posters", 
-      price: 120.00, 
-      originalPrice: 135.00, 
-      shipping: "Free Delivery in SA" 
+  // Auto-slide effect for main image
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSelectedImage((prev) => (prev + 1) % posters.length);
+    }, 3000); // Change image every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [posters.length]);
+
+  // Navigate main carousel
+  const nextImage = () => {
+    setSelectedImage((prev) => (prev + 1) % posters.length);
+  };
+
+  const prevImage = () => {
+    setSelectedImage((prev) => (prev - 1 + posters.length) % posters.length);
+  };
+
+  // Navigate thumbnail carousel
+  const nextThumbnails = () => {
+    if (thumbnailStartIndex + 4 < posters.length) {
+      setThumbnailStartIndex(thumbnailStartIndex + 1);
     }
-  ];
+  };
+
+  const prevThumbnails = () => {
+    if (thumbnailStartIndex > 0) {
+      setThumbnailStartIndex(thumbnailStartIndex - 1);
+    }
+  };
+
+  // Get visible thumbnails
+  const visibleThumbnails = posters.slice(thumbnailStartIndex, thumbnailStartIndex + 4);
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,42 +90,115 @@ const Product = () => {
       <section className="py-8 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Left - Product Images */}
+            {/* Left - Product Images with Carousel */}
             <div>
-              {/* Main Image */}
-              <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-4">
+              {/* Main Image Carousel */}
+              <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-4 relative group">
                 <div className="aspect-[3/4] p-8 flex items-center justify-center">
                   <img 
                     src={posters[selectedImage].image} 
                     alt={posters[selectedImage].title}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain transition-all duration-500"
                   />
+                </div>
+
+                {/* Navigation Arrows */}
+                <button
+                  onClick={prevImage}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-6 h-6 text-primary" />
+                </button>
+                <button
+                  onClick={nextImage}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-6 h-6 text-primary" />
+                </button>
+
+                {/* Slide Indicators */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {posters.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedImage(idx)}
+                      className={`h-2 rounded-full transition-all ${
+                        selectedImage === idx 
+                          ? 'w-8 bg-primary' 
+                          : 'w-2 bg-primary/30 hover:bg-primary/50'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+
+                {/* Image Counter */}
+                <div className="absolute top-4 right-4 bg-background/90 px-3 py-1 rounded-full">
+                  <p className="font-inter text-sm font-semibold">
+                    {selectedImage + 1} / {posters.length}
+                  </p>
                 </div>
               </Card>
               
-              {/* Thumbnail Grid - Show first 4 posters */}
-              <div className="grid grid-cols-4 gap-3">
-                {posters.slice(0, 4).map((poster, idx) => (
-                  <button
-                    key={poster.id}
-                    onClick={() => setSelectedImage(idx)}
-                    className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
-                      selectedImage === idx 
-                        ? 'border-primary shadow-lg ring-2 ring-primary/20' 
-                        : 'border-border hover:border-primary/50'
-                    }`}
-                  >
-                    <img 
-                      src={poster.image} 
-                      alt={poster.title}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
+              {/* Thumbnail Carousel */}
+              <div className="relative">
+                {/* Left Arrow */}
+                <button
+                  onClick={prevThumbnails}
+                  disabled={thumbnailStartIndex === 0}
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 bg-background border-2 border-border p-2 rounded-full shadow-lg transition-all ${
+                    thumbnailStartIndex === 0 
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:border-primary hover:bg-primary/5'
+                  }`}
+                  aria-label="Previous thumbnails"
+                >
+                  <ChevronLeft className="w-5 h-5 text-primary" />
+                </button>
+
+                {/* Thumbnails Grid */}
+                <div className="grid grid-cols-4 gap-3 px-1">
+                  {visibleThumbnails.map((poster, idx) => {
+                    const actualIndex = thumbnailStartIndex + idx;
+                    return (
+                      <button
+                        key={poster.id}
+                        onClick={() => setSelectedImage(actualIndex)}
+                        className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
+                          selectedImage === actualIndex
+                            ? 'border-primary shadow-lg ring-2 ring-primary/20 scale-105' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <img 
+                          src={poster.image} 
+                          alt={poster.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Right Arrow */}
+                <button
+                  onClick={nextThumbnails}
+                  disabled={thumbnailStartIndex + 4 >= posters.length}
+                  className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 bg-background border-2 border-border p-2 rounded-full shadow-lg transition-all ${
+                    thumbnailStartIndex + 4 >= posters.length
+                      ? 'opacity-30 cursor-not-allowed' 
+                      : 'hover:border-primary hover:bg-primary/5'
+                  }`}
+                  aria-label="Next thumbnails"
+                >
+                  <ChevronRight className="w-5 h-5 text-primary" />
+                </button>
               </div>
 
               <p className="font-inter text-sm text-muted-foreground text-center mt-3">
-                Click thumbnails to preview • All 9 posters included
+                {posters[selectedImage].title} • {thumbnailStartIndex + 1}-{Math.min(thumbnailStartIndex + 4, posters.length)} of {posters.length} posters
               </p>
             </div>
 
@@ -171,53 +251,22 @@ const Product = () => {
                 </li>
               </ul>
 
-              {/* Bundle & Save */}
-              <div className="bg-gradient-to-br from-accent/10 to-background border-2 border-accent/20 rounded-xl p-6 mb-6 shadow-lg">
-                <h3 className="font-fredoka text-2xl font-bold mb-4 text-center">
-                  CHOOSE YOUR SET
-                </h3>
-                
-                <RadioGroup value={selectedBundle} onValueChange={setSelectedBundle}>
-                  <div className="space-y-3">
-                    {bundles.map((bundle) => (
-                      <div
-                        key={bundle.id}
-                        className={`relative flex items-center justify-between p-5 rounded-xl border-2 transition-all cursor-pointer ${
-                          selectedBundle === bundle.id
-                            ? 'border-primary bg-primary/10 shadow-md'
-                            : 'border-border hover:border-primary/50 bg-background'
-                        }`}
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          <RadioGroupItem value={bundle.id} id={bundle.id} className="w-5 h-5" />
-                          <Label htmlFor={bundle.id} className="flex flex-col cursor-pointer flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-fredoka font-bold text-lg">{bundle.label}</span>
-                              {bundle.badge && (
-                                <span className="bg-accent text-accent-foreground text-xs px-3 py-1 rounded-full font-inter font-semibold">
-                                  {bundle.badge}
-                                </span>
-                              )}
-                            </div>
-                            <span className="font-inter text-sm text-muted-foreground">
-                              {bundle.shipping}
-                            </span>
-                          </Label>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-fredoka text-2xl font-bold text-primary">
-                            R{bundle.price.toFixed(0)}
-                          </p>
-                          {bundle.originalPrice > bundle.price && (
-                            <p className="font-inter text-sm text-muted-foreground line-through">
-                              R{bundle.originalPrice.toFixed(0)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </RadioGroup>
+              {/* Price Display */}
+              <div className="bg-gradient-to-br from-accent/10 to-background border-2 border-accent/20 rounded-xl p-8 mb-6 shadow-lg text-center">
+                <p className="font-inter text-sm text-muted-foreground mb-2 uppercase tracking-wide">
+                  Complete Collection
+                </p>
+                <div className="flex items-center justify-center gap-3 mb-3">
+                  <p className="font-fredoka text-6xl font-bold text-primary">
+                    R270
+                  </p>
+                </div>
+                <p className="font-inter text-base text-foreground font-medium mb-1">
+                  All 9 Premium A4 Posters
+                </p>
+                <p className="font-inter text-sm text-muted-foreground">
+                  350mg Quality Paper
+                </p>
               </div>
 
               {/* Shipping Notice */}
