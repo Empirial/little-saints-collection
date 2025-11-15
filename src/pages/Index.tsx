@@ -28,10 +28,6 @@ const Index = () => {
           <h1 className="font-fredoka text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-8 leading-tight drop-shadow-lg">
             Get It For Your<br />Child Today
           </h1>
-          <div className="inline-block bg-primary text-primary-foreground rounded-full px-10 py-5 mb-8 shadow-2xl">
-            <p className="font-fredoka text-4xl md:text-5xl font-bold">R270</p>
-            <p className="font-inter text-sm md:text-base opacity-90">9 Great Quality A4 Posters (350gsm Paper)</p>
-          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             <Button 
               onClick={() => navigate("/product")}
