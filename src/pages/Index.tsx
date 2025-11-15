@@ -53,35 +53,58 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-muted/30">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="font-fredoka text-4xl md:text-5xl font-bold text-center mb-16">
+      <section className="py-24 px-4 bg-gradient-to-b from-background via-muted/20 to-background relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-primary rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-accent rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-6xl mx-auto relative z-10">
+          <h2 className="font-fredoka text-4xl md:text-5xl font-bold text-center mb-4">
             Perfect For Christian Parents
           </h2>
+          <p className="font-inter text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
+            Transform your child's space with beautiful, faith-filled artwork
+          </p>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 text-center hover:shadow-xl transition-shadow">
-              <div className="text-5xl mb-4">🎨</div>
-              <h3 className="font-fredoka text-2xl font-bold mb-3">Beautiful Design</h3>
-              <p className="font-inter text-muted-foreground">
-                Colorful, child-friendly illustrations that bring Bible stories to life
-              </p>
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            <Card className="group relative p-8 text-center border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 bg-card/50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="text-6xl mb-5 transform group-hover:scale-110 transition-transform duration-300">🎨</div>
+                <h3 className="font-fredoka text-2xl font-bold mb-3 text-foreground group-hover:text-primary transition-colors">
+                  Beautiful Design
+                </h3>
+                <p className="font-inter text-muted-foreground leading-relaxed">
+                  Colorful, child-friendly illustrations that bring Bible stories to life
+                </p>
+              </div>
             </Card>
             
-            <Card className="p-8 text-center hover:shadow-xl transition-shadow">
-              <div className="text-5xl mb-4">📖</div>
-              <h3 className="font-fredoka text-2xl font-bold mb-3">Biblical Stories</h3>
-              <p className="font-inter text-muted-foreground">
-                9 carefully selected stories to inspire faith and teach God's word
-              </p>
+            <Card className="group relative p-8 text-center border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 bg-card/50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="text-6xl mb-5 transform group-hover:scale-110 transition-transform duration-300">📖</div>
+                <h3 className="font-fredoka text-2xl font-bold mb-3 text-foreground group-hover:text-primary transition-colors">
+                  Biblical Stories
+                </h3>
+                <p className="font-inter text-muted-foreground leading-relaxed">
+                  9 carefully selected stories to inspire faith and teach God's word
+                </p>
+              </div>
             </Card>
             
-            <Card className="p-8 text-center hover:shadow-xl transition-shadow">
-              <div className="text-5xl mb-4">⭐</div>
-              <h3 className="font-fredoka text-2xl font-bold mb-3">Premium Quality</h3>
-              <p className="font-inter text-muted-foreground">
-                Printed on high-quality 350mg A4 paper for lasting beauty
-              </p>
+            <Card className="group relative p-8 text-center border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 bg-card/50 backdrop-blur-sm overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="text-6xl mb-5 transform group-hover:scale-110 transition-transform duration-300">⭐</div>
+                <h3 className="font-fredoka text-2xl font-bold mb-3 text-foreground group-hover:text-primary transition-colors">
+                  Premium Quality
+                </h3>
+                <p className="font-inter text-muted-foreground leading-relaxed">
+                  Printed on high-quality 350gsm A4 paper for lasting beauty
+                </p>
+              </div>
             </Card>
           </div>
         </div>
