@@ -12,8 +12,8 @@ const Checkout = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Order received! We'll contact you shortly on WhatsApp to arrange payment and delivery.");
-    setTimeout(() => navigate("/"), 2000);
+    toast.success("Order received! Redirecting to confirmation...");
+    setTimeout(() => navigate("/thank-you"), 1500);
   };
 
   return (
