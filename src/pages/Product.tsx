@@ -1,5 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import poster1 from "@/assets/poster-1.jpg";
 import poster2 from "@/assets/poster-2.jpg";
 import poster3 from "@/assets/poster-3.jpg";
@@ -10,13 +13,16 @@ import poster7 from "@/assets/poster-7.jpg";
 import poster8 from "@/assets/poster-8.jpg";
 import poster9 from "@/assets/poster-9.jpg";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const Product = () => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
   const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
+  const [purchaseOption, setPurchaseOption] = useState<"complete" | "individual">("complete");
+  const [selectedPosters, setSelectedPosters] = useState<number[]>([]);
+  const [showPosterSelector, setShowPosterSelector] = useState(false);
 
   const posters = [
     { id: 1, image: poster1, title: "The Bible Timeline" },
@@ -30,11 +36,17 @@ const Product = () => {
     { id: 9, image: poster9, title: "Seven Days of Creation" },
   ];
 
+  const POSTER_PRICE = 40;
+  const COMPLETE_SET_PRICE = 270;
+
+  // Calculate individual poster total
+  const individualTotal = selectedPosters.length * POSTER_PRICE;
+
   // Auto-slide effect for main image
   useEffect(() => {
     const interval = setInterval(() => {
       setSelectedImage((prev) => (prev + 1) % posters.length);
-    }, 3000); // Change image every 3 seconds
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [posters.length]);
@@ -63,6 +75,24 @@ const Product = () => {
 
   // Get visible thumbnails
   const visibleThumbnails = posters.slice(thumbnailStartIndex, thumbnailStartIndex + 4);
+
+  // Handle poster selection
+  const togglePosterSelection = (posterId: number) => {
+    setSelectedPosters((prev) =>
+      prev.includes(posterId)
+        ? prev.filter((id) => id !== posterId)
+        : [...prev, posterId]
+    );
+  };
+
+  // Handle checkout
+  const handleCheckout = () => {
+    if (purchaseOption === "individual" && selectedPosters.length === 0) {
+      alert("Please select at least one poster");
+      return;
+    }
+    navigate("/checkout");
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -251,22 +281,149 @@ const Product = () => {
                 </li>
               </ul>
 
-              {/* Price Display */}
-              <div className="bg-gradient-to-br from-accent/10 to-background border-2 border-accent/20 rounded-xl p-8 mb-6 shadow-lg text-center">
-                <p className="font-inter text-sm text-muted-foreground mb-2 uppercase tracking-wide">
-                  Complete Collection
-                </p>
-                <div className="flex items-center justify-center gap-3 mb-3">
-                  <p className="font-fredoka text-6xl font-bold text-primary">
-                    R270
-                  </p>
-                </div>
-                <p className="font-inter text-base text-foreground font-medium mb-1">
-                  All 9 Premium A4 Posters
-                </p>
-                <p className="font-inter text-sm text-muted-foreground">
-                  350mg Quality Paper
-                </p>
+              {/* Purchase Options */}
+              <div className="bg-gradient-to-br from-accent/10 to-background border-2 border-accent/20 rounded-xl p-6 mb-6 shadow-lg">
+                <h3 className="font-fredoka text-2xl font-bold mb-4 text-center">
+                  CHOOSE YOUR OPTION
+                </h3>
+                
+                <RadioGroup value={purchaseOption} onValueChange={(value) => {
+                  setPurchaseOption(value as "complete" | "individual");
+                  if (value === "complete") {
+                    setSelectedPosters([]);
+                  }
+                }}>
+                  <div className="space-y-3">
+                    {/* Complete Set Option */}
+                    <div
+                      className={`relative flex items-center justify-between p-5 rounded-xl border-2 transition-all cursor-pointer ${
+                        purchaseOption === "complete"
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-border hover:border-primary/50 bg-background'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <RadioGroupItem value="complete" id="complete" className="w-5 h-5" />
+                        <Label htmlFor="complete" className="flex flex-col cursor-pointer flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-fredoka font-bold text-lg">Complete Set - All 9 Posters</span>
+                            <span className="bg-accent text-accent-foreground text-xs px-3 py-1 rounded-full font-inter font-semibold">
+                              Best Value!
+                            </span>
+                          </div>
+                          <span className="font-inter text-sm text-muted-foreground">
+                            Save R90 • Free Delivery in SA
+                          </span>
+                        </Label>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-fredoka text-2xl font-bold text-primary">
+                          R270
+                        </p>
+                        <p className="font-inter text-sm text-muted-foreground line-through">
+                          R360
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Individual Posters Option */}
+                    <div
+                      className={`relative flex flex-col p-5 rounded-xl border-2 transition-all cursor-pointer ${
+                        purchaseOption === "individual"
+                          ? 'border-primary bg-primary/10 shadow-md'
+                          : 'border-border hover:border-primary/50 bg-background'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-4 flex-1">
+                          <RadioGroupItem value="individual" id="individual" className="w-5 h-5" />
+                          <Label htmlFor="individual" className="flex flex-col cursor-pointer flex-1">
+                            <span className="font-fredoka font-bold text-lg">Individual Posters</span>
+                            <span className="font-inter text-sm text-muted-foreground">
+                              R40 per poster • Free Delivery in SA
+                            </span>
+                          </Label>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-fredoka text-2xl font-bold text-primary">
+                            R40
+                          </p>
+                          <p className="font-inter text-xs text-muted-foreground">
+                            each
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Poster Selection Dropdown */}
+                      {purchaseOption === "individual" && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <button
+                            type="button"
+                            onClick={() => setShowPosterSelector(!showPosterSelector)}
+                            className="w-full flex items-center justify-between p-3 bg-background rounded-lg border-2 border-primary/30 hover:border-primary transition-all"
+                          >
+                            <span className="font-inter font-semibold">
+                              {selectedPosters.length === 0 
+                                ? "Select Posters" 
+                                : `${selectedPosters.length} Poster${selectedPosters.length > 1 ? 's' : ''} Selected`}
+                            </span>
+                            {showPosterSelector ? (
+                              <ChevronUp className="w-5 h-5 text-primary" />
+                            ) : (
+                              <ChevronDown className="w-5 h-5 text-primary" />
+                            )}
+                          </button>
+
+                          {/* Poster Checkboxes */}
+                          {showPosterSelector && (
+                            <div className="mt-3 space-y-2 max-h-64 overflow-y-auto bg-background rounded-lg border border-border p-3">
+                              {posters.map((poster) => (
+                                <div
+                                  key={poster.id}
+                                  className="flex items-center gap-3 p-2 hover:bg-muted/30 rounded-lg transition-all"
+                                >
+                                  <Checkbox
+                                    id={`poster-${poster.id}`}
+                                    checked={selectedPosters.includes(poster.id)}
+                                    onCheckedChange={() => togglePosterSelection(poster.id)}
+                                  />
+                                  <Label
+                                    htmlFor={`poster-${poster.id}`}
+                                    className="flex items-center gap-3 cursor-pointer flex-1"
+                                  >
+                                    <div className="w-12 h-16 rounded border overflow-hidden">
+                                      <img
+                                        src={poster.image}
+                                        alt={poster.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <span className="font-inter text-sm">{poster.title}</span>
+                                  </Label>
+                                  <span className="font-inter text-sm text-muted-foreground">
+                                    R40
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Individual Total */}
+                          {selectedPosters.length > 0 && (
+                            <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+                              <div className="flex justify-between items-center">
+                                <span className="font-inter font-semibold">Total:</span>
+                                <span className="font-fredoka text-xl font-bold text-primary">
+                                  R{individualTotal}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </RadioGroup>
               </div>
 
               {/* Shipping Notice */}
@@ -281,12 +438,16 @@ const Product = () => {
 
               {/* Add to Cart Button */}
               <Button 
-                onClick={() => navigate("/checkout")}
+                onClick={handleCheckout}
                 className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4"
                 size="lg"
               >
                 <ShoppingCart className="w-6 h-6 mr-2" />
-                Get Your Collection Now
+                {purchaseOption === "complete" 
+                  ? "Get Your Collection Now - R270" 
+                  : selectedPosters.length > 0 
+                    ? `Add to Cart - R${individualTotal}`
+                    : "Select Posters to Continue"}
               </Button>
 
               {/* Trust Badges */}
@@ -374,7 +535,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "These posters are perfect! My kids love looking at them every day and asking questions about the Bible stories."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Gaxa S.</p>
+              <p className="font-fredoka font-semibold text-sm">- Sarah M.</p>
             </Card>
             
             <Card className="p-8 bg-secondary/20 border-2 border-secondary hover:shadow-xl transition-all">
@@ -386,7 +547,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "Beautiful quality and great value for money. They've really brightened up our children's room!"
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Vara Z.</p>
+              <p className="font-fredoka font-semibold text-sm">- John K.</p>
             </Card>
 
             <Card className="p-8 bg-accent/10 border-2 border-accent/30 hover:shadow-xl transition-all">
@@ -398,7 +559,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "A wonderful teaching tool that makes learning about faith fun and visual for young ones."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Ndlovu B.</p>
+              <p className="font-fredoka font-semibold text-sm">- Mary T.</p>
             </Card>
           </div>
         </div>

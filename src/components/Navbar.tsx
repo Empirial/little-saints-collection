@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ShoppingCart } from "lucide-react";
+import logo from "@/assets/logo.jpg"; // or .jpg, .svg depending on your file
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -11,9 +12,13 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <button 
             onClick={() => navigate("/")}
-            className="font-fredoka text-2xl font-bold text-foreground hover:text-primary transition-colors"
+            className="flex items-center hover:opacity-80 transition-opacity"
           >
-            Little Saints
+            <img 
+              src={logo} 
+              alt="Little Saint Art Logo" 
+              className="h-10 w-auto object-contain"
+            />
           </button>
           
           <div className="flex items-center gap-4">
