@@ -117,14 +117,14 @@ const Product = () => {
       </header>
 
       {/* Main Product Section */}
-      <section className="py-8 px-4">
+      <section className="py-4 sm:py-6 md:py-8 px-3 sm:px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12">
             {/* Left - Product Images with Carousel */}
             <div>
               {/* Main Image Carousel */}
-              <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-4 relative group">
-                <div className="aspect-[3/4] p-8 flex items-center justify-center">
+              <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-3 sm:mb-4 relative group">
+                <div className="aspect-[3/4] p-4 sm:p-6 md:p-8 flex items-center justify-center">
                   <img 
                     src={posters[selectedImage].image} 
                     alt={posters[selectedImage].title}
@@ -138,17 +138,17 @@ const Product = () => {
                 {/* Navigation Arrows */}
                 <button
                   onClick={prevImage}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   aria-label="Previous image"
                 >
-                  <ChevronLeft className="w-6 h-6 text-primary" />
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                   aria-label="Next image"
                 >
-                  <ChevronRight className="w-6 h-6 text-primary" />
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </button>
 
                 {/* Slide Indicators */}
@@ -168,31 +168,31 @@ const Product = () => {
                 </div>
 
                 {/* Image Counter */}
-                <div className="absolute top-4 right-4 bg-background/90 px-3 py-1 rounded-full">
-                  <p className="font-inter text-sm font-semibold">
+                <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-background/90 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
+                  <p className="font-inter text-xs sm:text-sm font-semibold">
                     {selectedImage + 1} / {posters.length}
                   </p>
                 </div>
               </Card>
               
               {/* Thumbnail Carousel */}
-              <div className="relative">
+              <div className="relative px-6 sm:px-0">
                 {/* Left Arrow */}
                 <button
                   onClick={prevThumbnails}
                   disabled={thumbnailStartIndex === 0}
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 bg-background border-2 border-border p-2 rounded-full shadow-lg transition-all ${
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 sm:-translate-x-3 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
                     thumbnailStartIndex === 0 
                       ? 'opacity-30 cursor-not-allowed' 
                       : 'hover:border-primary hover:bg-primary/5'
                   }`}
                   aria-label="Previous thumbnails"
                 >
-                  <ChevronLeft className="w-5 h-5 text-primary" />
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </button>
 
                 {/* Thumbnails Grid */}
-                <div className="grid grid-cols-4 gap-3 px-1">
+                <div className="grid grid-cols-4 gap-2 sm:gap-3 px-1">
                   {visibleThumbnails.map((poster, idx) => {
                     const actualIndex = thumbnailStartIndex + idx;
                     return (
@@ -222,14 +222,14 @@ const Product = () => {
                 <button
                   onClick={nextThumbnails}
                   disabled={thumbnailStartIndex + 4 >= posters.length}
-                  className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 bg-background border-2 border-border p-2 rounded-full shadow-lg transition-all ${
-                    thumbnailStartIndex + 4 >= posters.length
+                  className={`absolute right-0 top-1/2 -translate-y-1/2 sm:translate-x-3 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
+                    thumbnailStartIndex + 4 >= posters.length 
                       ? 'opacity-30 cursor-not-allowed' 
                       : 'hover:border-primary hover:bg-primary/5'
                   }`}
                   aria-label="Next thumbnails"
                 >
-                  <ChevronRight className="w-5 h-5 text-primary" />
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </button>
               </div>
 
@@ -302,31 +302,31 @@ const Product = () => {
                   <div className="space-y-3">
                     {/* Complete Set Option */}
                     <div
-                      className={`relative flex items-center justify-between p-5 rounded-xl border-2 transition-all cursor-pointer ${
+                      className={`relative flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${
                         purchaseOption === "complete"
                           ? 'border-primary bg-primary/10 shadow-md'
                           : 'border-border hover:border-primary/50 bg-background'
                       }`}
                     >
-                      <div className="flex items-center gap-4 flex-1">
-                        <RadioGroupItem value="complete" id="complete" className="w-5 h-5" />
+                      <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 mb-3 sm:mb-0">
+                        <RadioGroupItem value="complete" id="complete" className="w-4 h-4 sm:w-5 sm:h-5 mt-1 sm:mt-0" />
                         <Label htmlFor="complete" className="flex flex-col cursor-pointer flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-fredoka font-bold text-lg">Complete Set - All 9 Posters</span>
-                            <span className="bg-accent text-accent-foreground text-xs px-3 py-1 rounded-full font-inter font-semibold">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                            <span className="font-fredoka font-bold text-base sm:text-lg">Complete Set - All 9 Posters</span>
+                            <span className="bg-accent text-accent-foreground text-xs px-2 sm:px-3 py-0.5 sm:py-1 rounded-full font-inter font-semibold w-fit">
                               Best Value!
                             </span>
                           </div>
-                          <span className="font-inter text-sm text-muted-foreground">
+                          <span className="font-inter text-xs sm:text-sm text-muted-foreground">
                             Save R90 • Free Delivery in SA
                           </span>
                         </Label>
                       </div>
-                      <div className="text-right">
-                        <p className="font-fredoka text-2xl font-bold text-primary">
+                      <div className="text-left sm:text-right ml-7 sm:ml-0">
+                        <p className="font-fredoka text-xl sm:text-2xl font-bold text-primary">
                           R270
                         </p>
-                        <p className="font-inter text-sm text-muted-foreground line-through">
+                        <p className="font-inter text-xs sm:text-sm text-muted-foreground line-through">
                           R360
                         </p>
                       </div>
@@ -334,24 +334,24 @@ const Product = () => {
 
                     {/* Individual Posters Option */}
                     <div
-                      className={`relative flex flex-col p-5 rounded-xl border-2 transition-all cursor-pointer ${
+                      className={`relative flex flex-col p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${
                         purchaseOption === "individual"
                           ? 'border-primary bg-primary/10 shadow-md'
                           : 'border-border hover:border-primary/50 bg-background'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-4 flex-1">
-                          <RadioGroupItem value="individual" id="individual" className="w-5 h-5" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
+                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 mb-3 sm:mb-0">
+                          <RadioGroupItem value="individual" id="individual" className="w-4 h-4 sm:w-5 sm:h-5 mt-1 sm:mt-0" />
                           <Label htmlFor="individual" className="flex flex-col cursor-pointer flex-1">
-                            <span className="font-fredoka font-bold text-lg">Individual Posters</span>
-                            <span className="font-inter text-sm text-muted-foreground">
+                            <span className="font-fredoka font-bold text-base sm:text-lg">Individual Posters</span>
+                            <span className="font-inter text-xs sm:text-sm text-muted-foreground">
                               R40 per poster • Free Delivery in SA
                             </span>
                           </Label>
                         </div>
-                        <div className="text-right">
-                          <p className="font-fredoka text-2xl font-bold text-primary">
+                        <div className="text-left sm:text-right ml-7 sm:ml-0">
+                          <p className="font-fredoka text-xl sm:text-2xl font-bold text-primary">
                             R40
                           </p>
                           <p className="font-inter text-xs text-muted-foreground">
@@ -519,8 +519,8 @@ const Product = () => {
                     height="533"
                   />
                 </div>
-                <div className="p-4 bg-gradient-to-b from-background to-primary/5">
-                  <p className="font-fredoka text-sm font-semibold text-center">
+                <div className="p-2 sm:p-3 md:p-4 bg-gradient-to-b from-background to-primary/5">
+                  <p className="font-fredoka text-xs sm:text-sm font-semibold text-center">
                     {poster.title}
                   </p>
                 </div>
@@ -531,58 +531,58 @@ const Product = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 px-4 bg-gradient-to-b from-background to-primary/5">
+      <section className="py-8 sm:py-12 md:py-16 px-3 sm:px-4 bg-gradient-to-b from-background to-primary/5">
         <div className="max-w-6xl mx-auto">
-          <h2 className="font-fredoka text-4xl md:text-5xl font-bold text-center mb-12">
+          <h2 className="font-fredoka text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center mb-8 sm:mb-12">
             Why Parents Love Little Saints
           </h2>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 bg-primary/5 border-2 border-primary/20 hover:shadow-xl transition-all">
-              <div className="flex gap-1 mb-4">
+          <div className="grid md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <Card className="p-4 sm:p-6 md:p-8 bg-primary/5 border-2 border-primary/20 hover:shadow-xl transition-all">
+              <div className="flex gap-1 mb-3 sm:mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
                 ))}
               </div>
-              <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
+              <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "These posters are perfect! My kids love looking at them every day and asking questions about the Bible stories."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Sarah M.</p>
+              <p className="font-fredoka font-semibold text-xs sm:text-sm">- Sarah M.</p>
             </Card>
             
-            <Card className="p-8 bg-secondary/20 border-2 border-secondary hover:shadow-xl transition-all">
-              <div className="flex gap-1 mb-4">
+            <Card className="p-4 sm:p-6 md:p-8 bg-secondary/20 border-2 border-secondary hover:shadow-xl transition-all">
+              <div className="flex gap-1 mb-3 sm:mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
                 ))}
               </div>
-              <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
+              <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "Beautiful quality and great value for money. They've really brightened up our children's room!"
               </p>
-              <p className="font-fredoka font-semibold text-sm">- John K.</p>
+              <p className="font-fredoka font-semibold text-xs sm:text-sm">- John K.</p>
             </Card>
 
-            <Card className="p-8 bg-accent/10 border-2 border-accent/30 hover:shadow-xl transition-all">
-              <div className="flex gap-1 mb-4">
+            <Card className="p-4 sm:p-6 md:p-8 bg-accent/10 border-2 border-accent/30 hover:shadow-xl transition-all">
+              <div className="flex gap-1 mb-3 sm:mb-4">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-accent text-accent" />
+                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
                 ))}
               </div>
-              <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
+              <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "A wonderful teaching tool that makes learning about faith fun and visual for young ones."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Mary T.</p>
+              <p className="font-fredoka font-semibold text-xs sm:text-sm">- Mary T.</p>
             </Card>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-20 px-4 bg-gradient-to-t from-primary/10 to-background">
+      <section className="py-10 sm:py-16 md:py-20 px-3 sm:px-4 bg-gradient-to-t from-primary/10 to-background">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <Star className="w-10 h-10 text-accent fill-accent" />
-            <Star className="w-10 h-10 text-accent fill-accent" />
+          <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+            <Star className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-accent fill-accent" />
+            <Star className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-accent fill-accent" />
             <Star className="w-10 h-10 text-accent fill-accent" />
           </div>
 
