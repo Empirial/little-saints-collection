@@ -104,10 +104,9 @@ const Product = () => {
             onClick={() => navigate("/")}
             className="font-inter"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
           </Button>
-          <p className="font-fredoka text-2xl font-bold text-primary">Little Saints</p>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon">
               <ShoppingCart className="w-5 h-5" />
