@@ -374,7 +374,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "These posters are perfect! My kids love looking at them every day and asking questions about the Bible stories."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Sarah M.</p>
+              <p className="font-fredoka font-semibold text-sm">- Gaxa S.</p>
             </Card>
             
             <Card className="p-8 bg-secondary/20 border-2 border-secondary hover:shadow-xl transition-all">
@@ -386,7 +386,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "Beautiful quality and great value for money. They've really brightened up our children's room!"
               </p>
-              <p className="font-fredoka font-semibold text-sm">- John K.</p>
+              <p className="font-fredoka font-semibold text-sm">- Vara Z.</p>
             </Card>
 
             <Card className="p-8 bg-accent/10 border-2 border-accent/30 hover:shadow-xl transition-all">
@@ -398,7 +398,7 @@ const Product = () => {
               <p className="font-inter text-muted-foreground italic mb-4 leading-relaxed">
                 "A wonderful teaching tool that makes learning about faith fun and visual for young ones."
               </p>
-              <p className="font-fredoka font-semibold text-sm">- Mary T.</p>
+              <p className="font-fredoka font-semibold text-sm">- Ndlovu B.</p>
             </Card>
           </div>
         </div>
