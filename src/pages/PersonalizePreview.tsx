@@ -13,6 +13,7 @@ const PersonalizePreview = () => {
   const [personalization, setPersonalization] = useState<{ childName: string; gender: string } | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
+  const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem("personalization");
@@ -139,21 +140,69 @@ const PersonalizePreview = () => {
     ]
   };
 
-  // Generate story segments based on child's name
-  const generateStory = (name: string) => {
+  // Build the 16-page book structure
+  const buildBook = (name: string) => {
     const letters = name.toUpperCase().split('');
-    const storySegments = letters.map((letter) => {
+    const pages: Array<{ type: string; content: string }> = [];
+
+    // Page 1: Title Page
+    pages.push({
+      type: "title",
+      content: `${name}'s Great Name Chase`
+    });
+
+    // Pages 2-3: Frame Story - Start
+    pages.push({
+      type: "frame-start",
+      content: `One morning, ${name} woke up with a YELP! The letters that made them, all needed some help! They'd wiggled and jiggled and bounced out the door. ${name.toUpperCase().split('').join('-')} was not there anymore! A zippy Meerkat hero appeared with a flash: 'Your letters are out! We must go, in a dash!'`
+    });
+
+    // Pages 4-13: Dynamic A-Z Story Blocks (one page per letter)
+    letters.forEach((letter) => {
       const options = storyBlocks[letter];
       if (options && options.length > 0) {
-        // Pick a random option for variety
         const randomIndex = Math.floor(Math.random() * options.length);
-        return options[randomIndex];
+        pages.push({
+          type: "letter",
+          content: options[randomIndex]
+        });
       }
-      return '';
-    }).filter(segment => segment !== '');
+    });
 
-    return storySegments.join(' ');
+    // Pages 14-15: Frame Story - Climax
+    pages.push({
+      type: "frame-climax",
+      content: `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. They weren't just letters, ${name} saw it was true... Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize. The person your family once wished for, their wonderful 'Answered Prayer' in their eyes.`
+    });
+
+    // Page 16: Dedication Page
+    pages.push({
+      type: "dedication",
+      content: `To ${name}, with love${fromField ? ` from ${fromField}` : ''}.\n\n${personalMessage || 'You are loved beyond measure.'}`
+    });
+
+    return pages;
   };
+
+  const book = personalization ? buildBook(personalization.childName) : [];
+  const totalSpreads = Math.ceil(book.length / 2);
+
+  const handleNextSpread = () => {
+    if (currentSpreadIndex < totalSpreads - 1) {
+      setCurrentSpreadIndex(currentSpreadIndex + 1);
+    }
+  };
+
+  const handlePrevSpread = () => {
+    if (currentSpreadIndex > 0) {
+      setCurrentSpreadIndex(currentSpreadIndex - 1);
+    }
+  };
+
+  const leftPageIndex = currentSpreadIndex * 2;
+  const rightPageIndex = leftPageIndex + 1;
+  const leftPage = book[leftPageIndex];
+  const rightPage = book[rightPageIndex];
 
   return (
     <div className="min-h-screen bg-background">
@@ -173,39 +222,96 @@ const PersonalizePreview = () => {
           {/* Preview Area */}
           <div className="space-y-4">
             <h2 className="font-fredoka text-2xl md:text-3xl text-primary">Book Preview</h2>
-            <Card className="border-border shadow-lg overflow-hidden">
-              <CardContent className="p-0">
-                <div className="relative aspect-[16/9] bg-secondary/20">
-                  {/* Layer 1: Background Image */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/20 to-accent/10" />
-                  
-                  {/* Layer 2: Character Image (based on gender) */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className={`w-32 h-32 md:w-48 md:h-48 rounded-full ${
-                      personalization.gender === "boy" 
-                        ? "bg-primary/30" 
-                        : "bg-accent/30"
-                    } flex items-center justify-center`}>
-                      <span className="font-fredoka text-4xl md:text-6xl">
-                        {personalization.gender === "boy" ? "👦" : "👧"}
-                      </span>
+            
+            {/* Two-Page Spread */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Left Page */}
+              {leftPage && (
+                <Card className="border-border shadow-lg overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="relative aspect-[3/4] bg-secondary/20">
+                      {/* Layer 1: Background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/20 to-accent/10" />
+                      
+                      {/* Layer 2: Character (placeholder) */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                        <div className={`w-24 h-24 rounded-full ${
+                          personalization.gender === "boy" ? "bg-primary/30" : "bg-accent/30"
+                        } flex items-center justify-center`}>
+                          <span className="text-4xl">
+                            {personalization.gender === "boy" ? "👦" : "👧"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Layer 3: Text */}
+                      <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 w-full h-full overflow-y-auto">
+                          <p className="font-fredoka text-xs md:text-sm text-foreground leading-relaxed whitespace-pre-line">
+                            {leftPage.content}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  
-                  {/* Layer 3: Dynamic Story Text */}
-                  <div className="absolute inset-0 flex items-end p-4 md:p-6">
-                    <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 w-full">
-                      <p className="font-inter text-sm md:text-base text-foreground leading-relaxed">
-                        {generateStory(personalization.childName)}
-                      </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Right Page */}
+              {rightPage && (
+                <Card className="border-border shadow-lg overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="relative aspect-[3/4] bg-secondary/20">
+                      {/* Layer 1: Background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-secondary/20 to-primary/10" />
+                      
+                      {/* Layer 2: Character (placeholder) */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                        <div className={`w-24 h-24 rounded-full ${
+                          personalization.gender === "boy" ? "bg-primary/30" : "bg-accent/30"
+                        } flex items-center justify-center`}>
+                          <span className="text-4xl">
+                            {personalization.gender === "boy" ? "👦" : "👧"}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Layer 3: Text */}
+                      <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 w-full h-full overflow-y-auto">
+                          <p className="font-fredoka text-xs md:text-sm text-foreground leading-relaxed whitespace-pre-line">
+                            {rightPage.content}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <p className="font-inter text-sm text-muted-foreground text-center">
-              This is a preview of your personalized book spread
-            </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={handlePrevSpread}
+                disabled={currentSpreadIndex === 0}
+                className="font-inter"
+              >
+                Previous Page
+              </Button>
+              <p className="font-inter text-sm text-muted-foreground">
+                Pages {leftPageIndex + 1}-{rightPageIndex + 1} of {book.length}
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleNextSpread}
+                disabled={currentSpreadIndex >= totalSpreads - 1}
+                className="font-inter"
+              >
+                Next Page
+              </Button>
+            </div>
           </div>
 
           {/* Customization Form */}
