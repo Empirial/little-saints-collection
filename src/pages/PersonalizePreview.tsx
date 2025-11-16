@@ -33,9 +33,126 @@ const PersonalizePreview = () => {
     return null;
   }
 
+  // A-Z Story-Block Engine
+  const storyBlocks: Record<string, string[]> = {
+    A: [
+      "The A was with an Aardvark, digging up ants. 'It's for Awesome!' he said, 'Now, go on! Take a chance!'",
+      "An Angel was polishing the letter A bright. 'It stands for Adored! You're a wonderful sight!'",
+      "Amazing Antelope-Man, with a zip-zap-ka-cheer! 'This A is for Action! Chase away every fear!'"
+    ],
+    B: [
+      "A Big, Booming Baboon was balancing B. 'It's for Being so Brave! Now, take it from me!'",
+      "Bold-Boy with a cape, flew down with a zip! 'This B is for Blessed!' he said with a flip."
+    ],
+    C: [
+      "A Castle of clouds held the letter C high. 'It's for Caring!' a kind, clever pixie flew by.",
+      "A Cunning Caracal Crouched on the C-stump. 'It's for Clever!' he purred with a thumpity-thump."
+    ],
+    D: [
+      "A Dassie was Dozing, all snug on the D. 'It's for Dreaming,' he yawned, 'of all you can be!'",
+      "A Dragon (a kind one, with sparkly-green scales) was using the D to deliver the mails. 'It's for Daring!' he roared, 'Go on! Never fail!'"
+    ],
+    E: [
+      "An Enormous Elephant, Ever-so-gentle and grand, held E in his trunk, right for your little hand. 'It's for Excellent! Everything just as we planned!'",
+      "Elastic-Eland (a hero so tall) was stretching the E to help rescue a ball. 'It's for Effort!' he cheered, 'You're giving your all!'",
+      "An Enchanted Elf-friend was singing a tune. 'This E is for Excited, from morning 'til noon!'"
+    ],
+    F: [
+      "A Fennec Fox, fluffy and Fast, hurried past. 'This F is for Faith! Hold it tight, make it last!'",
+      "A Fairy-Queen waved her wand with a flick! 'This F is for Friendship, so loyal and quick!'"
+    ],
+    G: [
+      "A Giant Giraffe, with his head in the sky, was nibbling a cloud where the G drifted by. 'It's for Gentle and Good!' he said with a sigh.",
+      "Gracious-Gal gave the G with a Grin. 'It's for Giving and Grace! Let the goodness begin!'"
+    ],
+    H: [
+      "A Happy-hippo-hero, named Harry-the-Brave, was using the H to make a big splashy wave! 'It's for Happiness!' he cheered, 'and how you behave!'",
+      "A Horned Horse (A Uni-Zebra). 'This H is for Honest! Be truthful all day!'"
+    ],
+    I: [
+      "An Impala was leaping, so nimble and high, 'This I is for Inspire! Like stars in the sky!'",
+      "An Iridescent Iris-Fairy, so bright, held the I in her hands, a-glowing with light. 'It's for Imagination! And doing what's right!'",
+      "Incredible-Ibis (a hero so smart) was guarding the I, for your Intelligent heart!"
+    ],
+    J: [
+      "A Jumping Jackal juggled the J with great glee. 'It's for Joy!' he yipped, 'It's the best thing to be!'"
+    ],
+    K: [
+      "A Kingfisher, quick! with a click-clack-ka-cheer! dived down for the K and said, 'Keep Kindness right here!'",
+      "A King on a throne (made of flowers and moss) declared, 'This K is for Knowledge! You're smart as a boss!'"
+    ],
+    L: [
+      "A Lazy Lion was Lounging on L. 'It's for Love,' he purred softly, 'and Living so well.'",
+      "Lightning-Leopard (a hero so bright) was chasing the L, a-glowing with Light!"
+    ],
+    M: [
+      "A Marching Meerkat was holding the M. 'It's for Mercy!' he chirped, 'A most magical gem!'",
+      "A Magical Mermaid (in a freshwater spring!) said 'This M is for Music, and the joy that you bring!'"
+    ],
+    N: [
+      "A Nimble Nyala, stepped out from the trees. 'This N is for Nice! You're a breeze-on-a-breeze!'",
+      "Nguni-Boy (strong as a bull, but so kind) held the N for your Noble and wonderful mind."
+    ],
+    O: [
+      "An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'",
+      "An Ogre (a nice one!) was guarding the O. 'It's for Only-One-You! Now, where will you go?'",
+      "Olympic-Oryx was leaping a hoop. 'This O is for Outstanding!' he yelled with a whoop!"
+    ],
+    P: [
+      "A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'",
+      "A Princess (or Prince!) in a Palace so grand said, 'This P is for Promise, hold it tight in your hand!'"
+    ],
+    Q: [
+      "A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock. 'It's for Quiet,' she peeped, 'when you listen and pray.'"
+    ],
+    R: [
+      "A Resting Rhino was Resting, right on the R! 'It's for Respect!' he snorted, 'You'll surely go far!'",
+      "A Royal Rainbow-Keeper (a keeper of light) said 'R is for Radiant, and all that is bright!'"
+    ],
+    S: [
+      "A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'",
+      "Super-Secretary-Bird (with magnificent flair) had the S in his crest, flying high in the air! 'It's for Sunshine and Smiles, which you give everywhere!'"
+    ],
+    T: [
+      "A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'",
+      "A Troll with a Treasure of Twinkling things, said 'T is for Thankful, for the blessings life brings.'"
+    ],
+    U: [
+      "A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'",
+      "Up-Up-and-Away-Boy flew down from the blue. 'This U is for Uplifting! It's what good heroes do!'",
+      "An Unhurried Umbre-bird, under a tree, said 'U is for Understanding, for you and for me.'"
+    ],
+    V: [
+      "A Vervet monkey, with a voom and a vash, found the V in a Vine in a lightning-quick flash! 'It's for Virtue and Value! Now quick, make a dash!'"
+    ],
+    W: [
+      "A Warthog was Wallowing, Watching the W. 'It's for Wonderful! Worthy! And Wise! (That's no trouble!)'"
+    ],
+    X: [
+      "An 'eXtra' special boX held the X just right. 'It's for eXtra Love! And eXtra bright light!'"
+    ],
+    Y: [
+      "The Y was held by a hero, 'Mega-Yellow-Mongoose!' 'It's for YOU!' he announced, 'Now let's put it to use!'"
+    ],
+    Z: [
+      "A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z! 'It's for Zeal!' he said, 'for your amazing ener-ZY!'"
+    ]
+  };
+
   // Generate story segments based on child's name
   const generateStory = (name: string) => {
-    return `Once upon a time, there was a special child named ${name}. ${name} loved learning about God's amazing love and wonderful stories from the Bible.`;
+    const letters = name.toUpperCase().split('');
+    const storySegments = letters.map((letter) => {
+      const options = storyBlocks[letter];
+      if (options && options.length > 0) {
+        // Pick a random option for variety
+        const randomIndex = Math.floor(Math.random() * options.length);
+        return options[randomIndex];
+      }
+      return '';
+    }).filter(segment => segment !== '');
+
+    return storySegments.join(' ');
   };
 
   return (
