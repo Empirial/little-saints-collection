@@ -8,6 +8,8 @@ import Product from "./pages/Product";
 import Checkout from "./pages/Checkout";
 import ThankYou from "./pages/ThankYou";
 import NotFound from "./pages/NotFound";
+import PersonalizeBook from "./pages/PersonalizeBook";
+import PersonalizePreview from "./pages/PersonalizePreview";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +22,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/product" element={<Product />} />
+          <Route path="/personalize-book" element={<PersonalizeBook />} />
+          <Route path="/personalize-preview" element={<PersonalizePreview />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/thank-you" element={<ThankYou />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

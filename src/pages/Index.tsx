@@ -38,6 +38,13 @@ const Index = () => {
               View Collection
             </Button>
             <Button 
+              onClick={() => navigate("/personalize-book")}
+              size="lg" 
+              className="font-fredoka text-xl px-12 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
+            >
+              Personalize a Book
+            </Button>
+            <Button 
               onClick={() => navigate("/checkout")}
               variant="secondary"
               size="lg" 
