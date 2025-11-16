@@ -129,6 +129,9 @@ const Product = () => {
                     src={posters[selectedImage].image} 
                     alt={posters[selectedImage].title}
                     className="w-full h-full object-contain transition-all duration-500"
+                    loading="eager"
+                    width="800"
+                    height="1067"
                   />
                 </div>
 
@@ -206,6 +209,9 @@ const Product = () => {
                           src={poster.image} 
                           alt={poster.title}
                           className="w-full h-full object-cover"
+                          loading="lazy"
+                          width="200"
+                          height="267"
                         />
                       </button>
                     );
@@ -396,6 +402,9 @@ const Product = () => {
                                         src={poster.image}
                                         alt={poster.title}
                                         className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        width="48"
+                                        height="64"
                                       />
                                     </div>
                                     <span className="font-inter text-sm">{poster.title}</span>
@@ -505,6 +514,9 @@ const Product = () => {
                     src={poster.image} 
                     alt={poster.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
+                    width="400"
+                    height="533"
                   />
                 </div>
                 <div className="p-4 bg-gradient-to-b from-background to-primary/5">
