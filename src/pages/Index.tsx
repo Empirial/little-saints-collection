@@ -14,12 +14,13 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden pt-16">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background/70 to-background" />
-        </div>
+        <img 
+          src={heroImage}
+          alt="Christian Bible posters for children"
+          className="absolute inset-0 w-full h-full object-cover"
+          loading="eager"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background/70 to-background" />
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
           <p className="font-inter text-sm md:text-base text-foreground/70 mb-4 uppercase tracking-widest">
