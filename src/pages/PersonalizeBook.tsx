@@ -68,7 +68,7 @@ const PersonalizeBook = () => {
 
               <div className="space-y-3">
                 <Label className="font-inter text-foreground">Gender</Label>
-                <RadioGroup value={gender} onValueChange={setGender} className="flex flex-col space-y-2">
+                <RadioGroup value={gender} onValueChange={setGender} className="flex flex-col space-y-3">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="boy" id="boy" />
                     <Label htmlFor="boy" className="font-inter font-normal cursor-pointer">
