@@ -8,12 +8,94 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
+// Child character imports
+import DarkskinnedBoy from "@/assets/personalization/Darkskinnedboy.png";
+import DarkskinGirl from "@/assets/personalization/darkskingirl.png";
+import LightskinGirl from "@/assets/personalization/lightskingirl.png";
+import WhiteBoy from "@/assets/personalization/whiteboy.png";
+
+// Character imports for letters
+import AardvarkChar from "@/assets/personalization/characters/Whimsical Aardvark.png";
+import AngelChar from "@/assets/personalization/characters/Whimsical Angel.png";
+import AntelopeManChar from "@/assets/personalization/characters/Amazing Antelope-Man.png";
+import ElasticElandChar from "@/assets/personalization/characters/Elastic-Eland.png";
+import EnchantedElfChar from "@/assets/personalization/characters/Enchanted Elf.png";
+import ElephantChar from "@/assets/personalization/characters/Whimsical Elephant.png";
+import LeopardChar from "@/assets/personalization/characters/Whimsical Leopard.png";
+import LightningLeopardChar from "@/assets/personalization/characters/Lightning-Leopard.png";
+import LionChar from "@/assets/personalization/characters/Whimsical Lion.png";
+import MeerkatChar from "@/assets/personalization/characters/Zippy Meerkat.png";
+import MermaidChar from "@/assets/personalization/characters/Whimsical Mermaid.png";
+import MongooseChar from "@/assets/personalization/characters/Whimsical Mongoose.png";
+import NguniChar from "@/assets/personalization/characters/Whimsical 'Nguni-Boy'.png";
+import NyalaChar from "@/assets/personalization/characters/Whimsical Nyala.png";
+import OlympicOryxChar from "@/assets/personalization/characters/Whimsical 'Olympic-Oryx'.png";
+import OstrichChar from "@/assets/personalization/characters/Whimsical Ostrich.png";
+import RhinoChar from "@/assets/personalization/characters/Whimsical Rhino.png";
+import RocketRhinoChar from "@/assets/personalization/characters/Whimsical 'Rocket Rhino'.png";
+import RainbowKeeperChar from "@/assets/personalization/characters/Whimsical 'Rainbow-Keeper'.png";
+import SpringbokChar from "@/assets/personalization/characters/Whimsical Springbok.png";
+import SecretaryBirdChar from "@/assets/personalization/characters/Whimsical 'Super-Secretary-Bird.png";
+
+// Background imports
+import BedroomLeft from "@/assets/personalization/theme/bedroom-left.png";
+import BedroomRight from "@/assets/personalization/theme/bedroom-right.png";
+import CoastLeft from "@/assets/personalization/theme/Aerial View over SA Coast-left.png";
+import CoastRight from "@/assets/personalization/theme/Aerial View over SA Coast-right.png";
+import CityLeft from "@/assets/personalization/theme/Futuristic African City-left.png";
+import CityRight from "@/assets/personalization/theme/Futuristic African City-right.png";
+import PowerLeft from "@/assets/personalization/theme/Power Surge Landscape-left.png";
+import PowerRight from "@/assets/personalization/theme/Power Surge Landscape-right.png";
+import WaterfallLeft from "@/assets/personalization/theme/Secret Waterfall Base-left.png";
+import WaterfallRight from "@/assets/personalization/theme/Secret Waterfall Base-right.png";
+
 const PersonalizePreview = () => {
   const navigate = useNavigate();
   const [personalization, setPersonalization] = useState<{ childName: string; gender: string } | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
   const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
+
+  // Character mappings based on letter and theme
+  const characterMapping: Record<string, { character: string; theme: string }> = {
+    A: { character: AardvarkChar, theme: "animal" },
+    B: { character: AntelopeManChar, theme: "superhero" },
+    C: { character: AngelChar, theme: "fairytale" },
+    D: { character: ElephantChar, theme: "animal" },
+    E: { character: ElasticElandChar, theme: "superhero" },
+    F: { character: EnchantedElfChar, theme: "fairytale" },
+    G: { character: LionChar, theme: "animal" },
+    H: { character: MeerkatChar, theme: "animal" },
+    I: { character: LightningLeopardChar, theme: "superhero" },
+    J: { character: MongooseChar, theme: "animal" },
+    K: { character: MermaidChar, theme: "fairytale" },
+    L: { character: LeopardChar, theme: "animal" },
+    M: { character: MeerkatChar, theme: "animal" },
+    N: { character: NguniChar, theme: "superhero" },
+    O: { character: OlympicOryxChar, theme: "superhero" },
+    P: { character: OstrichChar, theme: "animal" },
+    Q: { character: NyalaChar, theme: "animal" },
+    R: { character: RocketRhinoChar, theme: "superhero" },
+    S: { character: SecretaryBirdChar, theme: "superhero" },
+    T: { character: SpringbokChar, theme: "animal" },
+    U: { character: RhinoChar, theme: "animal" },
+    V: { character: MongooseChar, theme: "animal" },
+    W: { character: RhinoChar, theme: "animal" },
+    X: { character: RainbowKeeperChar, theme: "fairytale" },
+    Y: { character: MongooseChar, theme: "superhero" },
+    Z: { character: MeerkatChar, theme: "animal" },
+  };
+
+  // Background mappings
+  const backgrounds = {
+    left: [BedroomLeft, CoastLeft, CityLeft, PowerLeft, WaterfallLeft],
+    right: [BedroomRight, CoastRight, CityRight, PowerRight, WaterfallRight],
+  };
+
+  // Get child character based on gender
+  const getChildCharacter = (gender: string) => {
+    return gender === "boy" ? DarkskinnedBoy : DarkskinGirl;
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem("personalization");
@@ -229,25 +311,34 @@ const PersonalizePreview = () => {
               {leftPage && (
                 <Card className="border-border shadow-lg overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="relative aspect-[3/4] bg-secondary/20">
-                      {/* Layer 1: Background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/20 to-accent/10" />
+                    <div className="relative aspect-[3/4] bg-background overflow-hidden">
+                      {/* Layer 1: Background Image */}
+                      <img
+                        src={backgrounds.left[currentSpreadIndex % backgrounds.left.length]}
+                        alt="Background"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                       
-                      {/* Layer 2: Character (placeholder) */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                        <div className={`w-24 h-24 rounded-full ${
-                          personalization.gender === "boy" ? "bg-primary/30" : "bg-accent/30"
-                        } flex items-center justify-center`}>
-                          <span className="text-4xl">
-                            {personalization.gender === "boy" ? "👦" : "👧"}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Layer 2: Character Images */}
+                      {leftPage.type === "letter" && leftPageIndex >= 3 && (
+                        <img
+                          src={characterMapping[personalization.childName.toUpperCase().split('')[leftPageIndex - 3]]?.character || MeerkatChar}
+                          alt="Character"
+                          className="absolute bottom-4 right-4 w-32 h-32 object-contain drop-shadow-lg"
+                        />
+                      )}
+                      {leftPage.type === "frame-start" && (
+                        <img
+                          src={getChildCharacter(personalization.gender)}
+                          alt="Child character"
+                          className="absolute bottom-4 left-4 w-32 h-32 object-contain drop-shadow-lg"
+                        />
+                      )}
                       
-                      {/* Layer 3: Text */}
-                      <div className="absolute inset-0 flex items-center justify-center p-4">
-                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 w-full h-full overflow-y-auto">
-                          <p className="font-fredoka text-xs md:text-sm text-foreground leading-relaxed whitespace-pre-line">
+                      {/* Layer 3: Text Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center p-6">
+                        <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 w-full max-h-full overflow-y-auto shadow-lg">
+                          <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
                             {leftPage.content}
                           </p>
                         </div>
@@ -261,25 +352,34 @@ const PersonalizePreview = () => {
               {rightPage && (
                 <Card className="border-border shadow-lg overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="relative aspect-[3/4] bg-secondary/20">
-                      {/* Layer 1: Background */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-accent/10 via-secondary/20 to-primary/10" />
+                    <div className="relative aspect-[3/4] bg-background overflow-hidden">
+                      {/* Layer 1: Background Image */}
+                      <img
+                        src={backgrounds.right[currentSpreadIndex % backgrounds.right.length]}
+                        alt="Background"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
                       
-                      {/* Layer 2: Character (placeholder) */}
-                      <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                        <div className={`w-24 h-24 rounded-full ${
-                          personalization.gender === "boy" ? "bg-primary/30" : "bg-accent/30"
-                        } flex items-center justify-center`}>
-                          <span className="text-4xl">
-                            {personalization.gender === "boy" ? "👦" : "👧"}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Layer 2: Character Images */}
+                      {rightPage.type === "letter" && rightPageIndex >= 3 && (
+                        <img
+                          src={characterMapping[personalization.childName.toUpperCase().split('')[rightPageIndex - 3]]?.character || MeerkatChar}
+                          alt="Character"
+                          className="absolute bottom-4 left-4 w-32 h-32 object-contain drop-shadow-lg"
+                        />
+                      )}
+                      {rightPage.type === "frame-climax" && (
+                        <img
+                          src={getChildCharacter(personalization.gender)}
+                          alt="Child character"
+                          className="absolute bottom-4 right-4 w-32 h-32 object-contain drop-shadow-lg"
+                        />
+                      )}
                       
-                      {/* Layer 3: Text */}
-                      <div className="absolute inset-0 flex items-center justify-center p-4">
-                        <div className="bg-background/90 backdrop-blur-sm rounded-lg p-4 w-full h-full overflow-y-auto">
-                          <p className="font-fredoka text-xs md:text-sm text-foreground leading-relaxed whitespace-pre-line">
+                      {/* Layer 3: Text Overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center p-6">
+                        <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 w-full max-h-full overflow-y-auto shadow-lg">
+                          <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
                             {rightPage.content}
                           </p>
                         </div>
