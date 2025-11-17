@@ -7,18 +7,23 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import charBoyLight from "@/assets/personalization/whiteboy.png";
+import charBoyDark from "@/assets/personalization/Darkskinnedboy.png";
+import charGirlLight from "@/assets/personalization/lightskingirl.png";
+import charGirlDark from "@/assets/personalization/darkskingirl.png";
 
 const PersonalizeBook = () => {
   const navigate = useNavigate();
   const [childName, setChildName] = useState("");
   const [gender, setGender] = useState("boy");
+  const [skinTone, setSkinTone] = useState<"light" | "dark" | "">("");
 
   const handleCreateBook = () => {
-    if (!childName.trim()) {
+    if (!childName.trim() || !skinTone) {
       return;
     }
     // Save selections to localStorage for the preview page
-    localStorage.setItem("personalization", JSON.stringify({ childName, gender }));
+    localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone }));
     navigate("/personalize-preview");
   };
 
@@ -79,9 +84,78 @@ const PersonalizeBook = () => {
                 </RadioGroup>
               </div>
 
+              <div className="space-y-3">
+                <Label className="font-inter text-foreground">Choose Your Character</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  {gender === "boy" ? (
+                    <>
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          skinTone === "light" ? "border-primary border-4" : "border-border"
+                        }`}
+                        onClick={() => setSkinTone("light")}
+                      >
+                        <CardContent className="p-4">
+                          <img
+                            src={charBoyLight}
+                            alt="Lighter skin tone boy"
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </CardContent>
+                      </Card>
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          skinTone === "dark" ? "border-primary border-4" : "border-border"
+                        }`}
+                        onClick={() => setSkinTone("dark")}
+                      >
+                        <CardContent className="p-4">
+                          <img
+                            src={charBoyDark}
+                            alt="Darker skin tone boy"
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </CardContent>
+                      </Card>
+                    </>
+                  ) : (
+                    <>
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          skinTone === "light" ? "border-primary border-4" : "border-border"
+                        }`}
+                        onClick={() => setSkinTone("light")}
+                      >
+                        <CardContent className="p-4">
+                          <img
+                            src={charGirlLight}
+                            alt="Lighter skin tone girl"
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </CardContent>
+                      </Card>
+                      <Card
+                        className={`cursor-pointer transition-all hover:shadow-md ${
+                          skinTone === "dark" ? "border-primary border-4" : "border-border"
+                        }`}
+                        onClick={() => setSkinTone("dark")}
+                      >
+                        <CardContent className="p-4">
+                          <img
+                            src={charGirlDark}
+                            alt="Darker skin tone girl"
+                            className="w-full h-auto rounded-lg"
+                          />
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
+                </div>
+              </div>
+
               <Button
                 onClick={handleCreateBook}
-                disabled={!childName.trim()}
+                disabled={!childName.trim() || !skinTone}
                 className="w-full font-inter text-base py-6"
                 size="lg"
               >
