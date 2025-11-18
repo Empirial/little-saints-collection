@@ -34,7 +34,7 @@ const Navbar = () => {
               className="font-fredoka gap-2"
             >
               <ShoppingCart className="w-4 h-4" />
-              Buy Now
+              View Cart
             </Button>
           </div>
         </div>
