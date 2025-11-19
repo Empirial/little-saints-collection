@@ -290,12 +290,12 @@ const PersonalizePreview = () => {
             {/* Two-Page Spread - Unified Book */}
             <div className="relative max-w-4xl mx-auto">
               {/* Book Spread Container */}
-              <div className="relative flex shadow-2xl rounded-lg overflow-hidden bg-background border border-border aspect-[2.8/1]">
+              <div className="relative flex shadow-2xl rounded-lg overflow-hidden bg-background border border-border">
                 {/* Single Panoramic Background for Entire Spread */}
                 <img
                   src={backgroundSpreads[currentSpreadIndex % backgroundSpreads.length]}
                   alt="Book spread background"
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
                 
                 {/* Left Page Overlay Section */}
