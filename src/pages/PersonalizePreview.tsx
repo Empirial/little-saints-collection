@@ -39,6 +39,7 @@ import SecretaryBirdChar from "@/assets/personalization/characters/Whimsical 'Su
 
 // Panoramic spread background imports
 import BedroomSpread from "@/assets/personalization/theme/bedroom-spread.png";
+import RainbowSpread from "@/assets/personalization/theme/rainbow-spread.png";
 
 const PersonalizePreview = () => {
   const navigate = useNavigate();
@@ -78,7 +79,7 @@ const PersonalizePreview = () => {
   };
 
   // Panoramic spread backgrounds
-  const backgroundSpreads = [BedroomSpread];
+  const backgroundSpreads = [BedroomSpread, RainbowSpread];
 
   // Get child character based on gender
   const getChildCharacter = (gender: string) => {
