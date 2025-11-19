@@ -221,13 +221,7 @@ const PersonalizePreview = () => {
       content: `${name}'s Great Name Chase`
     });
 
-    // Pages 2-3: Frame Story - Start
-    pages.push({
-      type: "frame-start",
-      content: `One morning, ${name} woke up with a YELP! The letters that made them, all needed some help! They'd wiggled and jiggled and bounced out the door. ${name.toUpperCase().split('').join('-')} was not there anymore! A zippy Meerkat hero appeared with a flash: 'Your letters are out! We must go, in a dash!'`
-    });
-
-    // Pages 4-13: Dynamic A-Z Story Blocks (one page per letter)
+    // Pages 2-13: Dynamic A-Z Story Blocks (one page per letter)
     letters.forEach((letter) => {
       const options = storyBlocks[letter];
       if (options && options.length > 0) {
