@@ -37,17 +37,8 @@ import RainbowKeeperChar from "@/assets/personalization/characters/Whimsical 'Ra
 import SpringbokChar from "@/assets/personalization/characters/Whimsical Springbok.png";
 import SecretaryBirdChar from "@/assets/personalization/characters/Whimsical 'Super-Secretary-Bird.png";
 
-// Background imports
-import BedroomLeft from "@/assets/personalization/theme/bedroom-left.png";
-import BedroomRight from "@/assets/personalization/theme/bedroom-right.png";
-import CoastLeft from "@/assets/personalization/theme/Aerial View over SA Coast-left.png";
-import CoastRight from "@/assets/personalization/theme/Aerial View over SA Coast-right.png";
-import CityLeft from "@/assets/personalization/theme/Futuristic African City-left.png";
-import CityRight from "@/assets/personalization/theme/Futuristic African City-right.png";
-import PowerLeft from "@/assets/personalization/theme/Power Surge Landscape-left.png";
-import PowerRight from "@/assets/personalization/theme/Power Surge Landscape-right.png";
-import WaterfallLeft from "@/assets/personalization/theme/Secret Waterfall Base-left.png";
-import WaterfallRight from "@/assets/personalization/theme/Secret Waterfall Base-right.png";
+// Panoramic spread background imports
+import BedroomSpread from "@/assets/personalization/theme/bedroom-spread.png";
 
 const PersonalizePreview = () => {
   const navigate = useNavigate();
@@ -86,11 +77,8 @@ const PersonalizePreview = () => {
     Z: { character: MeerkatChar, theme: "animal" },
   };
 
-  // Background mappings
-  const backgrounds = {
-    left: [BedroomLeft, CoastLeft, CityLeft, PowerLeft, WaterfallLeft],
-    right: [BedroomRight, CoastRight, CityRight, PowerRight, WaterfallRight],
-  };
+  // Panoramic spread backgrounds
+  const backgroundSpreads = [BedroomSpread];
 
   // Get child character based on gender
   const getChildCharacter = (gender: string) => {
@@ -308,17 +296,17 @@ const PersonalizePreview = () => {
             {/* Two-Page Spread - Unified Book */}
             <div className="relative max-w-4xl mx-auto">
               {/* Book Spread Container */}
-              <div className="flex shadow-2xl rounded-lg overflow-hidden bg-background border border-border">
-                {/* Left Page */}
+              <div className="relative flex shadow-2xl rounded-lg overflow-hidden bg-background border border-border aspect-[2.8/1]">
+                {/* Single Panoramic Background for Entire Spread */}
+                <img
+                  src={backgroundSpreads[currentSpreadIndex % backgroundSpreads.length]}
+                  alt="Book spread background"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                
+                {/* Left Page Overlay Section */}
                 {leftPage && (
-                  <div className="relative flex-1 aspect-[3/4] bg-background overflow-hidden">
-                    {/* Layer 1: Background Image */}
-                    <img
-                      src={backgrounds.left[currentSpreadIndex % backgrounds.left.length]}
-                      alt="Background"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    
+                  <div className="relative flex-1 z-10">
                     {/* Layer 2: Character Images */}
                     {leftPage.type === "letter" && leftPageIndex >= 3 && (
                       <img
@@ -347,20 +335,13 @@ const PersonalizePreview = () => {
                 )}
 
                 {/* Center Spine */}
-                <div className="w-1 bg-border shadow-inner relative">
+                <div className="w-1 bg-border shadow-inner relative z-10">
                   <div className="absolute inset-0 bg-gradient-to-r from-border/50 via-border to-border/50"></div>
                 </div>
 
-                {/* Right Page */}
+                {/* Right Page Overlay Section */}
                 {rightPage && (
-                  <div className="relative flex-1 aspect-[3/4] bg-background overflow-hidden">
-                    {/* Layer 1: Background Image */}
-                    <img
-                      src={backgrounds.right[currentSpreadIndex % backgrounds.right.length]}
-                      alt="Background"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    
+                  <div className="relative flex-1 z-10">
                     {/* Layer 2: Character Images */}
                     {rightPage.type === "letter" && rightPageIndex >= 3 && (
                       <img
