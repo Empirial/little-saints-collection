@@ -288,81 +288,62 @@ const PersonalizePreview = () => {
           <div className="space-y-4">
             <h2 className="font-fredoka text-2xl md:text-3xl text-primary">Book Preview</h2>
             
-            {/* Two-Page Spread - Unified Book */}
+            {/* Single Full-Page View */}
             <div className="relative max-w-4xl mx-auto">
-              {/* Book Spread Container */}
-              <div className="relative flex shadow-2xl rounded-lg overflow-hidden bg-background border border-border">
-                {/* Single Panoramic Background for Entire Spread */}
+              <div className="relative aspect-[16/9] shadow-2xl rounded-lg overflow-hidden bg-background border border-border">
+                {/* Full Panoramic Background */}
                 <img
-                  src={backgroundSpreads[currentSpreadIndex % backgroundSpreads.length]}
-                  alt="Book spread background"
-                  className="absolute inset-0 w-full h-full object-contain"
+                  src={backgroundSpreads[Math.floor(currentSpreadIndex / 2) % backgroundSpreads.length]}
+                  alt="Book page background"
+                  className="absolute inset-0 w-full h-full object-cover"
                 />
                 
-                {/* Left Page Overlay Section */}
-                {leftPage && (
-                  <div className="relative flex-1 z-10">
-                    {/* Layer 2: Character Images */}
-                    {leftPage.type === "letter" && leftPageIndex >= 3 && (
-                      <img
-                        src={characterMapping[personalization.childName.toUpperCase().split('')[leftPageIndex - 3]]?.character || MeerkatChar}
-                        alt="Character"
-                        className="absolute bottom-4 right-4 w-32 h-32 object-contain drop-shadow-lg"
-                      />
-                    )}
-                    {leftPage.type === "frame-start" && (
-                      <img
-                        src={getChildCharacter(personalization.gender)}
-                        alt="Child character"
-                        className="absolute bottom-4 left-4 w-32 h-32 object-contain drop-shadow-lg"
-                      />
-                    )}
-                    
-                    {/* Layer 3: Text Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 w-full max-h-full overflow-y-auto shadow-lg">
-                        <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
-                          {leftPage.content}
-                        </p>
+                {/* Content Overlay */}
+                <div className="relative z-10 h-full flex items-center justify-center p-8 md:p-12">
+                  {/* Character Image - positioned based on page type */}
+                  {leftPage && leftPage.type === "letter" && leftPageIndex >= 1 && (
+                    <img
+                      src={characterMapping[personalization.childName.toUpperCase().split('')[leftPageIndex - 1]]?.character || MeerkatChar}
+                      alt="Character"
+                      className="absolute bottom-8 right-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
+                    />
+                  )}
+                  
+                  {leftPage && leftPage.type === "frame-climax" && (
+                    <img
+                      src={getChildCharacter(personalization.gender)}
+                      alt="Child character"
+                      className="absolute bottom-8 right-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
+                    />
+                  )}
+                  
+                  {leftPage && leftPage.type === "title" && (
+                    <img
+                      src={getChildCharacter(personalization.gender)}
+                      alt="Child character"
+                      className="absolute bottom-8 left-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
+                    />
+                  )}
+                  
+                  {/* Text Content */}
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 max-w-2xl shadow-xl">
+                    {leftPage?.type === "title" ? (
+                      <h1 className="font-fredoka text-3xl md:text-5xl text-primary text-center leading-tight">
+                        {leftPage.content}
+                      </h1>
+                    ) : leftPage?.type === "dedication" ? (
+                      <div className="font-fredoka text-base md:text-lg text-foreground text-center space-y-4">
+                        {leftPage.content.split('\n\n').map((paragraph, idx) => (
+                          <p key={idx} className="leading-relaxed">{paragraph}</p>
+                        ))}
                       </div>
-                    </div>
+                    ) : (
+                      <p className="font-fredoka text-lg md:text-xl text-foreground leading-relaxed text-center">
+                        {leftPage?.content}
+                      </p>
+                    )}
                   </div>
-                )}
-
-                {/* Center Spine */}
-                <div className="w-1 bg-border shadow-inner relative z-10">
-                  <div className="absolute inset-0 bg-gradient-to-r from-border/50 via-border to-border/50"></div>
                 </div>
-
-                {/* Right Page Overlay Section */}
-                {rightPage && (
-                  <div className="relative flex-1 z-10">
-                    {/* Layer 2: Character Images */}
-                    {rightPage.type === "letter" && rightPageIndex >= 3 && (
-                      <img
-                        src={characterMapping[personalization.childName.toUpperCase().split('')[rightPageIndex - 3]]?.character || MeerkatChar}
-                        alt="Character"
-                        className="absolute bottom-4 left-4 w-32 h-32 object-contain drop-shadow-lg"
-                      />
-                    )}
-                    {rightPage.type === "frame-climax" && (
-                      <img
-                        src={getChildCharacter(personalization.gender)}
-                        alt="Child character"
-                        className="absolute bottom-4 right-4 w-32 h-32 object-contain drop-shadow-lg"
-                      />
-                    )}
-                    
-                    {/* Layer 3: Text Overlay */}
-                    <div className="absolute inset-0 flex items-center justify-center p-6">
-                      <div className="bg-background/80 backdrop-blur-sm rounded-lg p-6 w-full max-h-full overflow-y-auto shadow-lg">
-                        <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed whitespace-pre-line">
-                          {rightPage.content}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -377,12 +358,12 @@ const PersonalizePreview = () => {
                 Previous Page
               </Button>
               <p className="font-inter text-sm text-muted-foreground">
-                Pages {leftPageIndex + 1}-{rightPageIndex + 1} of {book.length}
+                Page {leftPageIndex + 1} of {book.length}
               </p>
               <Button
                 variant="outline"
                 onClick={handleNextSpread}
-                disabled={currentSpreadIndex >= totalSpreads - 1}
+                disabled={leftPageIndex >= book.length - 1}
                 className="font-inter"
               >
                 Next Page
