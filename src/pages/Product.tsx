@@ -24,6 +24,11 @@ const Product = () => {
   const [selectedPosters, setSelectedPosters] = useState<number[]>([]);
   const [showPosterSelector, setShowPosterSelector] = useState(false);
 
+  const carouselImages = [
+    { image: "/BEDROOM (2).png", title: "Bedroom Display" },
+    { image: "/Classroom.png", title: "Classroom Display" },
+  ];
+
   const posters = [
     { id: 1, image: poster1, title: "The Bible Timeline" },
     { id: 2, image: poster2, title: "Books of the Bible" },
@@ -34,8 +39,6 @@ const Product = () => {
     { id: 7, image: poster7, title: "The 10 Commandments" },
     { id: 8, image: poster8, title: "Lord's Prayer" },
     { id: 9, image: poster9, title: "Seven Days of Creation" },
-    { id: 10, image: "/BEDROOM (2).png", title: "Bedroom Display" },
-    { id: 11, image: "/Classroom.png", title: "Classroom Display" },
   ];
 
   const POSTER_PRICE = 40;
@@ -47,19 +50,19 @@ const Product = () => {
   // Auto-slide effect for main image
   useEffect(() => {
     const interval = setInterval(() => {
-      setSelectedImage((prev) => (prev + 1) % posters.length);
+      setSelectedImage((prev) => (prev + 1) % carouselImages.length);
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [posters.length]);
+  }, [carouselImages.length]);
 
   // Navigate main carousel
   const nextImage = () => {
-    setSelectedImage((prev) => (prev + 1) % posters.length);
+    setSelectedImage((prev) => (prev + 1) % carouselImages.length);
   };
 
   const prevImage = () => {
-    setSelectedImage((prev) => (prev - 1 + posters.length) % posters.length);
+    setSelectedImage((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
   };
 
   // Navigate thumbnail carousel
@@ -127,8 +130,8 @@ const Product = () => {
               <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-3 sm:mb-4 relative group">
                 <div className="aspect-[3/4] p-4 sm:p-6 md:p-8 flex items-center justify-center">
                   <img 
-                    src={posters[selectedImage].image} 
-                    alt={posters[selectedImage].title}
+                    src={carouselImages[selectedImage].image} 
+                    alt={carouselImages[selectedImage].title}
                     className="w-full h-full object-contain transition-all duration-500"
                     loading="eager"
                     width="800"
@@ -154,7 +157,7 @@ const Product = () => {
 
                 {/* Slide Indicators */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {posters.map((_, idx) => (
+                  {carouselImages.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedImage(idx)}
@@ -171,7 +174,7 @@ const Product = () => {
                 {/* Image Counter */}
                 <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-background/90 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                   <p className="font-inter text-xs sm:text-sm font-semibold">
-                    {selectedImage + 1} / {posters.length}
+                    {selectedImage + 1} / {carouselImages.length}
                   </p>
                 </div>
               </Card>
