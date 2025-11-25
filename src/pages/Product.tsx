@@ -12,8 +12,6 @@ import poster6 from "@/assets/poster-6.png";
 import poster7 from "@/assets/poster-7.png";
 import poster8 from "@/assets/poster-8.png";
 import poster9 from "@/assets/poster-9.png";
-import bedroomPhoto from "@/assets/BEDROOM (2).png";
-import classroomPhoto from "@/assets/CLassroom.png";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -36,6 +34,8 @@ const Product = () => {
     { id: 7, image: poster7, title: "The 10 Commandments" },
     { id: 8, image: poster8, title: "Lord's Prayer" },
     { id: 9, image: poster9, title: "Seven Days of Creation" },
+    { id: 10, image: "/BEDROOM (2).png", title: "Bedroom Display" },
+    { id: 11, image: "/Classroom.png", title: "Classroom Display" },
   ];
 
   const POSTER_PRICE = 40;
@@ -543,7 +543,7 @@ const Product = () => {
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
                 <img 
-                  src={bedroomPhoto} 
+                  src="/BEDROOM (2).png" 
                   alt="Christian posters displayed in a child's bedroom"
                   className="w-full h-auto object-cover"
                   loading="lazy"
@@ -560,7 +560,7 @@ const Product = () => {
 
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
                 <img 
-                  src={classroomPhoto} 
+                  src="/Classroom.png" 
                   alt="Christian posters displayed in a classroom setting"
                   className="w-full h-auto object-cover"
                   loading="lazy"
