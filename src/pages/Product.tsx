@@ -12,6 +12,8 @@ import poster6 from "@/assets/poster-6.jpg";
 import poster7 from "@/assets/poster-7.jpg";
 import poster8 from "@/assets/poster-8.jpg";
 import poster9 from "@/assets/poster-9.jpg";
+import bedroomPhoto from "@/assets/BEDROOM (2).png";
+import classroomPhoto from "@/assets/CLassroom.png";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -502,7 +504,7 @@ const Product = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-16">
             {posters.map((poster) => (
               <Card 
                 key={poster.id}
@@ -525,6 +527,54 @@ const Product = () => {
                 </div>
               </Card>
             ))}
+          </div>
+
+          {/* Real-Life Preview Section */}
+          <div className="mt-16">
+            <div className="text-center mb-8">
+              <h3 className="font-fredoka text-3xl md:text-4xl font-bold mb-4">
+                See How They Look In Real Spaces
+              </h3>
+              <p className="font-inter text-lg text-muted-foreground max-w-2xl mx-auto">
+                Transform bedrooms and classrooms into inspiring faith-filled environments
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
+                <img 
+                  src={bedroomPhoto} 
+                  alt="Christian posters displayed in a child's bedroom"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+                <div className="p-6 bg-gradient-to-b from-background to-primary/5">
+                  <p className="font-fredoka text-xl font-semibold text-center">
+                    Perfect for Bedrooms
+                  </p>
+                  <p className="font-inter text-sm text-muted-foreground text-center mt-2">
+                    Create an inspiring space for daily learning and prayer
+                  </p>
+                </div>
+              </Card>
+
+              <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
+                <img 
+                  src={classroomPhoto} 
+                  alt="Christian posters displayed in a classroom setting"
+                  className="w-full h-auto object-cover"
+                  loading="lazy"
+                />
+                <div className="p-6 bg-gradient-to-b from-background to-primary/5">
+                  <p className="font-fredoka text-xl font-semibold text-center">
+                    Ideal for Sunday School
+                  </p>
+                  <p className="font-inter text-sm text-muted-foreground text-center mt-2">
+                    Enhance your teaching with vibrant visual aids
+                  </p>
+                </div>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
