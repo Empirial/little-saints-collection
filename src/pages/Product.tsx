@@ -323,7 +323,7 @@ const Product = () => {
                             </span>
                           </div>
                           <span className="font-inter text-xs sm:text-sm text-muted-foreground">
-                            Save R90 • Free Delivery in SA
+                            Save R90 • Best Value
                           </span>
                         </Label>
                       </div>
@@ -351,7 +351,7 @@ const Product = () => {
                           <Label htmlFor="individual" className="flex flex-col cursor-pointer flex-1">
                             <span className="font-fredoka font-bold text-base sm:text-lg">Individual Posters</span>
                             <span className="font-inter text-xs sm:text-sm text-muted-foreground">
-                              R40 per poster • Free Delivery in SA
+                              R40 per poster
                             </span>
                           </Label>
                         </div>
@@ -443,7 +443,7 @@ const Product = () => {
               {/* Shipping Notice */}
               <div className="bg-muted/30 rounded-lg p-4 mb-6 text-center">
                 <p className="font-inter text-sm font-semibold text-foreground">
-                  ✓ Free Delivery Across South Africa
+                  ✓ Fast Delivery Across South Africa
                 </p>
                 <p className="font-inter text-xs text-muted-foreground mt-1">
                   Same week delivery • Secure WhatsApp confirmation
