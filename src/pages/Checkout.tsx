@@ -3,13 +3,25 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 import posterCollection from "@/assets/poster-collection.jpg"; // Add your collection image
 
 const Checkout = () => {
   const navigate = useNavigate();
+  const [deliveryMethod, setDeliveryMethod] = useState("fastway");
+  
+  const deliveryOptions = {
+    fastway: { name: "Fastway Courier", price: 95, days: "5-7 days" },
+    paxi: { name: "Paxi", price: 110, days: "7-9 days" }
+  };
+  
+  const subtotal = 270;
+  const deliveryCost = deliveryOptions[deliveryMethod as keyof typeof deliveryOptions].price;
+  const total = subtotal + deliveryCost;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +70,7 @@ const Checkout = () => {
                     <div className="space-y-1 text-xs text-muted-foreground">
                       <p>✓ Premium 350mg paper quality</p>
                       <p>✓ Vibrant, child-friendly colors</p>
-                      <p>✓ Free delivery across SA</p>
+                      <p>✓ Reliable courier delivery</p>
                     </div>
                   </div>
                   <p className="font-fredoka text-xl font-bold text-primary">R270</p>
@@ -68,22 +80,16 @@ const Checkout = () => {
               <div className="border-t pt-4 space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="font-inter text-muted-foreground">Subtotal</span>
-                  <span className="font-inter">R270</span>
+                  <span className="font-inter">R{subtotal}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="font-inter text-muted-foreground">Delivery</span>
-                  <span className="font-inter text-accent font-semibold">FREE</span>
+                  <span className="font-inter">R{deliveryCost}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center text-xl font-bold">
                   <span className="font-fredoka">Total</span>
-                  <span className="font-fredoka text-primary">R270</span>
+                  <span className="font-fredoka text-primary">R{total}</span>
                 </div>
-              </div>
-
-              <div className="mt-6 bg-accent/10 border border-accent/30 rounded-lg p-4">
-                <p className="font-inter text-sm text-center font-medium">
-                  🎉 Free delivery included!
-                </p>
               </div>
             </Card>
           </div>
@@ -126,6 +132,40 @@ const Checkout = () => {
               </div>
 
               <div>
+                <Label className="font-inter font-semibold">Delivery Method *</Label>
+                <RadioGroup 
+                  value={deliveryMethod} 
+                  onValueChange={setDeliveryMethod}
+                  className="mt-3 space-y-3"
+                >
+                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="fastway" id="fastway" />
+                    <Label htmlFor="fastway" className="flex-1 cursor-pointer">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold">Fastway Courier</p>
+                          <p className="text-sm text-muted-foreground">5-7 days delivery</p>
+                        </div>
+                        <span className="font-bold text-primary">R95</span>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="paxi" id="paxi" />
+                    <Label htmlFor="paxi" className="flex-1 cursor-pointer">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold">Paxi</p>
+                          <p className="text-sm text-muted-foreground">7-9 days delivery</p>
+                        </div>
+                        <span className="font-bold text-primary">R110</span>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
                 <Label htmlFor="address" className="font-inter font-semibold">Delivery Address *</Label>
                 <Textarea 
                   id="address" 
@@ -150,7 +190,7 @@ const Checkout = () => {
                   size="lg" 
                   className="w-full font-fredoka text-lg py-6"
                 >
-                  Complete Order - R270
+                  Complete Order - R{total}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center mt-4">
                   We'll contact you on WhatsApp to arrange secure payment and delivery
