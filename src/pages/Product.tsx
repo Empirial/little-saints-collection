@@ -134,8 +134,9 @@ const Product = () => {
                     alt={carouselImages[selectedImage].title}
                     className="w-full h-full object-contain transition-all duration-500"
                     loading="eager"
-                    width="800"
-                    height="1067"
+                    fetchPriority="high"
+                    width="1200"
+                    height="1600"
                   />
                 </div>
 
