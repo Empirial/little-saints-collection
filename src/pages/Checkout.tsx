@@ -5,14 +5,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
-import posterCollection from "@/assets/poster-collection.jpg"; // Add your collection image
+import { supabase } from "@/integrations/supabase/client";
+import posterCollection from "@/assets/poster-collection.jpg";
+
+const YOCO_PUBLIC_KEY = "pk_test_9c1de029bVeG55G6c614";
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [deliveryMethod, setDeliveryMethod] = useState("fastway");
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: "",
+  });
   
   const deliveryOptions = {
     fastway: { name: "Fastway Courier", price: 95, days: "5-7 days" },
@@ -23,10 +36,72 @@ const Checkout = () => {
   const deliveryCost = deliveryOptions[deliveryMethod as keyof typeof deliveryOptions].price;
   const total = subtotal + deliveryCost;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Order received! Redirecting to confirmation...");
-    setTimeout(() => navigate("/thank-you"), 1500);
+    
+    // Validate form
+    if (!formData.name || !formData.email || !formData.phone || !formData.address) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      const baseUrl = window.location.origin;
+      
+      // Call edge function to create Yoco checkout
+      const { data, error } = await supabase.functions.invoke('create-yoco-checkout', {
+        body: {
+          amount: total * 100, // Convert to cents
+          currency: 'ZAR',
+          successUrl: `${baseUrl}/payment-success`,
+          cancelUrl: `${baseUrl}/payment-cancelled`,
+          metadata: {
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            deliveryAddress: formData.address,
+            deliveryMethod: deliveryMethod,
+            orderNotes: formData.notes,
+            subtotal: subtotal,
+            deliveryCost: deliveryCost,
+            total: total,
+          },
+        },
+      });
+
+      if (error) {
+        console.error('Checkout error:', error);
+        throw new Error(error.message || 'Failed to create checkout');
+      }
+
+      if (data?.redirectUrl) {
+        // Store order details in sessionStorage for success page
+        sessionStorage.setItem('orderDetails', JSON.stringify({
+          ...formData,
+          deliveryMethod,
+          subtotal,
+          deliveryCost,
+          total,
+        }));
+        
+        // Redirect to Yoco payment page
+        window.location.href = data.redirectUrl;
+      } else {
+        throw new Error('No redirect URL received');
+      }
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || "Payment failed. Please try again.");
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -36,6 +111,7 @@ const Checkout = () => {
           variant="ghost" 
           onClick={() => navigate("/")}
           className="mb-6"
+          disabled={isProcessing}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Shop
@@ -106,6 +182,9 @@ const Checkout = () => {
                   required 
                   placeholder="John Doe"
                   className="mt-1.5"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  disabled={isProcessing}
                 />
               </div>
 
@@ -117,6 +196,9 @@ const Checkout = () => {
                   required 
                   placeholder="john@example.com"
                   className="mt-1.5"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled={isProcessing}
                 />
               </div>
 
@@ -128,6 +210,9 @@ const Checkout = () => {
                   required 
                   placeholder="+27 79 117 5714"
                   className="mt-1.5"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  disabled={isProcessing}
                 />
               </div>
 
@@ -137,6 +222,7 @@ const Checkout = () => {
                   value={deliveryMethod} 
                   onValueChange={setDeliveryMethod}
                   className="mt-3 space-y-3"
+                  disabled={isProcessing}
                 >
                   <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
                     <RadioGroupItem value="fastway" id="fastway" />
@@ -172,6 +258,9 @@ const Checkout = () => {
                   required 
                   placeholder="Street address, City, Province, Postal Code"
                   className="mt-1.5 min-h-[100px]"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  disabled={isProcessing}
                 />
               </div>
 
@@ -181,6 +270,9 @@ const Checkout = () => {
                   id="notes" 
                   placeholder="Any special instructions or requests"
                   className="mt-1.5"
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                  disabled={isProcessing}
                 />
               </div>
 
@@ -189,11 +281,19 @@ const Checkout = () => {
                   type="submit" 
                   size="lg" 
                   className="w-full font-fredoka text-lg py-6"
+                  disabled={isProcessing}
                 >
-                  Complete Order - R{total}
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>Pay Now - R{total}</>
+                  )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center mt-4">
-                  We'll contact you on WhatsApp to arrange secure payment and delivery
+                  Secure payment powered by Yoco
                 </p>
               </div>
             </form>

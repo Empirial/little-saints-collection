@@ -7,6 +7,8 @@ import Index from "./pages/Index";
 import Product from "./pages/Product";
 import Checkout from "./pages/Checkout";
 import ThankYou from "./pages/ThankYou";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
 import NotFound from "./pages/NotFound";
 import PersonalizeBook from "./pages/PersonalizeBook";
 import PersonalizePreview from "./pages/PersonalizePreview";
@@ -26,6 +28,8 @@ const App = () => (
           <Route path="/personalize-preview" element={<PersonalizePreview />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancelled" element={<PaymentCancelled />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
