@@ -106,6 +106,20 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-muted/30 py-12 px-4">
+      {/* Hidden Netlify Form for order notifications */}
+      <form name="order-notification" data-netlify="true" netlify-honeypot="bot-field" hidden>
+        <input type="hidden" name="form-name" value="order-notification" />
+        <input name="bot-field" />
+        <input name="order_id" />
+        <input name="customer_name" />
+        <input name="customer_email" />
+        <input name="customer_phone" />
+        <input name="delivery_address" />
+        <input name="delivery_method" />
+        <input name="order_notes" />
+        <input name="total" />
+        <input name="paid_at" />
+      </form>
       <div className="max-w-4xl mx-auto">
         <Button 
           variant="ghost" 

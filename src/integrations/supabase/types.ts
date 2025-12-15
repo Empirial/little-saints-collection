@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          created_at: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          delivery_cost: number
+          delivery_method: string
+          id: string
+          order_notes: string | null
+          paid_at: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string | null
+          yoco_checkout_id: string | null
+          yoco_payment_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          delivery_address: string
+          delivery_cost: number
+          delivery_method: string
+          id?: string
+          order_notes?: string | null
+          paid_at?: string | null
+          status?: string
+          subtotal: number
+          total: number
+          updated_at?: string | null
+          yoco_checkout_id?: string | null
+          yoco_payment_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          delivery_address?: string
+          delivery_cost?: number
+          delivery_method?: string
+          id?: string
+          order_notes?: string | null
+          paid_at?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string | null
+          yoco_checkout_id?: string | null
+          yoco_payment_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
