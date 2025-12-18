@@ -56,7 +56,7 @@ serve(async (req) => {
           try {
             const formData = new URLSearchParams();
             formData.append('form-name', 'order-notification');
-            formData.append('order_id', order.id);
+            formData.append('order_id', order.order_number || order.id);
             formData.append('customer_name', order.customer_name);
             formData.append('customer_email', order.customer_email);
             formData.append('customer_phone', order.customer_phone);

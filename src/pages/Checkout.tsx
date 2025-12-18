@@ -119,6 +119,7 @@ const Checkout = () => {
           subtotal,
           deliveryCost,
           total,
+          orderNumber: data.orderNumber,
         }));
         
         // Redirect to Yoco payment page

@@ -102,6 +102,7 @@ serve(async (req) => {
       id: data.id,
       redirectUrl: data.redirectUrl,
       orderId: order.id,
+      orderNumber: order.order_number,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
