@@ -25,6 +25,7 @@ export type Database = {
           delivery_method: string
           id: string
           order_notes: string | null
+          order_number: string | null
           paid_at: string | null
           status: string
           subtotal: number
@@ -43,6 +44,7 @@ export type Database = {
           delivery_method: string
           id?: string
           order_notes?: string | null
+          order_number?: string | null
           paid_at?: string | null
           status?: string
           subtotal: number
@@ -61,6 +63,7 @@ export type Database = {
           delivery_method?: string
           id?: string
           order_notes?: string | null
+          order_number?: string | null
           paid_at?: string | null
           status?: string
           subtotal?: number
