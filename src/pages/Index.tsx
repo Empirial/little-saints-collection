@@ -13,12 +13,15 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-16">
+      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-16 bg-primary/20">
         <img 
           src={heroImage}
           alt="Christian Bible posters for children"
           className="absolute inset-0 w-full h-full object-cover"
           loading="eager"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none';
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background/70 to-background" />
         
@@ -178,7 +181,7 @@ const Index = () => {
           </div>
           <p className="font-fredoka text-2xl font-bold mb-2">Little Saints</p>
           <p className="font-inter text-sm text-muted-foreground">
-            © 2024 Little Saints. Inspiring faith in young hearts.
+            © 2025 Little Saints. Inspiring faith in young hearts.
           </p>
         </div>
       </footer>
