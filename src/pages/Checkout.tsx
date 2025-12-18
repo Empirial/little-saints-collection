@@ -165,15 +165,23 @@ const Checkout = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Order Summary */}
           <div className="space-y-6">
-            {/* Collection Image Card */}
+            {/* Paxi Point Locator */}
             <Card className="overflow-hidden border-2 border-primary/20">
-              <div className="aspect-[3/4] bg-gradient-to-br from-primary/10 to-background">
-                <img 
-                  src={posterCollection} 
-                  alt="Little Saints Poster Collection"
-                  className="w-full h-full object-cover"
-                />
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
+                <h3 className="font-fredoka font-semibold">Find your nearest Paxi Point</h3>
+                <p className="text-sm font-inter text-muted-foreground">
+                  Click on a marker to see the store name and code
+                </p>
               </div>
+              <iframe 
+                width="100%" 
+                height="450" 
+                src="https://www.paxi.co.za/pep-paxi-point-locator" 
+                frameBorder="0" 
+                allow="geolocation"
+                className="w-full"
+                title="PEP Paxi Point Locator"
+              />
             </Card>
 
             {/* Order Details */}
