@@ -314,6 +314,35 @@ const Checkout = () => {
                 </RadioGroup>
               </div>
 
+              {/* Paxi Store Locator */}
+              {deliveryMethod === "paxi" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-2">
+                    <div className="h-px flex-1 bg-border"></div>
+                    <span className="text-sm font-semibold text-muted-foreground px-2">Find a Paxi Point</span>
+                    <div className="h-px flex-1 bg-border"></div>
+                  </div>
+                  <Card className="overflow-hidden border-2 border-primary/20">
+                    <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
+                      <p className="text-sm font-inter text-muted-foreground">
+                        Select a Paxi point near you and include the <span className="font-semibold text-foreground">store name</span> in your delivery address below.
+                      </p>
+                    </div>
+                    <div className="relative">
+                      <iframe 
+                        width="100%" 
+                        height="450" 
+                        src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
+                        frameBorder="0" 
+                        allow="geolocation"
+                        className="w-full"
+                        title="Paxi Store Locator"
+                      />
+                    </div>
+                  </Card>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="address" className="font-inter font-semibold">
                   {deliveryMethod === "pickup" ? "Pickup Notes (Optional)" : "Delivery Address *"}
