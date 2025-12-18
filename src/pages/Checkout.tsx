@@ -175,12 +175,12 @@ const Checkout = () => {
               </div>
               <iframe 
                 width="100%" 
-                height="450" 
-                src="https://www.paxi.co.za/pep-paxi-point-locator" 
+                height="600" 
+                src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
                 frameBorder="0" 
                 allow="geolocation"
                 className="w-full"
-                title="PEP Paxi Point Locator"
+                title="Paxi Point Locator"
               />
             </Card>
 
