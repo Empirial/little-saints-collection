@@ -41,7 +41,7 @@ const Product = () => {
     { id: 9, image: poster9, title: "Seven Days of Creation" },
   ];
 
-  const POSTER_PRICE = 40;
+  const POSTER_PRICE = 10;
   const COMPLETE_SET_PRICE = 270;
 
   // Calculate individual poster total
