@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.yoco-webhook]
 verify_jwt = false
+
+[functions.register-yoco-webhook]
+verify_jwt = false
