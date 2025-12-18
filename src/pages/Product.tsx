@@ -115,7 +115,7 @@ const Product = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="bg-muted/30 py-4 px-4 sticky top-0 z-50 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -149,7 +149,6 @@ const Product = () => {
                     alt={carouselImages[selectedImage].title}
                     className="w-full h-full object-contain transition-all duration-500"
                     loading="eager"
-                    fetchPriority="high"
                     width="1200"
                     height="1600"
                   />
@@ -196,12 +195,12 @@ const Product = () => {
               </Card>
               
               {/* Thumbnail Carousel */}
-              <div className="relative px-6 sm:px-0">
+              <div className="relative px-8 sm:px-0">
                 {/* Left Arrow */}
                 <button
                   onClick={prevThumbnails}
                   disabled={thumbnailStartIndex === 0}
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 sm:-translate-x-3 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
+                  className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
                     thumbnailStartIndex === 0 
                       ? 'opacity-30 cursor-not-allowed' 
                       : 'hover:border-primary hover:bg-primary/5'
@@ -212,7 +211,7 @@ const Product = () => {
                 </button>
 
                 {/* Thumbnails Grid */}
-                <div className="grid grid-cols-4 gap-2 sm:gap-3 px-1">
+                <div className="grid grid-cols-4 gap-1 sm:gap-3">
                   {visibleThumbnails.map((poster, idx) => {
                     const actualIndex = thumbnailStartIndex + idx;
                     return (
@@ -221,7 +220,7 @@ const Product = () => {
                         onClick={() => setSelectedImage(actualIndex)}
                         className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
                           selectedImage === actualIndex
-                            ? 'border-primary shadow-lg ring-2 ring-primary/20 scale-105' 
+                            ? 'border-primary shadow-lg ring-2 ring-primary/20' 
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
@@ -242,7 +241,7 @@ const Product = () => {
                 <button
                   onClick={nextThumbnails}
                   disabled={thumbnailStartIndex + 4 >= posters.length}
-                  className={`absolute right-0 top-1/2 -translate-y-1/2 sm:translate-x-3 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
+                  className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
                     thumbnailStartIndex + 4 >= posters.length 
                       ? 'opacity-30 cursor-not-allowed' 
                       : 'hover:border-primary hover:bg-primary/5'
