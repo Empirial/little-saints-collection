@@ -96,6 +96,21 @@ const Product = () => {
       alert("Please select at least one poster");
       return;
     }
+    
+    // Store cart data for checkout
+    const cartData = {
+      purchaseOption,
+      selectedPosters: purchaseOption === "individual" ? selectedPosters : [],
+      subtotal: purchaseOption === "complete" ? COMPLETE_SET_PRICE : individualTotal,
+      items: purchaseOption === "complete" 
+        ? [{ name: "Complete Poster Set (9 posters)", quantity: 1, price: COMPLETE_SET_PRICE }]
+        : selectedPosters.map(id => {
+            const poster = posters.find(p => p.id === id);
+            return { name: poster?.title || `Poster ${id}`, quantity: 1, price: POSTER_PRICE };
+          }),
+    };
+    localStorage.setItem("cart", JSON.stringify(cartData));
+    
     navigate("/checkout");
   };
 

@@ -7,16 +7,28 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ShoppingBag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import posterCollection from "@/assets/poster-collection.jpg";
 
-const YOCO_PUBLIC_KEY = "pk_test_9c1de029bVeG55G6c614";
+interface CartItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface CartData {
+  purchaseOption: "complete" | "individual";
+  selectedPosters: number[];
+  subtotal: number;
+  items: CartItem[];
+}
 
 const Checkout = () => {
   const navigate = useNavigate();
   const [deliveryMethod, setDeliveryMethod] = useState("fastway");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cart, setCart] = useState<CartData | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -26,13 +38,29 @@ const Checkout = () => {
     address: "",
     notes: "",
   });
+
+  // Load cart data from localStorage
+  useEffect(() => {
+    const cartData = localStorage.getItem("cart");
+    if (cartData) {
+      setCart(JSON.parse(cartData));
+    } else {
+      // Default to complete set if no cart data
+      setCart({
+        purchaseOption: "complete",
+        selectedPosters: [],
+        subtotal: 270,
+        items: [{ name: "Complete Poster Set (9 posters)", quantity: 1, price: 270 }],
+      });
+    }
+  }, []);
   
   const deliveryOptions = {
     fastway: { name: "Fastway Courier", price: 95, days: "5-7 days" },
     paxi: { name: "Paxi", price: 110, days: "7-9 days" }
   };
   
-  const subtotal = 270;
+  const subtotal = cart?.subtotal || 270;
   const deliveryCost = deliveryOptions[deliveryMethod as keyof typeof deliveryOptions].price;
   const total = subtotal + deliveryCost;
 
@@ -153,18 +181,24 @@ const Checkout = () => {
               </h2>
               
               <div className="space-y-4 mb-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-fredoka font-bold text-lg mb-1">Little Saints Poster Collection</h3>
-                    <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A4 posters</p>
-                    <div className="space-y-1 text-xs text-muted-foreground">
-                      <p>✓ Premium 350mg paper quality</p>
-                      <p>✓ Vibrant, child-friendly colors</p>
-                      <p>✓ Reliable courier delivery</p>
+                {cart?.items.map((item, index) => (
+                  <div key={index} className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-fredoka font-bold text-lg mb-1">{item.name}</h3>
+                      {cart.purchaseOption === "complete" && (
+                        <>
+                          <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A4 posters</p>
+                          <div className="space-y-1 text-xs text-muted-foreground">
+                            <p>✓ Premium 350mg paper quality</p>
+                            <p>✓ Vibrant, child-friendly colors</p>
+                            <p>✓ Reliable courier delivery</p>
+                          </div>
+                        </>
+                      )}
                     </div>
+                    <p className="font-fredoka text-xl font-bold text-primary">R{item.price}</p>
                   </div>
-                  <p className="font-fredoka text-xl font-bold text-primary">R270</p>
-                </div>
+                ))}
               </div>
 
               <div className="border-t pt-4 space-y-3">
