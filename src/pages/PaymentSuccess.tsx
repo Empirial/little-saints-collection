@@ -13,6 +13,7 @@ interface OrderDetails {
   subtotal: number;
   deliveryCost: number;
   total: number;
+  orderNumber?: string;
 }
 
 const PaymentSuccess = () => {
@@ -52,6 +53,12 @@ const PaymentSuccess = () => {
           <div className="bg-muted/30 rounded-lg p-4 mb-6 text-left">
             <h3 className="font-fredoka font-bold mb-3">Order Summary</h3>
             <div className="space-y-2 text-sm">
+              {orderDetails.orderNumber && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Order Number:</span>
+                  <span className="font-bold text-primary">{orderDetails.orderNumber}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Name:</span>
                 <span className="font-medium">{orderDetails.name}</span>
