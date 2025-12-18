@@ -322,50 +322,6 @@ const Checkout = () => {
                 </RadioGroup>
               </div>
 
-              {/* Paxi Store Locator */}
-              {deliveryMethod === "paxi" && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                  {/* Step 1: Find Paxi Point */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold">1</div>
-                      <h3 className="font-fredoka font-semibold text-lg">Find your nearest Paxi Point</h3>
-                    </div>
-                    <Card className="overflow-hidden border-2 border-primary/20">
-                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
-                        <p className="text-sm font-inter text-muted-foreground">
-                          Use the map below to find a Paxi point near you. Click on a marker to see the <span className="font-semibold text-foreground">store name and code</span>.
-                        </p>
-                      </div>
-                      <div className="relative">
-                        <iframe 
-                          width="100%" 
-                          height="400" 
-                          src="https://www.paxi.co.za/pep-paxi-point-locator" 
-                          frameBorder="0" 
-                          allow="geolocation"
-                          className="w-full"
-                          title="PEP Paxi Point Locator"
-                        />
-                      </div>
-                    </Card>
-                    <a 
-                      href="https://map.paxi.co.za" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
-                    >
-                      Open Paxi map in new tab for better viewing →
-                    </a>
-                  </div>
-
-                  {/* Step 2: Enter Details */}
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold">2</div>
-                    <h3 className="font-fredoka font-semibold text-lg">Enter the Paxi Point details below</h3>
-                  </div>
-                </div>
-              )}
 
               <div>
                 <Label htmlFor="address" className="font-inter font-semibold">
