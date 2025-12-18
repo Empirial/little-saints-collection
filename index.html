@@ -23,6 +23,21 @@
   </head>
 
   <body>
+    <!-- Hidden Netlify Form for build detection -->
+    <form name="order-notification" netlify netlify-honeypot="bot-field" hidden>
+      <input type="hidden" name="form-name" value="order-notification" />
+      <input name="bot-field" />
+      <input name="order_id" />
+      <input name="customer_name" />
+      <input name="customer_email" />
+      <input name="customer_phone" />
+      <input name="delivery_address" />
+      <input name="delivery_method" />
+      <input name="order_notes" />
+      <input name="total" />
+      <input name="paid_at" />
+    </form>
+    
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
