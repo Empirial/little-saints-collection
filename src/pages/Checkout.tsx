@@ -333,11 +333,11 @@ const Checkout = () => {
                         <iframe 
                           width="100%" 
                           height="400" 
-                          src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
+                          src="https://www.paxi.co.za/pep-paxi-point-locator" 
                           frameBorder="0" 
                           allow="geolocation"
                           className="w-full"
-                          title="Paxi Store Locator"
+                          title="PEP Paxi Point Locator"
                         />
                       </div>
                     </Card>
