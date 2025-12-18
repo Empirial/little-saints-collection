@@ -56,6 +56,7 @@ const Checkout = () => {
   }, []);
   
   const deliveryOptions = {
+    pickup: { name: "Pickup", price: 0, days: "Arrange via WhatsApp" },
     fastway: { name: "Fastway Courier", price: 95, days: "5-7 days" },
     paxi: { name: "Paxi", price: 110, days: "7-9 days" }
   };
@@ -73,7 +74,8 @@ const Checkout = () => {
     e.preventDefault();
     
     // Validate form
-    if (!formData.name || !formData.email || !formData.phone || !formData.address) {
+    const isPickup = deliveryMethod === "pickup";
+    if (!formData.name || !formData.email || !formData.phone || (!isPickup && !formData.address)) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -273,6 +275,18 @@ const Checkout = () => {
                   disabled={isProcessing}
                 >
                   <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="pickup" id="pickup" />
+                    <Label htmlFor="pickup" className="flex-1 cursor-pointer">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-semibold">Pickup</p>
+                          <p className="text-sm text-muted-foreground">Arrange via WhatsApp</p>
+                        </div>
+                        <span className="font-bold text-primary">R0</span>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
                     <RadioGroupItem value="fastway" id="fastway" />
                     <Label htmlFor="fastway" className="flex-1 cursor-pointer">
                       <div className="flex justify-between items-start">
@@ -300,11 +314,13 @@ const Checkout = () => {
               </div>
 
               <div>
-                <Label htmlFor="address" className="font-inter font-semibold">Delivery Address *</Label>
+                <Label htmlFor="address" className="font-inter font-semibold">
+                  {deliveryMethod === "pickup" ? "Pickup Notes (Optional)" : "Delivery Address *"}
+                </Label>
                 <Textarea 
                   id="address" 
-                  required 
-                  placeholder="Street address, City, Province, Postal Code"
+                  required={deliveryMethod !== "pickup"}
+                  placeholder={deliveryMethod === "pickup" ? "Any notes for pickup arrangement" : "Street address, City, Province, Postal Code"}
                   className="mt-1.5 min-h-[100px]"
                   value={formData.address}
                   onChange={handleInputChange}
