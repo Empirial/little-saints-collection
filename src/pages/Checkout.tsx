@@ -345,12 +345,18 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="address" className="font-inter font-semibold">
-                  {deliveryMethod === "pickup" ? "Pickup Notes (Optional)" : "Delivery Address *"}
+                  {deliveryMethod === "pickup" ? "Pickup Notes (Optional)" : deliveryMethod === "paxi" ? "Paxi Point Details *" : "Delivery Address *"}
                 </Label>
                 <Textarea 
                   id="address" 
                   required={deliveryMethod !== "pickup"}
-                  placeholder={deliveryMethod === "pickup" ? "Any notes for pickup arrangement" : "Street address, City, Province, Postal Code"}
+                  placeholder={
+                    deliveryMethod === "pickup" 
+                      ? "Any notes for pickup arrangement" 
+                      : deliveryMethod === "paxi"
+                        ? "Paxi Point name (e.g., PEP Store Sandton), your full name & phone number"
+                        : "Street address, City, Province, Postal Code"
+                  }
                   className="mt-1.5 min-h-[100px]"
                   value={formData.address}
                   onChange={handleInputChange}
