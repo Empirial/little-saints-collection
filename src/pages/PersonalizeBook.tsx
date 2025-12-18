@@ -40,11 +40,11 @@ const PersonalizeBook = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 md:py-16">
+      <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
         <Button
           variant="ghost"
           onClick={() => navigate("/")}
-          className="mb-6 font-inter"
+          className="mb-4 sm:mb-6 font-inter"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Home

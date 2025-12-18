@@ -35,24 +35,24 @@ const Index = () => {
           <p className="font-inter text-base md:text-lg text-foreground/80 mb-6 italic max-w-3xl mx-auto">
             "Train up a child in the way he should go: and when he is old, he will not depart from it."
           </p>
-          <h1 className="font-fredoka text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
+          <h1 className="font-fredoka text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
             Inspire Faith in Every<br />Child's Room
           </h1>
-          <p className="font-inter text-xl md:text-2xl text-foreground/80 mb-8 max-w-3xl mx-auto">
+          <p className="font-inter text-base sm:text-xl md:text-2xl text-foreground/80 mb-6 sm:mb-8 max-w-3xl mx-auto">
             Beautiful Christian posters and personalized books that teach values, joy and God's love
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-6 sm:mt-8">
             <Button 
               onClick={() => navigate("/product")}
               size="lg" 
-              className="font-fredoka text-xl px-12 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
+              className="font-fredoka text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Christian Posters
             </Button>
             <Button 
               onClick={() => navigate("/personalize-book")}
               size="lg" 
-              className="font-fredoka text-xl px-12 py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
+              className="font-fredoka text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Personalized Book
             </Button>
@@ -137,24 +137,24 @@ const Index = () => {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-gradient-to-b from-background to-primary/10">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="font-fredoka text-4xl md:text-6xl font-bold mb-6">
+          <h2 className="font-fredoka text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6">
             Start Your Child's Faith Journey Today
           </h2>
-          <p className="font-inter text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
+          <p className="font-inter text-base sm:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto">
             Create a space filled with God's love and inspiring Bible stories that will nurture your child's faith
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <Button 
               onClick={() => navigate("/product")}
               size="lg" 
-              className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
+              className="font-fredoka text-lg sm:text-2xl px-8 sm:px-16 py-6 sm:py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Christian Posters
             </Button>
             <Button 
               onClick={() => navigate("/personalize-book")}
               size="lg" 
-              className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
+              className="font-fredoka text-lg sm:text-2xl px-8 sm:px-16 py-6 sm:py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Personalized Book
             </Button>
@@ -163,11 +163,11 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-foreground text-background py-8 px-4">
+      <footer className="bg-foreground text-background py-6 sm:py-8 px-4">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <MessageCircle className="w-6 h-6" />
-            <p className="font-inter text-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4">
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+            <p className="font-inter text-sm sm:text-lg">
               Contact us on WhatsApp:{" "}
               <a 
                 href="https://wa.me/27791175714" 
@@ -179,8 +179,8 @@ const Index = () => {
               </a>
             </p>
           </div>
-          <p className="font-fredoka text-2xl font-bold mb-2">Little Saints</p>
-          <p className="font-inter text-sm text-muted-foreground">
+          <p className="font-fredoka text-xl sm:text-2xl font-bold mb-2">Little Saints</p>
+          <p className="font-inter text-xs sm:text-sm text-muted-foreground">
             © 2025 Little Saints. Inspiring faith in young hearts.
           </p>
         </div>
