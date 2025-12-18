@@ -316,30 +316,46 @@ const Checkout = () => {
 
               {/* Paxi Store Locator */}
               {deliveryMethod === "paxi" && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center gap-2">
-                    <div className="h-px flex-1 bg-border"></div>
-                    <span className="text-sm font-semibold text-muted-foreground px-2">Find a Paxi Point</span>
-                    <div className="h-px flex-1 bg-border"></div>
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  {/* Step 1: Find Paxi Point */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold">1</div>
+                      <h3 className="font-fredoka font-semibold text-lg">Find your nearest Paxi Point</h3>
+                    </div>
+                    <Card className="overflow-hidden border-2 border-primary/20">
+                      <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
+                        <p className="text-sm font-inter text-muted-foreground">
+                          Use the map below to find a Paxi point near you. Click on a marker to see the <span className="font-semibold text-foreground">store name and code</span>.
+                        </p>
+                      </div>
+                      <div className="relative">
+                        <iframe 
+                          width="100%" 
+                          height="400" 
+                          src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
+                          frameBorder="0" 
+                          allow="geolocation"
+                          className="w-full"
+                          title="Paxi Store Locator"
+                        />
+                      </div>
+                    </Card>
+                    <a 
+                      href="https://map.paxi.co.za" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-sm text-primary hover:underline font-medium"
+                    >
+                      Open Paxi map in new tab for better viewing →
+                    </a>
                   </div>
-                  <Card className="overflow-hidden border-2 border-primary/20">
-                    <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
-                      <p className="text-sm font-inter text-muted-foreground">
-                        Select a Paxi point near you and include the <span className="font-semibold text-foreground">store name</span> in your delivery address below.
-                      </p>
-                    </div>
-                    <div className="relative">
-                      <iframe 
-                        width="100%" 
-                        height="450" 
-                        src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
-                        frameBorder="0" 
-                        allow="geolocation"
-                        className="w-full"
-                        title="Paxi Store Locator"
-                      />
-                    </div>
-                  </Card>
+
+                  {/* Step 2: Enter Details */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary text-primary-foreground text-sm font-bold">2</div>
+                    <h3 className="font-fredoka font-semibold text-lg">Enter the Paxi Point details below</h3>
+                  </div>
                 </div>
               )}
 
