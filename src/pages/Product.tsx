@@ -3,15 +3,17 @@ import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import poster1 from "@/assets/poster-1.png";
-import poster2 from "@/assets/poster-2.png";
-import poster3 from "@/assets/poster-3.png";
-import poster4 from "@/assets/poster-4.png";
-import poster5 from "@/assets/poster-5.png";
-import poster6 from "@/assets/poster-6.png";
-import poster7 from "@/assets/poster-7.png";
-import poster8 from "@/assets/poster-8.png";
-import poster9 from "@/assets/poster-9.png";
+import poster1 from "@/assets/poster/poster-1.webp";
+import poster2 from "@/assets/poster/poster-2.webp";
+import poster3 from "@/assets/poster/poster-3.webp";
+import poster4 from "@/assets/poster/poster-4.webp";
+import poster5 from "@/assets/poster/poster-5.webp";
+import poster6 from "@/assets/poster/poster-6.webp";
+import poster7 from "@/assets/poster/poster-7.webp";
+import poster8 from "@/assets/poster/poster-8.webp";
+import poster9 from "@/assets/poster/poster-9.webp";
+import bedroomImage from "@/assets/poster/BEDROOM (2).webp";
+import classroomImage from "@/assets/poster/CLassroom.webp";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -25,8 +27,8 @@ const Product = () => {
   const [showPosterSelector, setShowPosterSelector] = useState(false);
 
   const carouselImages = [
-    { image: "/BEDROOM (2).png", title: "Bedroom Display" },
-    { image: "/Classroom.png", title: "Classroom Display" },
+    { image: bedroomImage, title: "Bedroom Display" },
+    { image: classroomImage, title: "Classroom Display" },
   ];
 
   const posters = [
@@ -561,7 +563,7 @@ const Product = () => {
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
                 <img 
-                  src="/BEDROOM (2).png" 
+                  src={bedroomImage} 
                   alt="Christian posters displayed in a child's bedroom"
                   className="w-full h-auto object-cover"
                   loading="lazy"
@@ -578,7 +580,7 @@ const Product = () => {
 
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
                 <img 
-                  src="/Classroom.png" 
+                  src={classroomImage} 
                   alt="Christian posters displayed in a classroom setting"
                   className="w-full h-auto object-cover"
                   loading="lazy"
