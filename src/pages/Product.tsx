@@ -18,7 +18,6 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
-
 const Product = () => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -26,24 +25,50 @@ const Product = () => {
   const [purchaseOption, setPurchaseOption] = useState<"complete" | "individual">("complete");
   const [selectedPosters, setSelectedPosters] = useState<number[]>([]);
   const [showPosterSelector, setShowPosterSelector] = useState(false);
-
-  const carouselImages = [
-    { image: bedroomImage, title: "Bedroom Display" },
-    { image: classroomImage, title: "Classroom Display" },
-  ];
-
-  const posters = [
-    { id: 1, image: poster1, title: "The Bible Timeline" },
-    { id: 2, image: poster2, title: "Books of the Bible" },
-    { id: 3, image: poster3, title: "God's Promises" },
-    { id: 4, image: poster4, title: "Armour of God" },
-    { id: 5, image: poster5, title: "The Beatitudes" },
-    { id: 6, image: poster6, title: "Fruits of the Spirit" },
-    { id: 7, image: poster7, title: "The 10 Commandments" },
-    { id: 8, image: poster8, title: "Lord's Prayer" },
-    { id: 9, image: poster9, title: "Seven Days of Creation" },
-  ];
-
+  const carouselImages = [{
+    image: bedroomImage,
+    title: "Bedroom Display"
+  }, {
+    image: classroomImage,
+    title: "Classroom Display"
+  }];
+  const posters = [{
+    id: 1,
+    image: poster1,
+    title: "The Bible Timeline"
+  }, {
+    id: 2,
+    image: poster2,
+    title: "Books of the Bible"
+  }, {
+    id: 3,
+    image: poster3,
+    title: "God's Promises"
+  }, {
+    id: 4,
+    image: poster4,
+    title: "Armour of God"
+  }, {
+    id: 5,
+    image: poster5,
+    title: "The Beatitudes"
+  }, {
+    id: 6,
+    image: poster6,
+    title: "Fruits of the Spirit"
+  }, {
+    id: 7,
+    image: poster7,
+    title: "The 10 Commandments"
+  }, {
+    id: 8,
+    image: poster8,
+    title: "Lord's Prayer"
+  }, {
+    id: 9,
+    image: poster9,
+    title: "Seven Days of Creation"
+  }];
   const POSTER_PRICE = 10;
   const COMPLETE_SET_PRICE = 270;
 
@@ -53,19 +78,17 @@ const Product = () => {
   // Auto-slide effect for main image
   useEffect(() => {
     const interval = setInterval(() => {
-      setSelectedImage((prev) => (prev + 1) % carouselImages.length);
+      setSelectedImage(prev => (prev + 1) % carouselImages.length);
     }, 3000);
-
     return () => clearInterval(interval);
   }, [carouselImages.length]);
 
   // Navigate main carousel
   const nextImage = () => {
-    setSelectedImage((prev) => (prev + 1) % carouselImages.length);
+    setSelectedImage(prev => (prev + 1) % carouselImages.length);
   };
-
   const prevImage = () => {
-    setSelectedImage((prev) => (prev - 1 + carouselImages.length) % carouselImages.length);
+    setSelectedImage(prev => (prev - 1 + carouselImages.length) % carouselImages.length);
   };
 
   // Navigate thumbnail carousel
@@ -74,7 +97,6 @@ const Product = () => {
       setThumbnailStartIndex(thumbnailStartIndex + 1);
     }
   };
-
   const prevThumbnails = () => {
     if (thumbnailStartIndex > 0) {
       setThumbnailStartIndex(thumbnailStartIndex - 1);
@@ -86,11 +108,7 @@ const Product = () => {
 
   // Handle poster selection
   const togglePosterSelection = (posterId: number) => {
-    setSelectedPosters((prev) =>
-      prev.includes(posterId)
-        ? prev.filter((id) => id !== posterId)
-        : [...prev, posterId]
-    );
+    setSelectedPosters(prev => prev.includes(posterId) ? prev.filter(id => id !== posterId) : [...prev, posterId]);
   };
 
   // Handle checkout
@@ -99,24 +117,28 @@ const Product = () => {
       alert("Please select at least one poster");
       return;
     }
-    
+
     // Store cart data for checkout
     const cartData = {
       purchaseOption,
       selectedPosters: purchaseOption === "individual" ? selectedPosters : [],
       subtotal: purchaseOption === "complete" ? COMPLETE_SET_PRICE : individualTotal,
-      items: purchaseOption === "complete" 
-        ? [{ name: "Complete Poster Set (9 posters)", quantity: 1, price: COMPLETE_SET_PRICE }]
-        : selectedPosters.map(id => {
-            const poster = posters.find(p => p.id === id);
-            return { name: poster?.title || `Poster ${id}`, quantity: 1, price: POSTER_PRICE };
-          }),
+      items: purchaseOption === "complete" ? [{
+        name: "Complete Poster Set (9 posters)",
+        quantity: 1,
+        price: COMPLETE_SET_PRICE
+      }] : selectedPosters.map(id => {
+        const poster = posters.find(p => p.id === id);
+        return {
+          name: poster?.title || `Poster ${id}`,
+          quantity: 1,
+          price: POSTER_PRICE
+        };
+      })
     };
     localStorage.setItem("cart", JSON.stringify(cartData));
-    
     navigate("/checkout");
   };
-
   const productStructuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -145,24 +167,12 @@ const Product = () => {
       "reviewCount": "50"
     }
   };
-
-  return (
-    <main className="min-h-screen bg-background overflow-x-hidden">
-      <SEOHead
-        title="Christian Posters for Children - 9 Bible Story Posters | Little Saints"
-        description="Buy beautiful Christian posters for kids. Set of 9 A4 Bible story posters including The 10 Commandments, Lord's Prayer, Fruits of the Spirit. Premium 350gsm paper. R270 for complete set."
-        canonicalUrl="https://littlesaintart.co.za/product"
-        keywords="Christian posters, Bible posters for kids, religious wall art, Sunday school posters, 10 commandments poster, Lord's prayer poster, fruits of the spirit"
-        structuredData={productStructuredData}
-      />
+  return <main className="min-h-screen bg-background overflow-x-hidden">
+      <SEOHead title="Christian Posters for Children - 9 Bible Story Posters | Little Saints" description="Buy beautiful Christian posters for kids. Set of 9 A4 Bible story posters including The 10 Commandments, Lord's Prayer, Fruits of the Spirit. Premium 350gsm paper. R270 for complete set." canonicalUrl="https://littlesaintart.co.za/product" keywords="Christian posters, Bible posters for kids, religious wall art, Sunday school posters, 10 commandments poster, Lord's prayer poster, fruits of the spirit" structuredData={productStructuredData} />
       {/* Header */}
       <header className="bg-muted/30 py-4 px-4 sticky top-0 z-50 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate("/")}
-            className="font-inter"
-          >
+          <Button variant="ghost" onClick={() => navigate("/")} className="font-inter">
           <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
           </Button>
@@ -183,46 +193,20 @@ const Product = () => {
               {/* Main Image Carousel */}
               <Card className="overflow-hidden bg-gradient-to-br from-primary/10 to-background border-2 mb-3 sm:mb-4 relative group">
                 <div className="aspect-[3/4] p-4 sm:p-6 md:p-8 flex items-center justify-center">
-                  <img 
-                    src={carouselImages[selectedImage].image} 
-                    alt={carouselImages[selectedImage].title}
-                    className="w-full h-full object-contain transition-all duration-500"
-                    loading="eager"
-                    width="1200"
-                    height="1600"
-                  />
+                  <img src={carouselImages[selectedImage].image} alt={carouselImages[selectedImage].title} className="w-full h-full object-contain transition-all duration-500" loading="eager" width="1200" height="1600" />
                 </div>
 
                 {/* Navigation Arrows */}
-                <button
-                  onClick={prevImage}
-                  className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                  aria-label="Previous image"
-                >
+                <button onClick={prevImage} className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" aria-label="Previous image">
                   <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </button>
-                <button
-                  onClick={nextImage}
-                  className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                  aria-label="Next image"
-                >
+                <button onClick={nextImage} className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background p-1.5 sm:p-2 rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" aria-label="Next image">
                   <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
                 </button>
 
                 {/* Slide Indicators */}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                  {carouselImages.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`h-2 rounded-full transition-all ${
-                        selectedImage === idx 
-                          ? 'w-8 bg-primary' 
-                          : 'w-2 bg-primary/30 hover:bg-primary/50'
-                      }`}
-                      aria-label={`Go to slide ${idx + 1}`}
-                    />
-                  ))}
+                  {carouselImages.map((_, idx) => <button key={idx} onClick={() => setSelectedImage(idx)} className={`h-2 rounded-full transition-all ${selectedImage === idx ? 'w-8 bg-primary' : 'w-2 bg-primary/30 hover:bg-primary/50'}`} aria-label={`Go to slide ${idx + 1}`} />)}
                 </div>
 
                 {/* Image Counter */}
@@ -236,57 +220,22 @@ const Product = () => {
               {/* Thumbnail Carousel */}
               <div className="relative px-8 sm:px-0">
                 {/* Left Arrow */}
-                <button
-                  onClick={prevThumbnails}
-                  disabled={thumbnailStartIndex === 0}
-                  className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
-                    thumbnailStartIndex === 0 
-                      ? 'opacity-30 cursor-not-allowed' 
-                      : 'hover:border-primary hover:bg-primary/5'
-                  }`}
-                  aria-label="Previous thumbnails"
-                >
+                <button onClick={prevThumbnails} disabled={thumbnailStartIndex === 0} className={`absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${thumbnailStartIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary hover:bg-primary/5'}`} aria-label="Previous thumbnails">
                   <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </button>
 
                 {/* Thumbnails Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3">
                   {visibleThumbnails.map((poster, idx) => {
-                    const actualIndex = thumbnailStartIndex + idx;
-                    return (
-                      <button
-                        key={poster.id}
-                        onClick={() => setSelectedImage(actualIndex)}
-                        className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${
-                          selectedImage === actualIndex
-                            ? 'border-primary shadow-lg ring-2 ring-primary/20' 
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <img 
-                          src={poster.image} 
-                          alt={poster.title}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                          width="200"
-                          height="267"
-                        />
-                      </button>
-                    );
-                  })}
+                  const actualIndex = thumbnailStartIndex + idx;
+                  return <button key={poster.id} onClick={() => setSelectedImage(actualIndex)} className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${selectedImage === actualIndex ? 'border-primary shadow-lg ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}>
+                        <img src={poster.image} alt={poster.title} className="w-full h-full object-cover" loading="lazy" width="200" height="267" />
+                      </button>;
+                })}
                 </div>
 
                 {/* Right Arrow */}
-                <button
-                  onClick={nextThumbnails}
-                  disabled={thumbnailStartIndex + 4 >= posters.length}
-                  className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${
-                    thumbnailStartIndex + 4 >= posters.length 
-                      ? 'opacity-30 cursor-not-allowed' 
-                      : 'hover:border-primary hover:bg-primary/5'
-                  }`}
-                  aria-label="Next thumbnails"
-                >
+                <button onClick={nextThumbnails} disabled={thumbnailStartIndex + 4 >= posters.length} className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${thumbnailStartIndex + 4 >= posters.length ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary hover:bg-primary/5'}`} aria-label="Next thumbnails">
                   <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 </button>
               </div>
@@ -301,9 +250,7 @@ const Product = () => {
               {/* Reviews */}
               <div className="flex items-center gap-2 mb-4">
                 <div className="flex">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-accent text-accent" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-accent text-accent" />)}
                 </div>
                 <span className="font-inter text-sm text-muted-foreground">
                   (50+ Happy Families)
@@ -329,7 +276,7 @@ const Product = () => {
               <ul className="space-y-3 mb-8 bg-muted/20 p-6 rounded-lg">
                 <li className="flex items-start gap-3 font-inter">
                   <span className="text-primary text-2xl">✓</span>
-                  <span>9 beautifully designed A4 Christian posters</span>
+                  <span>9 beautifully designed A3 Christian posters</span>
                 </li>
                 <li className="flex items-start gap-3 font-inter">
                   <span className="text-primary text-2xl">✓</span>
@@ -351,21 +298,15 @@ const Product = () => {
                   CHOOSE YOUR OPTION
                 </h3>
                 
-                <RadioGroup value={purchaseOption} onValueChange={(value) => {
-                  setPurchaseOption(value as "complete" | "individual");
-                  if (value === "complete") {
-                    setSelectedPosters([]);
-                  }
-                }}>
+                <RadioGroup value={purchaseOption} onValueChange={value => {
+                setPurchaseOption(value as "complete" | "individual");
+                if (value === "complete") {
+                  setSelectedPosters([]);
+                }
+              }}>
                   <div className="space-y-3">
                     {/* Complete Set Option */}
-                    <div
-                      className={`relative flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${
-                        purchaseOption === "complete"
-                          ? 'border-primary bg-primary/10 shadow-md'
-                          : 'border-border hover:border-primary/50 bg-background'
-                      }`}
-                    >
+                    <div className={`relative flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${purchaseOption === "complete" ? 'border-primary bg-primary/10 shadow-md' : 'border-border hover:border-primary/50 bg-background'}`}>
                       <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 mb-3 sm:mb-0">
                         <RadioGroupItem value="complete" id="complete" className="w-4 h-4 sm:w-5 sm:h-5 mt-1 sm:mt-0" />
                         <Label htmlFor="complete" className="flex flex-col cursor-pointer flex-1">
@@ -391,13 +332,7 @@ const Product = () => {
                     </div>
 
                     {/* Individual Posters Option */}
-                    <div
-                      className={`relative flex flex-col p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${
-                        purchaseOption === "individual"
-                          ? 'border-primary bg-primary/10 shadow-md'
-                          : 'border-border hover:border-primary/50 bg-background'
-                      }`}
-                    >
+                    <div className={`relative flex flex-col p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${purchaseOption === "individual" ? 'border-primary bg-primary/10 shadow-md' : 'border-border hover:border-primary/50 bg-background'}`}>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
                         <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 mb-3 sm:mb-0">
                           <RadioGroupItem value="individual" id="individual" className="w-4 h-4 sm:w-5 sm:h-5 mt-1 sm:mt-0" />
@@ -419,75 +354,40 @@ const Product = () => {
                       </div>
 
                       {/* Poster Selection Dropdown */}
-                      {purchaseOption === "individual" && (
-                        <div className="mt-4 pt-4 border-t border-border">
-                          <button
-                            type="button"
-                            onClick={() => setShowPosterSelector(!showPosterSelector)}
-                            className="w-full flex items-center justify-between p-3 bg-background rounded-lg border-2 border-primary/30 hover:border-primary transition-all"
-                          >
+                      {purchaseOption === "individual" && <div className="mt-4 pt-4 border-t border-border">
+                          <button type="button" onClick={() => setShowPosterSelector(!showPosterSelector)} className="w-full flex items-center justify-between p-3 bg-background rounded-lg border-2 border-primary/30 hover:border-primary transition-all">
                             <span className="font-inter font-semibold">
-                              {selectedPosters.length === 0 
-                                ? "Select Posters" 
-                                : `${selectedPosters.length} Poster${selectedPosters.length > 1 ? 's' : ''} Selected`}
+                              {selectedPosters.length === 0 ? "Select Posters" : `${selectedPosters.length} Poster${selectedPosters.length > 1 ? 's' : ''} Selected`}
                             </span>
-                            {showPosterSelector ? (
-                              <ChevronUp className="w-5 h-5 text-primary" />
-                            ) : (
-                              <ChevronDown className="w-5 h-5 text-primary" />
-                            )}
+                            {showPosterSelector ? <ChevronUp className="w-5 h-5 text-primary" /> : <ChevronDown className="w-5 h-5 text-primary" />}
                           </button>
 
                           {/* Poster Checkboxes */}
-                          {showPosterSelector && (
-                            <div className="mt-3 space-y-2 max-h-64 overflow-y-auto bg-background rounded-lg border border-border p-3">
-                              {posters.map((poster) => (
-                                <div
-                                  key={poster.id}
-                                  className="flex items-center gap-3 p-2 hover:bg-muted/30 rounded-lg transition-all"
-                                >
-                                  <Checkbox
-                                    id={`poster-${poster.id}`}
-                                    checked={selectedPosters.includes(poster.id)}
-                                    onCheckedChange={() => togglePosterSelection(poster.id)}
-                                  />
-                                  <Label
-                                    htmlFor={`poster-${poster.id}`}
-                                    className="flex items-center gap-3 cursor-pointer flex-1"
-                                  >
+                          {showPosterSelector && <div className="mt-3 space-y-2 max-h-64 overflow-y-auto bg-background rounded-lg border border-border p-3">
+                              {posters.map(poster => <div key={poster.id} className="flex items-center gap-3 p-2 hover:bg-muted/30 rounded-lg transition-all">
+                                  <Checkbox id={`poster-${poster.id}`} checked={selectedPosters.includes(poster.id)} onCheckedChange={() => togglePosterSelection(poster.id)} />
+                                  <Label htmlFor={`poster-${poster.id}`} className="flex items-center gap-3 cursor-pointer flex-1">
                                     <div className="w-12 h-16 rounded border overflow-hidden">
-                                      <img
-                                        src={poster.image}
-                                        alt={poster.title}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                        width="48"
-                                        height="64"
-                                      />
+                                      <img src={poster.image} alt={poster.title} className="w-full h-full object-cover" loading="lazy" width="48" height="64" />
                                     </div>
                                     <span className="font-inter text-sm">{poster.title}</span>
                                   </Label>
                                   <span className="font-inter text-sm text-muted-foreground">
                                     R40
                                   </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                                </div>)}
+                            </div>}
 
                           {/* Individual Total */}
-                          {selectedPosters.length > 0 && (
-                            <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+                          {selectedPosters.length > 0 && <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
                               <div className="flex justify-between items-center">
                                 <span className="font-inter font-semibold">Total:</span>
                                 <span className="font-fredoka text-xl font-bold text-primary">
                                   R{individualTotal}
                                 </span>
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                            </div>}
+                        </div>}
                     </div>
                   </div>
                 </RadioGroup>
@@ -504,17 +404,9 @@ const Product = () => {
               </div>
 
               {/* Add to Cart Button */}
-              <Button 
-                onClick={handleCheckout}
-                className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4"
-                size="lg"
-              >
+              <Button onClick={handleCheckout} className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4" size="lg">
                 <ShoppingCart className="w-6 h-6 mr-2" />
-                {purchaseOption === "complete" 
-                  ? "Get Your Collection Now - R270" 
-                  : selectedPosters.length > 0 
-                    ? `Add to Cart - R${individualTotal}`
-                    : "Select Posters to Continue"}
+                {purchaseOption === "complete" ? "Get Your Collection Now - R270" : selectedPosters.length > 0 ? `Add to Cart - R${individualTotal}` : "Select Posters to Continue"}
               </Button>
 
               {/* Trust Badges */}
@@ -562,28 +454,16 @@ const Product = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-16">
-            {posters.map((poster) => (
-              <Card 
-                key={poster.id}
-                className="overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-card border-2 border-primary/20"
-              >
+            {posters.map(poster => <Card key={poster.id} className="overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 bg-card border-2 border-primary/20">
                 <div className="aspect-[3/4] overflow-hidden">
-                  <img 
-                    src={poster.image} 
-                    alt={poster.title}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    width="400"
-                    height="533"
-                  />
+                  <img src={poster.image} alt={poster.title} className="w-full h-full object-cover" loading="lazy" width="400" height="533" />
                 </div>
                 <div className="p-2 sm:p-3 md:p-4 bg-gradient-to-b from-background to-primary/5">
                   <p className="font-fredoka text-xs sm:text-sm font-semibold text-center">
                     {poster.title}
                   </p>
                 </div>
-              </Card>
-            ))}
+              </Card>)}
           </div>
 
           {/* Real-Life Preview Section */}
@@ -599,12 +479,7 @@ const Product = () => {
 
             <div className="grid md:grid-cols-2 gap-8">
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
-                <img 
-                  src={bedroomImage} 
-                  alt="Christian posters displayed in a child's bedroom"
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
+                <img src={bedroomImage} alt="Christian posters displayed in a child's bedroom" className="w-full h-auto object-cover" loading="lazy" />
                 <div className="p-6 bg-gradient-to-b from-background to-primary/5">
                   <p className="font-fredoka text-xl font-semibold text-center">
                     Perfect for Bedrooms
@@ -616,12 +491,7 @@ const Product = () => {
               </Card>
 
               <Card className="overflow-hidden border-2 border-primary/20 hover:shadow-2xl transition-all">
-                <img 
-                  src={classroomImage} 
-                  alt="Christian posters displayed in a classroom setting"
-                  className="w-full h-auto object-cover"
-                  loading="lazy"
-                />
+                <img src={classroomImage} alt="Christian posters displayed in a classroom setting" className="w-full h-auto object-cover" loading="lazy" />
                 <div className="p-6 bg-gradient-to-b from-background to-primary/5">
                   <p className="font-fredoka text-xl font-semibold text-center">
                     Ideal for Sunday School
@@ -646,9 +516,7 @@ const Product = () => {
           <div className="grid md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             <Card className="p-4 sm:p-6 md:p-8 bg-primary/5 border-2 border-primary/20 hover:shadow-xl transition-all">
               <div className="flex gap-1 mb-3 sm:mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />)}
               </div>
               <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "These posters are perfect! My kids love looking at them every day and asking questions about the Bible stories."
@@ -658,9 +526,7 @@ const Product = () => {
             
             <Card className="p-4 sm:p-6 md:p-8 bg-secondary/20 border-2 border-secondary hover:shadow-xl transition-all">
               <div className="flex gap-1 mb-3 sm:mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />)}
               </div>
               <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "Beautiful quality and great value for money. They've really brightened up our children's room!"
@@ -670,9 +536,7 @@ const Product = () => {
 
             <Card className="p-4 sm:p-6 md:p-8 bg-accent/10 border-2 border-accent/30 hover:shadow-xl transition-all">
               <div className="flex gap-1 mb-3 sm:mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />
-                ))}
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-accent text-accent" />)}
               </div>
               <p className="font-inter text-sm sm:text-base text-muted-foreground italic mb-3 sm:mb-4 leading-relaxed">
                 "A wonderful teaching tool that makes learning about faith fun and visual for young ones."
@@ -700,11 +564,7 @@ const Product = () => {
             Transform your child's room into a faith-filled space that inspires learning and love for God's word. Premium quality, vibrant designs, delivered to your door.
           </p>
           
-          <Button 
-            onClick={() => navigate("/checkout")}
-            size="lg" 
-            className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
-          >
+          <Button onClick={() => navigate("/checkout")} size="lg" className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all">
             <ShoppingCart className="w-7 h-7 mr-3" />
             Get Your Collection Now
           </Button>
@@ -722,12 +582,7 @@ const Product = () => {
             <MessageCircle className="w-6 h-6" />
             <p className="font-inter text-lg">
               Questions? WhatsApp us:{" "}
-              <a 
-                href="https://wa.me/27791175714" 
-                className="font-fredoka font-bold hover:text-primary transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href="https://wa.me/27791175714" className="font-fredoka font-bold hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer">
                 +27 79 117 5714
               </a>
             </p>
@@ -738,8 +593,6 @@ const Product = () => {
           </p>
         </div>
       </footer>
-    </main>
-  );
+    </main>;
 };
-
 export default Product;
