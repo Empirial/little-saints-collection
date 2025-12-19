@@ -1,10 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import heroImage from "@/assets/poster/hero-image.webp";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
+import HeroCarousel from "@/components/HeroCarousel";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -35,53 +35,8 @@ const Index = () => {
       />
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="relative min-h-svh flex items-center justify-center overflow-hidden pt-16 pb-8 bg-primary/20">
-        <img 
-          src={heroImage}
-          alt="Christian Bible posters for children"
-          className="absolute inset-0 w-full h-full object-cover"
-          loading="eager"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background/70 to-background" />
-        
-        <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <p className="font-fredoka text-2xl md:text-3xl text-foreground mb-2">
-            Little Saint Art Creations
-          </p>
-          <p className="font-inter text-sm md:text-base text-foreground/70 mb-2 uppercase tracking-widest">
-            Proverbs 22:6
-          </p>
-          <p className="font-inter text-base md:text-lg text-foreground/80 mb-6 italic max-w-3xl mx-auto">
-            "Train up a child in the way he should go: and when he is old, he will not depart from it."
-          </p>
-          <h1 className="font-fredoka text-2xl xs:text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
-            Inspire Faith in Every<br />Child's Room
-          </h1>
-          <p className="font-inter text-base sm:text-xl md:text-2xl text-foreground/80 mb-6 sm:mb-8 max-w-3xl mx-auto">
-            Beautiful Christian posters and personalized books that teach values, joy and God's love
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-6 sm:mt-8">
-            <Button 
-              onClick={() => navigate("/product")}
-              size="lg" 
-              className="font-fredoka text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
-            >
-              Get Christian Posters
-            </Button>
-            <Button 
-              onClick={() => navigate("/personalize-book")}
-              size="lg" 
-              className="font-fredoka text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
-            >
-              Get Personalized Book
-            </Button>
-          </div>
-        </div>
-      </section>
+      {/* Hero Carousel */}
+      <HeroCarousel />
 
       {/* About Us Section */}
       <section className="py-20 px-4 bg-gradient-to-b from-background to-muted/20" aria-labelledby="about-heading">
