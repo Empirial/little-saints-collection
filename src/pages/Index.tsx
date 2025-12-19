@@ -36,7 +36,7 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative h-screen flex items-center justify-center overflow-hidden pt-16 bg-primary/20">
+      <section className="relative min-h-svh flex items-center justify-center overflow-hidden pt-16 pb-8 bg-primary/20">
         <img 
           src={heroImage}
           alt="Christian Bible posters for children"
@@ -58,7 +58,7 @@ const Index = () => {
           <p className="font-inter text-base md:text-lg text-foreground/80 mb-6 italic max-w-3xl mx-auto">
             "Train up a child in the way he should go: and when he is old, he will not depart from it."
           </p>
-          <h1 className="font-fredoka text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
+          <h1 className="font-fredoka text-2xl xs:text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
             Inspire Faith in Every<br />Child's Room
           </h1>
           <p className="font-inter text-base sm:text-xl md:text-2xl text-foreground/80 mb-6 sm:mb-8 max-w-3xl mx-auto">

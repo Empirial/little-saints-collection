@@ -250,7 +250,7 @@ const Product = () => {
                 </button>
 
                 {/* Thumbnails Grid */}
-                <div className="grid grid-cols-4 gap-1 sm:gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3">
                   {visibleThumbnails.map((poster, idx) => {
                     const actualIndex = thumbnailStartIndex + idx;
                     return (

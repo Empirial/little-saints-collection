@@ -102,4 +102,30 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Prevent horizontal overflow on mobile */
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+}
+
+/* Safe area utilities for notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Safe viewport height for mobile browsers */
+@supports (min-height: 100svh) {
+  .min-h-svh {
+    min-height: 100svh;
+  }
+}
+
+@supports not (min-height: 100svh) {
+  .min-h-svh {
+    min-height: 100vh;
+  }
 }

@@ -37,7 +37,7 @@ const PersonalizeBook = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navbar />
       
       <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
