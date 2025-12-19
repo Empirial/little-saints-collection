@@ -63,7 +63,7 @@ const Navbar = () => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-border py-4 space-y-2 animate-in slide-in-from-top-2 duration-200">
+          <div className="sm:hidden border-t border-border py-4 pb-safe space-y-2 animate-in slide-in-from-top-2 duration-200">
             <Button
               onClick={() => handleNavigation("/product")}
               variant="ghost"

@@ -136,7 +136,7 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30 py-12 px-4">
+    <div className="min-h-screen bg-muted/30 py-6 sm:py-12 px-3 sm:px-4 overflow-x-hidden">
       {/* Hidden Netlify Form for order notifications */}
       <form name="order-notification" data-netlify="true" netlify-honeypot="bot-field" hidden>
         <input type="hidden" name="form-name" value="order-notification" />
@@ -175,11 +175,10 @@ const Checkout = () => {
               </div>
               <iframe 
                 width="100%" 
-                height="600" 
                 src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
                 frameBorder="0" 
                 allow="geolocation"
-                className="w-full"
+                className="w-full h-[350px] sm:h-[450px] md:h-[600px]"
                 title="Paxi Point Locator"
               />
             </Card>
@@ -283,39 +282,39 @@ const Checkout = () => {
                   className="mt-3 space-y-3"
                   disabled={isProcessing}
                 >
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
-                    <RadioGroupItem value="pickup" id="pickup" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="pickup" id="pickup" className="min-w-4 min-h-4" />
                     <Label htmlFor="pickup" className="flex-1 cursor-pointer">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">Pickup</p>
-                          <p className="text-sm text-muted-foreground">Arrange via WhatsApp</p>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm sm:text-base">Pickup</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">Arrange via WhatsApp</p>
                         </div>
-                        <span className="font-bold text-primary">R0</span>
+                        <span className="font-bold text-primary text-sm sm:text-base shrink-0">R0</span>
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
-                    <RadioGroupItem value="fastway" id="fastway" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="fastway" id="fastway" className="min-w-4 min-h-4" />
                     <Label htmlFor="fastway" className="flex-1 cursor-pointer">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">Fastway Courier</p>
-                          <p className="text-sm text-muted-foreground">5-7 days delivery</p>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm sm:text-base">Fastway Courier</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">5-7 days delivery</p>
                         </div>
-                        <span className="font-bold text-primary">R95</span>
+                        <span className="font-bold text-primary text-sm sm:text-base shrink-0">R95</span>
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 border rounded-lg p-4 hover:bg-accent/5 transition-colors">
-                    <RadioGroupItem value="paxi" id="paxi" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 border rounded-lg p-3 sm:p-4 hover:bg-accent/5 transition-colors">
+                    <RadioGroupItem value="paxi" id="paxi" className="min-w-4 min-h-4" />
                     <Label htmlFor="paxi" className="flex-1 cursor-pointer">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-semibold">Paxi</p>
-                          <p className="text-sm text-muted-foreground">7-9 days delivery</p>
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm sm:text-base">Paxi</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground">7-9 days delivery</p>
                         </div>
-                        <span className="font-bold text-primary">R110</span>
+                        <span className="font-bold text-primary text-sm sm:text-base shrink-0">R110</span>
                       </div>
                     </Label>
                   </div>
