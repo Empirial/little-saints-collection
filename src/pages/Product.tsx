@@ -333,18 +333,18 @@ const Product = () => {
 
                     {/* Individual Posters Option */}
                     <div className={`relative flex flex-col p-3 sm:p-5 rounded-xl border-2 transition-all cursor-pointer ${purchaseOption === "individual" ? 'border-primary bg-primary/10 shadow-md' : 'border-border hover:border-primary/50 bg-background'}`}>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3">
-                        <div className="flex items-start sm:items-center gap-3 sm:gap-4 flex-1 mb-3 sm:mb-0">
-                          <RadioGroupItem value="individual" id="individual" className="w-4 h-4 sm:w-5 sm:h-5 mt-1 sm:mt-0" />
-                          <Label htmlFor="individual" className="flex flex-col cursor-pointer flex-1">
-                            <span className="font-fredoka font-bold text-base sm:text-lg">Individual Posters</span>
-                            <span className="font-inter text-xs sm:text-sm text-muted-foreground">
+                      <div className="flex flex-row items-center justify-between">
+                        <div className="flex items-center gap-2 sm:gap-4 flex-1">
+                          <RadioGroupItem value="individual" id="individual" className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                          <Label htmlFor="individual" className="flex flex-col cursor-pointer flex-1 min-w-0">
+                            <span className="font-fredoka font-bold text-sm sm:text-lg leading-tight">Individual Posters</span>
+                            <span className="font-inter text-xs text-muted-foreground">
                               R40 per poster
                             </span>
                           </Label>
                         </div>
-                        <div className="text-left sm:text-right ml-7 sm:ml-0">
-                          <p className="font-fredoka text-xl sm:text-2xl font-bold text-primary">
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <p className="font-fredoka text-lg sm:text-2xl font-bold text-primary">
                             R40
                           </p>
                           <p className="font-inter text-xs text-muted-foreground">
@@ -354,40 +354,57 @@ const Product = () => {
                       </div>
 
                       {/* Poster Selection Dropdown */}
-                      {purchaseOption === "individual" && <div className="mt-4 pt-4 border-t border-border">
-                          <button type="button" onClick={() => setShowPosterSelector(!showPosterSelector)} className="w-full flex items-center justify-between p-3 bg-background rounded-lg border-2 border-primary/30 hover:border-primary transition-all">
-                            <span className="font-inter font-semibold">
+                      {purchaseOption === "individual" && (
+                        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-border">
+                          <button 
+                            type="button" 
+                            onClick={() => setShowPosterSelector(!showPosterSelector)} 
+                            className="w-full flex items-center justify-between p-2 sm:p-3 bg-background rounded-lg border-2 border-primary/30 hover:border-primary transition-all"
+                          >
+                            <span className="font-inter font-semibold text-sm sm:text-base">
                               {selectedPosters.length === 0 ? "Select Posters" : `${selectedPosters.length} Poster${selectedPosters.length > 1 ? 's' : ''} Selected`}
                             </span>
-                            {showPosterSelector ? <ChevronUp className="w-5 h-5 text-primary" /> : <ChevronDown className="w-5 h-5 text-primary" />}
+                            {showPosterSelector ? <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" /> : <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />}
                           </button>
 
                           {/* Poster Checkboxes */}
-                          {showPosterSelector && <div className="mt-3 space-y-2 max-h-64 overflow-y-auto bg-background rounded-lg border border-border p-3">
-                              {posters.map(poster => <div key={poster.id} className="flex items-center gap-3 p-2 hover:bg-muted/30 rounded-lg transition-all">
-                                  <Checkbox id={`poster-${poster.id}`} checked={selectedPosters.includes(poster.id)} onCheckedChange={() => togglePosterSelection(poster.id)} />
-                                  <Label htmlFor={`poster-${poster.id}`} className="flex items-center gap-3 cursor-pointer flex-1">
-                                    <div className="w-12 h-16 rounded border overflow-hidden">
+                          {showPosterSelector && (
+                            <div className="mt-2 sm:mt-3 space-y-1 sm:space-y-2 max-h-48 sm:max-h-64 overflow-y-auto bg-background rounded-lg border border-border p-2 sm:p-3">
+                              {posters.map(poster => (
+                                <div key={poster.id} className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 hover:bg-muted/30 rounded-lg transition-all">
+                                  <Checkbox 
+                                    id={`poster-${poster.id}`} 
+                                    checked={selectedPosters.includes(poster.id)} 
+                                    onCheckedChange={() => togglePosterSelection(poster.id)} 
+                                    className="flex-shrink-0"
+                                  />
+                                  <Label htmlFor={`poster-${poster.id}`} className="flex items-center gap-2 sm:gap-3 cursor-pointer flex-1 min-w-0">
+                                    <div className="w-8 h-10 sm:w-12 sm:h-16 rounded border overflow-hidden flex-shrink-0">
                                       <img src={poster.image} alt={poster.title} className="w-full h-full object-cover" loading="lazy" width="48" height="64" />
                                     </div>
-                                    <span className="font-inter text-sm">{poster.title}</span>
+                                    <span className="font-inter text-xs sm:text-sm truncate">{poster.title}</span>
                                   </Label>
-                                  <span className="font-inter text-sm text-muted-foreground">
+                                  <span className="font-inter text-xs sm:text-sm text-muted-foreground flex-shrink-0">
                                     R40
                                   </span>
-                                </div>)}
-                            </div>}
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Individual Total */}
-                          {selectedPosters.length > 0 && <div className="mt-3 p-3 bg-accent/10 rounded-lg border border-accent/30">
+                          {selectedPosters.length > 0 && (
+                            <div className="mt-2 sm:mt-3 p-2 sm:p-3 bg-accent/10 rounded-lg border border-accent/30">
                               <div className="flex justify-between items-center">
-                                <span className="font-inter font-semibold">Total:</span>
-                                <span className="font-fredoka text-xl font-bold text-primary">
+                                <span className="font-inter font-semibold text-sm sm:text-base">Total:</span>
+                                <span className="font-fredoka text-lg sm:text-xl font-bold text-primary">
                                   R{individualTotal}
                                 </span>
                               </div>
-                            </div>}
-                        </div>}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </RadioGroup>
