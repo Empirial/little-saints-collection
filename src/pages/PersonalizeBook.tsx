@@ -7,10 +7,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
-import charBoyLight from "@/assets/personalization/whiteboy.png";
-import charBoyDark from "@/assets/personalization/Darkskinnedboy.png";
-import charGirlLight from "@/assets/personalization/lightskingirl.png";
-import charGirlDark from "@/assets/personalization/darkskingirl.png";
+import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
+import charBoyDark from "@/assets/personalization/Blackboy/Blackboy.png";
+import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
+import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
 
 const PersonalizeBook = () => {
   const navigate = useNavigate();
