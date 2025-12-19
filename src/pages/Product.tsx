@@ -288,7 +288,7 @@ const Product = () => {
                 </li>
                 <li className="flex items-start gap-3 font-inter">
                   <span className="text-primary text-2xl">✓</span>
-                  <span>Perfect for bedrooms & Sunday school</span>
+                  <span>Perfect for wall decor, kids bedrooms, classrooms, preschools and Sunday schools.</span>
                 </li>
               </ul>
 
