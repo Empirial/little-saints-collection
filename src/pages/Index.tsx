@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import heroImage from "@/assets/hero-image.jpg";
+import heroImage from "@/assets/poster/hero-image.webp";
 import { useNavigate } from "react-router-dom";
 import { MessageCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
