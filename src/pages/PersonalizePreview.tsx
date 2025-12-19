@@ -9,81 +9,24 @@ import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
 
 // Child character imports
-import DarkskinnedBoy from "@/assets/personalization/Darkskinnedboy.png";
-import DarkskinGirl from "@/assets/personalization/darkskingirl.png";
-import LightskinGirl from "@/assets/personalization/lightskingirl.png";
-import WhiteBoy from "@/assets/personalization/whiteboy.png";
-
-// Character imports for letters
-import AardvarkChar from "@/assets/personalization/characters/Whimsical Aardvark.png";
-import AngelChar from "@/assets/personalization/characters/Whimsical Angel.png";
-import AntelopeManChar from "@/assets/personalization/characters/Amazing Antelope-Man.png";
-import ElasticElandChar from "@/assets/personalization/characters/Elastic-Eland.png";
-import EnchantedElfChar from "@/assets/personalization/characters/Enchanted Elf.png";
-import ElephantChar from "@/assets/personalization/characters/Whimsical Elephant.png";
-import LeopardChar from "@/assets/personalization/characters/Whimsical Leopard.png";
-import LightningLeopardChar from "@/assets/personalization/characters/Lightning-Leopard.png";
-import LionChar from "@/assets/personalization/characters/Whimsical Lion.png";
-import MeerkatChar from "@/assets/personalization/characters/Zippy Meerkat.png";
-import MermaidChar from "@/assets/personalization/characters/Whimsical Mermaid.png";
-import MongooseChar from "@/assets/personalization/characters/Whimsical Mongoose.png";
-import NguniChar from "@/assets/personalization/characters/Whimsical 'Nguni-Boy'.png";
-import NyalaChar from "@/assets/personalization/characters/Whimsical Nyala.png";
-import OlympicOryxChar from "@/assets/personalization/characters/Whimsical 'Olympic-Oryx'.png";
-import OstrichChar from "@/assets/personalization/characters/Whimsical Ostrich.png";
-import RhinoChar from "@/assets/personalization/characters/Whimsical Rhino.png";
-import RocketRhinoChar from "@/assets/personalization/characters/Whimsical 'Rocket Rhino'.png";
-import RainbowKeeperChar from "@/assets/personalization/characters/Whimsical 'Rainbow-Keeper'.png";
-import SpringbokChar from "@/assets/personalization/characters/Whimsical Springbok.png";
-import SecretaryBirdChar from "@/assets/personalization/characters/Whimsical 'Super-Secretary-Bird.png";
-
-// Panoramic spread background imports
-import BedroomSpread from "@/assets/personalization/theme/bedroom-spread.png";
-import RainbowSpread from "@/assets/personalization/theme/rainbow-spread.png";
+import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
+import charBoyDark from "@/assets/personalization/Blackboy/Blackboy.png";
+import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
+import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
 
 const PersonalizePreview = () => {
   const navigate = useNavigate();
-  const [personalization, setPersonalization] = useState<{ childName: string; gender: string } | null>(null);
+  const [personalization, setPersonalization] = useState<{ childName: string; gender: string; skinTone?: string } | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
-  const [currentSpreadIndex, setCurrentSpreadIndex] = useState(0);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
 
-  // Character mappings based on letter and theme
-  const characterMapping: Record<string, { character: string; theme: string }> = {
-    A: { character: AardvarkChar, theme: "animal" },
-    B: { character: AntelopeManChar, theme: "superhero" },
-    C: { character: AngelChar, theme: "fairytale" },
-    D: { character: ElephantChar, theme: "animal" },
-    E: { character: ElasticElandChar, theme: "superhero" },
-    F: { character: EnchantedElfChar, theme: "fairytale" },
-    G: { character: LionChar, theme: "animal" },
-    H: { character: MeerkatChar, theme: "animal" },
-    I: { character: LightningLeopardChar, theme: "superhero" },
-    J: { character: MongooseChar, theme: "animal" },
-    K: { character: MermaidChar, theme: "fairytale" },
-    L: { character: LeopardChar, theme: "animal" },
-    M: { character: MeerkatChar, theme: "animal" },
-    N: { character: NguniChar, theme: "superhero" },
-    O: { character: OlympicOryxChar, theme: "superhero" },
-    P: { character: OstrichChar, theme: "animal" },
-    Q: { character: NyalaChar, theme: "animal" },
-    R: { character: RocketRhinoChar, theme: "superhero" },
-    S: { character: SecretaryBirdChar, theme: "superhero" },
-    T: { character: SpringbokChar, theme: "animal" },
-    U: { character: RhinoChar, theme: "animal" },
-    V: { character: MongooseChar, theme: "animal" },
-    W: { character: RhinoChar, theme: "animal" },
-    X: { character: RainbowKeeperChar, theme: "fairytale" },
-    Y: { character: MongooseChar, theme: "superhero" },
-    Z: { character: MeerkatChar, theme: "animal" },
-  };
-
-  // Panoramic spread backgrounds
-  const backgroundSpreads = [BedroomSpread, RainbowSpread];
-
-  // Get child character based on gender
-  const getChildCharacter = (gender: string) => {
-    return gender === "boy" ? DarkskinnedBoy : DarkskinGirl;
+  // Get child character based on gender and skin tone
+  const getChildCharacter = (gender: string, skinTone?: string) => {
+    if (gender === "boy") {
+      return skinTone === "dark" ? charBoyDark : charBoyLight;
+    }
+    return skinTone === "dark" ? charGirlDark : charGirlLight;
   };
 
   useEffect(() => {
@@ -96,7 +39,6 @@ const PersonalizePreview = () => {
   }, [navigate]);
 
   const handleCheckout = () => {
-    // Save final customizations
     localStorage.setItem("customization", JSON.stringify({ fromField, personalMessage }));
     navigate("/checkout");
   };
@@ -107,140 +49,64 @@ const PersonalizePreview = () => {
 
   // A-Z Story-Block Engine
   const storyBlocks: Record<string, string[]> = {
-    A: [
-      "The A was with an Aardvark, digging up ants. 'It's for Awesome!' he said, 'Now, go on! Take a chance!'",
-      "An Angel was polishing the letter A bright. 'It stands for Adored! You're a wonderful sight!'",
-      "Amazing Antelope-Man, with a zip-zap-ka-cheer! 'This A is for Action! Chase away every fear!'"
-    ],
-    B: [
-      "A Big, Booming Baboon was balancing B. 'It's for Being so Brave! Now, take it from me!'",
-      "Bold-Boy with a cape, flew down with a zip! 'This B is for Blessed!' he said with a flip."
-    ],
-    C: [
-      "A Castle of clouds held the letter C high. 'It's for Caring!' a kind, clever pixie flew by.",
-      "A Cunning Caracal Crouched on the C-stump. 'It's for Clever!' he purred with a thumpity-thump."
-    ],
-    D: [
-      "A Dassie was Dozing, all snug on the D. 'It's for Dreaming,' he yawned, 'of all you can be!'",
-      "A Dragon (a kind one, with sparkly-green scales) was using the D to deliver the mails. 'It's for Daring!' he roared, 'Go on! Never fail!'"
-    ],
-    E: [
-      "An Enormous Elephant, Ever-so-gentle and grand, held E in his trunk, right for your little hand. 'It's for Excellent! Everything just as we planned!'",
-      "Elastic-Eland (a hero so tall) was stretching the E to help rescue a ball. 'It's for Effort!' he cheered, 'You're giving your all!'",
-      "An Enchanted Elf-friend was singing a tune. 'This E is for Excited, from morning 'til noon!'"
-    ],
-    F: [
-      "A Fennec Fox, fluffy and Fast, hurried past. 'This F is for Faith! Hold it tight, make it last!'",
-      "A Fairy-Queen waved her wand with a flick! 'This F is for Friendship, so loyal and quick!'"
-    ],
-    G: [
-      "A Giant Giraffe, with his head in the sky, was nibbling a cloud where the G drifted by. 'It's for Gentle and Good!' he said with a sigh.",
-      "Gracious-Gal gave the G with a Grin. 'It's for Giving and Grace! Let the goodness begin!'"
-    ],
-    H: [
-      "A Happy-hippo-hero, named Harry-the-Brave, was using the H to make a big splashy wave! 'It's for Happiness!' he cheered, 'and how you behave!'",
-      "A Horned Horse (A Uni-Zebra). 'This H is for Honest! Be truthful all day!'"
-    ],
-    I: [
-      "An Impala was leaping, so nimble and high, 'This I is for Inspire! Like stars in the sky!'",
-      "An Iridescent Iris-Fairy, so bright, held the I in her hands, a-glowing with light. 'It's for Imagination! And doing what's right!'",
-      "Incredible-Ibis (a hero so smart) was guarding the I, for your Intelligent heart!"
-    ],
-    J: [
-      "A Jumping Jackal juggled the J with great glee. 'It's for Joy!' he yipped, 'It's the best thing to be!'"
-    ],
-    K: [
-      "A Kingfisher, quick! with a click-clack-ka-cheer! dived down for the K and said, 'Keep Kindness right here!'",
-      "A King on a throne (made of flowers and moss) declared, 'This K is for Knowledge! You're smart as a boss!'"
-    ],
-    L: [
-      "A Lazy Lion was Lounging on L. 'It's for Love,' he purred softly, 'and Living so well.'",
-      "Lightning-Leopard (a hero so bright) was chasing the L, a-glowing with Light!"
-    ],
-    M: [
-      "A Marching Meerkat was holding the M. 'It's for Mercy!' he chirped, 'A most magical gem!'",
-      "A Magical Mermaid (in a freshwater spring!) said 'This M is for Music, and the joy that you bring!'"
-    ],
-    N: [
-      "A Nimble Nyala, stepped out from the trees. 'This N is for Nice! You're a breeze-on-a-breeze!'",
-      "Nguni-Boy (strong as a bull, but so kind) held the N for your Noble and wonderful mind."
-    ],
-    O: [
-      "An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'",
-      "An Ogre (a nice one!) was guarding the O. 'It's for Only-One-You! Now, where will you go?'",
-      "Olympic-Oryx was leaping a hoop. 'This O is for Outstanding!' he yelled with a whoop!"
-    ],
-    P: [
-      "A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'",
-      "A Princess (or Prince!) in a Palace so grand said, 'This P is for Promise, hold it tight in your hand!'"
-    ],
-    Q: [
-      "A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock. 'It's for Quiet,' she peeped, 'when you listen and pray.'"
-    ],
-    R: [
-      "A Resting Rhino was Resting, right on the R! 'It's for Respect!' he snorted, 'You'll surely go far!'",
-      "A Royal Rainbow-Keeper (a keeper of light) said 'R is for Radiant, and all that is bright!'"
-    ],
-    S: [
-      "A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'",
-      "Super-Secretary-Bird (with magnificent flair) had the S in his crest, flying high in the air! 'It's for Sunshine and Smiles, which you give everywhere!'"
-    ],
-    T: [
-      "A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'",
-      "A Troll with a Treasure of Twinkling things, said 'T is for Thankful, for the blessings life brings.'"
-    ],
-    U: [
-      "A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'",
-      "Up-Up-and-Away-Boy flew down from the blue. 'This U is for Uplifting! It's what good heroes do!'",
-      "An Unhurried Umbre-bird, under a tree, said 'U is for Understanding, for you and for me.'"
-    ],
-    V: [
-      "A Vervet monkey, with a voom and a vash, found the V in a Vine in a lightning-quick flash! 'It's for Virtue and Value! Now quick, make a dash!'"
-    ],
-    W: [
-      "A Warthog was Wallowing, Watching the W. 'It's for Wonderful! Worthy! And Wise! (That's no trouble!)'"
-    ],
-    X: [
-      "An 'eXtra' special boX held the X just right. 'It's for eXtra Love! And eXtra bright light!'"
-    ],
-    Y: [
-      "The Y was held by a hero, 'Mega-Yellow-Mongoose!' 'It's for YOU!' he announced, 'Now let's put it to use!'"
-    ],
-    Z: [
-      "A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z! 'It's for Zeal!' he said, 'for your amazing ener-ZY!'"
-    ]
+    A: ["The A was with an Aardvark, digging up ants. 'It's for Awesome!' he said, 'Now, go on! Take a chance!'"],
+    B: ["A Big, Booming Baboon was balancing B. 'It's for Being so Brave! Now, take it from me!'"],
+    C: ["A Castle of clouds held the letter C high. 'It's for Caring!' a kind, clever pixie flew by."],
+    D: ["A Dassie was Dozing, all snug on the D. 'It's for Dreaming,' he yawned, 'of all you can be!'"],
+    E: ["An Enormous Elephant, Ever-so-gentle and grand, held E in his trunk, right for your little hand."],
+    F: ["A Fennec Fox, fluffy and Fast, hurried past. 'This F is for Faith! Hold it tight, make it last!'"],
+    G: ["A Giant Giraffe, with his head in the sky, was nibbling a cloud where the G drifted by."],
+    H: ["A Happy-hippo-hero, named Harry-the-Brave, was using the H to make a big splashy wave!"],
+    I: ["An Impala was leaping, so nimble and high, 'This I is for Inspire! Like stars in the sky!'"],
+    J: ["A Jumping Jackal juggled the J with great glee. 'It's for Joy!' he yipped, 'It's the best thing to be!'"],
+    K: ["A Kingfisher, quick! with a click-clack-ka-cheer! dived down for the K and said, 'Keep Kindness right here!'"],
+    L: ["A Lazy Lion was Lounging on L. 'It's for Love,' he purred softly, 'and Living so well.'"],
+    M: ["A Marching Meerkat was holding the M. 'It's for Mercy!' he chirped, 'A most magical gem!'"],
+    N: ["A Nimble Nyala, stepped out from the trees. 'This N is for Nice! You're a breeze-on-a-breeze!'"],
+    O: ["An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'"],
+    P: ["A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'"],
+    Q: ["A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock."],
+    R: ["A Resting Rhino was Resting, right on the R! 'It's for Respect!' he snorted, 'You'll surely go far!'"],
+    S: ["A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'"],
+    T: ["A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'"],
+    U: ["A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'"],
+    V: ["A Vervet monkey, with a voom and a vash, found the V in a Vine in a lightning-quick flash!"],
+    W: ["A Warthog was Wallowing, Watching the W. 'It's for Wonderful! Worthy! And Wise!'"],
+    X: ["An 'eXtra' special boX held the X just right. 'It's for eXtra Love! And eXtra bright light!'"],
+    Y: ["The Y was held by a hero, 'Mega-Yellow-Mongoose!' 'It's for YOU!' he announced, 'Now let's put it to use!'"],
+    Z: ["A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z!"]
   };
 
-  // Build the 16-page book structure
+  // Build the book pages
   const buildBook = (name: string) => {
-    const letters = name.toUpperCase().split('');
-    const pages: Array<{ type: string; content: string }> = [];
+    const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
+    const pages: Array<{ type: string; content: string; letter?: string }> = [];
 
-    // Page 1: Title Page
+    // Title Page
     pages.push({
       type: "title",
       content: `${name}'s Great Name Chase`
     });
 
-    // Pages 2-13: Dynamic A-Z Story Blocks (one page per letter)
+    // Letter pages
     letters.forEach((letter) => {
       const options = storyBlocks[letter];
       if (options && options.length > 0) {
-        const randomIndex = Math.floor(Math.random() * options.length);
         pages.push({
           type: "letter",
-          content: options[randomIndex]
+          content: options[0],
+          letter: letter
         });
       }
     });
 
-    // Pages 14-15: Frame Story - Climax
+    // Climax
     pages.push({
       type: "frame-climax",
-      content: `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. They weren't just letters, ${name} saw it was true... Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize. The person your family once wished for, their wonderful 'Answered Prayer' in their eyes.`
+      content: `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize.`
     });
 
-    // Page 16: Dedication Page
+    // Dedication
     pages.push({
       type: "dedication",
       content: `To ${name}, with love${fromField ? ` from ${fromField}` : ''}.\n\n${personalMessage || 'You are loved beyond measure.'}`
@@ -249,25 +115,29 @@ const PersonalizePreview = () => {
     return pages;
   };
 
-  const book = personalization ? buildBook(personalization.childName) : [];
-  const totalSpreads = Math.ceil(book.length / 2);
+  const book = buildBook(personalization.childName);
+  const currentPage = book[currentPageIndex];
 
-  const handleNextSpread = () => {
-    if (currentSpreadIndex < totalSpreads - 1) {
-      setCurrentSpreadIndex(currentSpreadIndex + 1);
+  const handleNextPage = () => {
+    if (currentPageIndex < book.length - 1) {
+      setCurrentPageIndex(currentPageIndex + 1);
     }
   };
 
-  const handlePrevSpread = () => {
-    if (currentSpreadIndex > 0) {
-      setCurrentSpreadIndex(currentSpreadIndex - 1);
+  const handlePrevPage = () => {
+    if (currentPageIndex > 0) {
+      setCurrentPageIndex(currentPageIndex - 1);
     }
   };
 
-  const leftPageIndex = currentSpreadIndex * 2;
-  const rightPageIndex = leftPageIndex + 1;
-  const leftPage = book[leftPageIndex];
-  const rightPage = book[rightPageIndex];
+  // Background colors for variety
+  const bgColors = [
+    "from-primary/20 to-accent/10",
+    "from-accent/20 to-primary/10",
+    "from-blue-100 to-purple-100",
+    "from-green-100 to-yellow-100",
+    "from-pink-100 to-orange-100"
+  ];
 
   return (
     <div className="min-h-screen bg-background">
@@ -288,58 +158,44 @@ const PersonalizePreview = () => {
           <div className="space-y-4">
             <h2 className="font-fredoka text-2xl md:text-3xl text-primary">Book Preview</h2>
             
-            {/* Single Full-Page View */}
-            <div className="relative max-w-4xl mx-auto">
-              <div className="relative aspect-[16/9] shadow-2xl rounded-lg overflow-hidden bg-background border border-border">
-                {/* Full Panoramic Background */}
-                <img
-                  src={backgroundSpreads[Math.floor(currentSpreadIndex / 2) % backgroundSpreads.length]}
-                  alt="Book page background"
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
+            {/* Page View */}
+            <div className="relative max-w-2xl mx-auto">
+              <div className={`relative aspect-[3/4] shadow-2xl rounded-lg overflow-hidden bg-gradient-to-br ${bgColors[currentPageIndex % bgColors.length]} border border-border`}>
+                {/* Character Image */}
+                {(currentPage?.type === "title" || currentPage?.type === "frame-climax") && (
+                  <img
+                    src={getChildCharacter(personalization.gender, personalization.skinTone)}
+                    alt="Child character"
+                    className="absolute bottom-4 right-4 w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-xl"
+                    loading="lazy"
+                  />
+                )}
                 
-                {/* Content Overlay */}
-                <div className="relative z-10 h-full flex items-center justify-center p-8 md:p-12">
-                  {/* Character Image - positioned based on page type */}
-                  {leftPage && leftPage.type === "letter" && leftPageIndex >= 1 && (
-                    <img
-                      src={characterMapping[personalization.childName.toUpperCase().split('')[leftPageIndex - 1]]?.character || MeerkatChar}
-                      alt="Character"
-                      className="absolute bottom-8 right-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
-                    />
-                  )}
-                  
-                  {leftPage && leftPage.type === "frame-climax" && (
-                    <img
-                      src={getChildCharacter(personalization.gender)}
-                      alt="Child character"
-                      className="absolute bottom-8 right-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
-                    />
-                  )}
-                  
-                  {leftPage && leftPage.type === "title" && (
-                    <img
-                      src={getChildCharacter(personalization.gender)}
-                      alt="Child character"
-                      className="absolute bottom-8 left-8 w-40 h-40 md:w-48 md:h-48 object-contain drop-shadow-2xl"
-                    />
-                  )}
-                  
-                  {/* Text Content */}
-                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 max-w-2xl shadow-xl">
-                    {leftPage?.type === "title" ? (
-                      <h1 className="font-fredoka text-3xl md:text-5xl text-primary text-center leading-tight">
-                        {leftPage.content}
+                {/* Letter Display */}
+                {currentPage?.type === "letter" && currentPage.letter && (
+                  <div className="absolute top-4 left-4 w-16 h-16 md:w-20 md:h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                    <span className="font-fredoka text-3xl md:text-4xl text-primary-foreground font-bold">
+                      {currentPage.letter}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Text Content */}
+                <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
+                  <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
+                    {currentPage?.type === "title" ? (
+                      <h1 className="font-fredoka text-2xl md:text-4xl text-primary text-center leading-tight">
+                        {currentPage.content}
                       </h1>
-                    ) : leftPage?.type === "dedication" ? (
+                    ) : currentPage?.type === "dedication" ? (
                       <div className="font-fredoka text-base md:text-lg text-foreground text-center space-y-4">
-                        {leftPage.content.split('\n\n').map((paragraph, idx) => (
+                        {currentPage.content.split('\n\n').map((paragraph, idx) => (
                           <p key={idx} className="leading-relaxed">{paragraph}</p>
                         ))}
                       </div>
                     ) : (
-                      <p className="font-fredoka text-lg md:text-xl text-foreground leading-relaxed text-center">
-                        {leftPage?.content}
+                      <p className="font-fredoka text-base md:text-lg text-foreground leading-relaxed text-center">
+                        {currentPage?.content}
                       </p>
                     )}
                   </div>
@@ -351,19 +207,19 @@ const PersonalizePreview = () => {
             <div className="flex items-center justify-between">
               <Button
                 variant="outline"
-                onClick={handlePrevSpread}
-                disabled={currentSpreadIndex === 0}
+                onClick={handlePrevPage}
+                disabled={currentPageIndex === 0}
                 className="font-inter"
               >
                 Previous Page
               </Button>
               <p className="font-inter text-sm text-muted-foreground">
-                Page {leftPageIndex + 1} of {book.length}
+                Page {currentPageIndex + 1} of {book.length}
               </p>
               <Button
                 variant="outline"
-                onClick={handleNextSpread}
-                disabled={leftPageIndex >= book.length - 1}
+                onClick={handleNextPage}
+                disabled={currentPageIndex >= book.length - 1}
                 className="font-inter"
               >
                 Next Page
