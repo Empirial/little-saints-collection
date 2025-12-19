@@ -17,6 +17,7 @@ import classroomImage from "@/assets/poster/CLassroom.webp";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
+import SEOHead from "@/components/SEOHead";
 
 const Product = () => {
   const navigate = useNavigate();
@@ -116,8 +117,44 @@ const Product = () => {
     navigate("/checkout");
   };
 
+  const productStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Christian Posters for Children - Complete Set of 9",
+    "image": "https://littlesaintart.co.za/og-image.png",
+    "description": "Beautiful set of 9 A4 Christian posters for children featuring Bible stories including The Bible Timeline, Books of the Bible, God's Promises, Armour of God, The Beatitudes, Fruits of the Spirit, The 10 Commandments, Lord's Prayer, and Seven Days of Creation.",
+    "brand": {
+      "@type": "Brand",
+      "name": "Little Saint Art Creations"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": "https://littlesaintart.co.za/product",
+      "priceCurrency": "ZAR",
+      "price": "270",
+      "priceValidUntil": "2025-12-31",
+      "availability": "https://schema.org/InStock",
+      "seller": {
+        "@type": "Organization",
+        "name": "Little Saint Art Creations"
+      }
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5",
+      "reviewCount": "50"
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <main className="min-h-screen bg-background overflow-x-hidden">
+      <SEOHead
+        title="Christian Posters for Children - 9 Bible Story Posters | Little Saints"
+        description="Buy beautiful Christian posters for kids. Set of 9 A4 Bible story posters including The 10 Commandments, Lord's Prayer, Fruits of the Spirit. Premium 350gsm paper. R270 for complete set."
+        canonicalUrl="https://littlesaintart.co.za/product"
+        keywords="Christian posters, Bible posters for kids, religious wall art, Sunday school posters, 10 commandments poster, Lord's prayer poster, fruits of the spirit"
+        structuredData={productStructuredData}
+      />
       {/* Header */}
       <header className="bg-muted/30 py-4 px-4 sticky top-0 z-50 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -701,7 +738,7 @@ const Product = () => {
           </p>
         </div>
       </footer>
-    </div>
+    </main>
   );
 };
 
