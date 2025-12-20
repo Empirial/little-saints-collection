@@ -28,7 +28,7 @@ const Index = () => {
     <main className="min-h-screen bg-background">
       <SEOHead
         title="Little Saints - Christian Posters & Personalized Books for Children | South Africa"
-        description="Shop beautiful Christian posters and personalized Bible storybooks for children. 9 faith-filled A4 posters featuring Bible stories, perfect for kids' rooms."
+        description="Shop beautiful Christian posters and personalized Bible storybooks for children. 9 faith-filled A3 posters featuring Bible stories, perfect for kids' rooms."
         canonicalUrl="https://littlesaintart.co.za/"
         keywords="Christian posters for kids, Bible posters for children, personalized Christian books, religious wall art, South Africa"
         structuredData={homeStructuredData}
@@ -78,12 +78,12 @@ const Index = () => {
                     Christian Posters
                   </h3>
                   <p className="font-inter text-lg text-muted-foreground leading-relaxed mb-4">
-                    Beautiful A4 posters featuring 9 inspiring Bible stories, printed on premium 350gsm paper. 
+                    Beautiful A3 posters featuring 9 inspiring Bible stories, printed on premium 350gsm paper. 
                     Perfect for decorating your child's room with colorful, faith-filled artwork.
                   </p>
                   <ul className="font-inter text-muted-foreground space-y-2">
                     <li>✓ 9 Biblical stories beautifully illustrated</li>
-                    <li>✓ High-quality 350gsm A4 paper</li>
+                    <li>✓ High-quality 350gsm A3 paper</li>
                     <li>✓ Child-friendly, engaging designs</li>
                     <li>✓ Perfect for bedroom walls</li>
                   </ul>

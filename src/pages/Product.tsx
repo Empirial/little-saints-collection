@@ -18,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
+import { toast } from "sonner";
 const Product = () => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -25,13 +26,23 @@ const Product = () => {
   const [purchaseOption, setPurchaseOption] = useState<"complete" | "individual">("complete");
   const [selectedPosters, setSelectedPosters] = useState<number[]>([]);
   const [showPosterSelector, setShowPosterSelector] = useState(false);
-  const carouselImages = [{
+  // Combine scene images and poster images for the carousel
+  const sceneImages = [{
     image: bedroomImage,
-    title: "Bedroom Display"
+    title: "Bedroom Display",
+    isScene: true
   }, {
     image: classroomImage,
-    title: "Classroom Display"
+    title: "Classroom Display",
+    isScene: true
   }];
+  
+  // All carousel images including scenes and selected/clicked poster
+  const [displayedPoster, setDisplayedPoster] = useState<typeof posters[0] | null>(null);
+  
+  const carouselImages = displayedPoster 
+    ? [...sceneImages, { image: displayedPoster.image, title: displayedPoster.title, isScene: false }]
+    : sceneImages;
   const posters = [{
     id: 1,
     image: poster1,
@@ -75,13 +86,16 @@ const Product = () => {
   // Calculate individual poster total
   const individualTotal = selectedPosters.length * POSTER_PRICE;
 
-  // Auto-slide effect for main image
+  // Auto-slide effect for main image (only for scene images)
   useEffect(() => {
+    // Only auto-slide between scenes when no poster is displayed
+    if (displayedPoster) return;
+    
     const interval = setInterval(() => {
-      setSelectedImage(prev => (prev + 1) % carouselImages.length);
+      setSelectedImage(prev => (prev + 1) % sceneImages.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, [carouselImages.length]);
+  }, [sceneImages.length, displayedPoster]);
 
   // Navigate main carousel
   const nextImage = () => {
@@ -106,9 +120,18 @@ const Product = () => {
   // Get visible thumbnails
   const visibleThumbnails = posters.slice(thumbnailStartIndex, thumbnailStartIndex + 4);
 
-  // Handle poster selection
+  // Handle poster selection with toast feedback
   const togglePosterSelection = (posterId: number) => {
-    setSelectedPosters(prev => prev.includes(posterId) ? prev.filter(id => id !== posterId) : [...prev, posterId]);
+    const poster = posters.find(p => p.id === posterId);
+    setSelectedPosters(prev => {
+      if (prev.includes(posterId)) {
+        toast.info(`Removed "${poster?.title}" from cart`);
+        return prev.filter(id => id !== posterId);
+      } else {
+        toast.success(`Added "${poster?.title}" to cart`);
+        return [...prev, posterId];
+      }
+    });
   };
 
   // Handle checkout
@@ -144,7 +167,7 @@ const Product = () => {
     "@type": "Product",
     "name": "Christian Posters for Children - Complete Set of 9",
     "image": "https://littlesaintart.co.za/og-image.png",
-    "description": "Beautiful set of 9 A4 Christian posters for children featuring Bible stories including The Bible Timeline, Books of the Bible, God's Promises, Armour of God, The Beatitudes, Fruits of the Spirit, The 10 Commandments, Lord's Prayer, and Seven Days of Creation.",
+    "description": "Beautiful set of 9 A3 Christian posters for children featuring Bible stories including The Bible Timeline, Books of the Bible, God's Promises, Armour of God, The Beatitudes, Fruits of the Spirit, The 10 Commandments, Lord's Prayer, and Seven Days of Creation.",
     "brand": {
       "@type": "Brand",
       "name": "Little Saint Art Creations"
@@ -168,7 +191,7 @@ const Product = () => {
     }
   };
   return <main className="min-h-screen bg-background overflow-x-hidden">
-      <SEOHead title="Christian Posters for Children - 9 Bible Story Posters | Little Saints" description="Buy beautiful Christian posters for kids. Set of 9 A4 Bible story posters including The 10 Commandments, Lord's Prayer, Fruits of the Spirit. Premium 350gsm paper. R270 for complete set." canonicalUrl="https://littlesaintart.co.za/product" keywords="Christian posters, Bible posters for kids, religious wall art, Sunday school posters, 10 commandments poster, Lord's prayer poster, fruits of the spirit" structuredData={productStructuredData} />
+      <SEOHead title="Christian Posters for Children - 9 Bible Story Posters | Little Saints" description="Buy beautiful Christian posters for kids. Set of 9 A3 Bible story posters including The 10 Commandments, Lord's Prayer, Fruits of the Spirit. Premium 350gsm paper. R270 for complete set." canonicalUrl="https://littlesaintart.co.za/product" keywords="Christian posters, Bible posters for kids, religious wall art, Sunday school posters, 10 commandments poster, Lord's prayer poster, fruits of the spirit" structuredData={productStructuredData} />
       {/* Header */}
       <header className="bg-muted/30 py-4 px-4 sticky top-0 z-50 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -227,12 +250,15 @@ const Product = () => {
                 {/* Thumbnails Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 sm:gap-3">
                   {visibleThumbnails.map((poster, idx) => {
-                  const actualIndex = thumbnailStartIndex + idx;
-                  return <button key={poster.id} onClick={() => setSelectedImage(actualIndex)} className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${selectedImage === actualIndex ? 'border-primary shadow-lg ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}>
+                  return <button key={poster.id} onClick={() => {
+                    // Show the clicked poster in the main carousel
+                    setDisplayedPoster(poster);
+                    setSelectedImage(2); // Jump to the poster slide (index 2, after the two scene images)
+                  }} className={`aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all ${displayedPoster?.id === poster.id ? 'border-primary shadow-lg ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}>
                         <img src={poster.image} alt={poster.title} className="w-full h-full object-cover" loading="lazy" width="200" height="267" />
                       </button>;
                 })}
-                </div>
+              </div>
 
                 {/* Right Arrow */}
                 <button onClick={nextThumbnails} disabled={thumbnailStartIndex + 4 >= posters.length} className={`absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-background border-2 border-border p-1 sm:p-2 rounded-full shadow-lg transition-all ${thumbnailStartIndex + 4 >= posters.length ? 'opacity-30 cursor-not-allowed' : 'hover:border-primary hover:bg-primary/5'}`} aria-label="Next thumbnails">
@@ -241,7 +267,7 @@ const Product = () => {
               </div>
 
               <p className="font-inter text-sm text-muted-foreground text-center mt-3">
-                {posters[selectedImage].title} • {thumbnailStartIndex + 1}-{Math.min(thumbnailStartIndex + 4, posters.length)} of {posters.length} posters
+                {displayedPoster ? `Viewing: ${displayedPoster.title}` : `${thumbnailStartIndex + 1}-${Math.min(thumbnailStartIndex + 4, posters.length)} of ${posters.length} posters`}
               </p>
             </div>
 
