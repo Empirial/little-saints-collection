@@ -32,6 +32,7 @@ const Navbar = () => {
     { icon: Image, label: "Poster Full Collection", path: "/product", action: "navigate" },
     { icon: Layers, label: "Individual Poster", path: "/product", action: "navigate" },
     { icon: BookOpen, label: "Personalised Books", path: "/personalize-book", action: "navigate" },
+    { icon: ShoppingCart, label: "Cart", path: "/cart", action: "navigate", showBadge: true },
     { icon: MessageCircle, label: "Contact Us", path: "#footer", action: "scroll" },
   ];
 
@@ -76,10 +77,15 @@ const Navbar = () => {
                             handleNavigation(item.path);
                           }
                         }}
-                        className="flex items-center gap-4 w-full px-6 py-4 hover:bg-muted transition-colors text-left"
+                        className="flex items-center gap-4 w-full px-6 py-4 hover:bg-muted transition-colors text-left relative"
                       >
                         <item.icon className="w-5 h-5 text-muted-foreground" />
                         <span className="font-fredoka text-base">{item.label}</span>
+                        {item.showBadge && totalItems > 0 && (
+                          <span className="absolute right-6 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {totalItems > 9 ? "9+" : totalItems}
+                          </span>
+                        )}
                       </button>
                     </SheetClose>
                   ))}
