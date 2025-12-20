@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, Search, X, Home, Image, BookOpen, MessageCircle } from "lucide-react";
+import { ShoppingCart, Menu, Search, X, Home, Image, Layers, BookOpen, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import logo from "@/assets/logo.png";
+import { useCart } from "@/context/CartContext";
 import {
   Sheet,
   SheetContent,
@@ -13,15 +14,25 @@ import {
 const Navbar = () => {
   const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
+  const { totalItems } = useCart();
 
   const handleNavigation = (path: string) => {
     navigate(path);
   };
 
+  const scrollToFooter = () => {
+    const footer = document.querySelector("footer");
+    if (footer) {
+      footer.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const menuItems = [
-    { icon: Home, label: "Home", path: "/" },
-    { icon: Image, label: "Collection", path: "/product" },
-    { icon: BookOpen, label: "Personalized Books", path: "/personalize-book" },
+    { icon: Home, label: "Home", path: "/", action: "navigate" },
+    { icon: Image, label: "Poster Full Collection", path: "/product", action: "navigate" },
+    { icon: Layers, label: "Individual Poster", path: "/product", action: "navigate" },
+    { icon: BookOpen, label: "Personalised Books", path: "/personalize-book", action: "navigate" },
+    { icon: MessageCircle, label: "Contact Us", path: "#footer", action: "scroll" },
   ];
 
   return (
@@ -55,10 +66,16 @@ const Navbar = () => {
 
                 {/* Menu Items */}
                 <div className="flex-1 py-4">
-                  {menuItems.map((item) => (
-                    <SheetClose key={item.path} asChild>
+                  {menuItems.map((item, index) => (
+                    <SheetClose key={`${item.path}-${index}`} asChild>
                       <button
-                        onClick={() => handleNavigation(item.path)}
+                        onClick={() => {
+                          if (item.action === "scroll") {
+                            scrollToFooter();
+                          } else {
+                            handleNavigation(item.path);
+                          }
+                        }}
                         className="flex items-center gap-4 w-full px-6 py-4 hover:bg-muted transition-colors text-left"
                       >
                         <item.icon className="w-5 h-5 text-muted-foreground" />
@@ -77,7 +94,7 @@ const Navbar = () => {
                     className="flex items-center gap-3 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <MessageCircle className="w-5 h-5" />
-                    <span className="font-inter text-sm">Contact us on WhatsApp</span>
+                    <span className="font-inter text-sm">WhatsApp: +27 79 117 5714</span>
                   </a>
                 </div>
               </div>
@@ -107,10 +124,15 @@ const Navbar = () => {
             </button>
             <button
               onClick={() => navigate("/checkout")}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors relative"
               aria-label="View cart"
             >
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {totalItems > 9 ? "9+" : totalItems}
+                </span>
+              )}
             </button>
           </div>
         </div>
