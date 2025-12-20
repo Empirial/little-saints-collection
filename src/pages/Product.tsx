@@ -19,30 +19,16 @@ import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, Che
 import { useState, useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
+import { useCart } from "@/context/CartContext";
 const Product = () => {
   const navigate = useNavigate();
+  const { addItem, removeItem, items: cartItems } = useCart();
   const [selectedImage, setSelectedImage] = useState(0);
   const [thumbnailStartIndex, setThumbnailStartIndex] = useState(0);
   const [purchaseOption, setPurchaseOption] = useState<"complete" | "individual">("complete");
   const [selectedPosters, setSelectedPosters] = useState<number[]>([]);
   const [showPosterSelector, setShowPosterSelector] = useState(false);
-  // Combine scene images and poster images for the carousel
-  const sceneImages = [{
-    image: bedroomImage,
-    title: "Bedroom Display",
-    isScene: true
-  }, {
-    image: classroomImage,
-    title: "Classroom Display",
-    isScene: true
-  }];
   
-  // All carousel images including scenes and selected/clicked poster
-  const [displayedPoster, setDisplayedPoster] = useState<typeof posters[0] | null>(null);
-  
-  const carouselImages = displayedPoster 
-    ? [...sceneImages, { image: displayedPoster.image, title: displayedPoster.title, isScene: false }]
-    : sceneImages;
   const posters = [{
     id: 1,
     image: poster1,
@@ -80,8 +66,28 @@ const Product = () => {
     image: poster9,
     title: "Seven Days of Creation"
   }];
+  
+  // Combine scene images and poster images for the carousel
+  const sceneImages = [{
+    image: bedroomImage,
+    title: "Bedroom Display",
+    isScene: true
+  }, {
+    image: classroomImage,
+    title: "Classroom Display",
+    isScene: true
+  }];
+  
+  // All carousel images including scenes and selected/clicked poster
+  const [displayedPoster, setDisplayedPoster] = useState<typeof posters[0] | null>(null);
+  
+  const carouselImages = displayedPoster 
+    ? [...sceneImages, { image: displayedPoster.image, title: displayedPoster.title, isScene: false }]
+    : sceneImages;
+  
   const POSTER_PRICE = 40;
   const COMPLETE_SET_PRICE = 270;
+  const COLLECTION_ID = 100; // Unique ID for the collection
 
   // Calculate individual poster total
   const individualTotal = selectedPosters.length * POSTER_PRICE;
@@ -120,48 +126,68 @@ const Product = () => {
   // Get visible thumbnails
   const visibleThumbnails = posters.slice(thumbnailStartIndex, thumbnailStartIndex + 4);
 
-  // Handle poster selection with toast feedback
+  // Handle poster selection with cart integration
   const togglePosterSelection = (posterId: number) => {
     const poster = posters.find(p => p.id === posterId);
+    if (!poster) return;
+    
     setSelectedPosters(prev => {
       if (prev.includes(posterId)) {
-        toast.info(`Removed "${poster?.title}" from cart`);
+        // Remove from cart
+        removeItem(posterId);
+        toast.info(`Removed "${poster.title}" from cart`);
         return prev.filter(id => id !== posterId);
       } else {
-        toast.success(`Added "${poster?.title}" to cart`);
+        // Add to cart
+        addItem({
+          id: posterId,
+          name: poster.title,
+          price: POSTER_PRICE,
+          quantity: 1,
+          image: poster.image
+        });
+        toast.success(`Added "${poster.title}" to cart`);
         return [...prev, posterId];
       }
     });
   };
 
-  // Handle checkout
-  const handleCheckout = () => {
-    if (purchaseOption === "individual" && selectedPosters.length === 0) {
-      alert("Please select at least one poster");
-      return;
-    }
-
-    // Store cart data for checkout
-    const cartData = {
-      purchaseOption,
-      selectedPosters: purchaseOption === "individual" ? selectedPosters : [],
-      subtotal: purchaseOption === "complete" ? COMPLETE_SET_PRICE : individualTotal,
-      items: purchaseOption === "complete" ? [{
+  // Handle adding complete collection to cart
+  const handleAddToCart = () => {
+    if (purchaseOption === "complete") {
+      // Check if collection is already in cart
+      const collectionInCart = cartItems.find(item => item.id === COLLECTION_ID);
+      if (collectionInCart) {
+        toast.info("Collection is already in your cart");
+        navigate("/cart");
+        return;
+      }
+      
+      // Clear any individual posters first
+      selectedPosters.forEach(id => removeItem(id));
+      setSelectedPosters([]);
+      
+      // Add the complete collection
+      addItem({
+        id: COLLECTION_ID,
         name: "Complete Poster Set (9 posters)",
+        price: COMPLETE_SET_PRICE,
         quantity: 1,
-        price: COMPLETE_SET_PRICE
-      }] : selectedPosters.map(id => {
-        const poster = posters.find(p => p.id === id);
-        return {
-          name: poster?.title || `Poster ${id}`,
-          quantity: 1,
-          price: POSTER_PRICE
-        };
-      })
-    };
-    localStorage.setItem("cart", JSON.stringify(cartData));
-    navigate("/checkout");
+        image: poster1
+      });
+      toast.success("Complete collection added to cart!");
+      navigate("/cart");
+    } else {
+      // For individual posters, they're already added via togglePosterSelection
+      if (selectedPosters.length === 0) {
+        toast.error("Please select at least one poster");
+        return;
+      }
+      toast.success(`${selectedPosters.length} poster(s) added to cart!`);
+      navigate("/cart");
+    }
   };
+
   const productStructuredData = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -447,7 +473,7 @@ const Product = () => {
               </div>
 
               {/* Add to Cart Button */}
-              <Button onClick={handleCheckout} className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4" size="lg">
+              <Button onClick={handleAddToCart} className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4" size="lg">
                 <ShoppingCart className="w-6 h-6 mr-2" />
                 {purchaseOption === "complete" ? "Get Your Collection Now - R270" : selectedPosters.length > 0 ? `Add to Cart - R${individualTotal}` : "Select Posters to Continue"}
               </Button>

@@ -123,7 +123,7 @@ const Navbar = () => {
               <Search className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
-              onClick={() => navigate("/checkout")}
+              onClick={() => navigate("/cart")}
               className="p-2 hover:bg-muted rounded-lg transition-colors relative"
               aria-label="View cart"
             >
