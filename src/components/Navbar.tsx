@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Menu, Search, X, Home, Image, Layers, BookOpen, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { ShoppingCart, Menu, X, Home, Image, Layers, BookOpen, MessageCircle } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { useCart } from "@/context/CartContext";
 import {
@@ -13,7 +12,6 @@ import {
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const [searchOpen, setSearchOpen] = useState(false);
   const { totalItems } = useCart();
 
   const handleNavigation = (path: string) => {
@@ -121,13 +119,6 @@ const Navbar = () => {
           
           {/* Right - Search & Cart */}
           <div className="flex items-center gap-1 sm:gap-2">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
-              aria-label="Search"
-            >
-              <Search className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
             <button
               onClick={() => navigate("/cart")}
               className="p-2 hover:bg-muted rounded-lg transition-colors relative"

@@ -9,7 +9,7 @@ import { ArrowLeft, ShoppingBag, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import posterCollection from "@/assets/poster-collection.jpg";
+
 
 interface CartItem {
   name: string;
@@ -197,7 +197,7 @@ const Checkout = () => {
                       <h3 className="font-fredoka font-bold text-lg mb-1">{item.name}</h3>
                       {cart.purchaseOption === "complete" && (
                         <>
-                          <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A4 posters</p>
+                          <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A3 posters</p>
                           <div className="space-y-1 text-xs text-muted-foreground">
                             <p>✓ Premium 350mg paper quality</p>
                             <p>✓ Vibrant, child-friendly colors</p>
