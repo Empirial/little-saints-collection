@@ -23,25 +23,28 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_STORAGE_KEY = "littlesaints_cart";
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    // Initialize from localStorage
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem(CART_STORAGE_KEY);
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch {
-          return [];
-        }
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) {
+      try {
+        setItems(JSON.parse(stored));
+      } catch {
+        // Invalid JSON, start with empty cart
       }
     }
-    return [];
-  });
+    setIsInitialized(true);
+  }, []);
 
-  // Persist to localStorage whenever items change
+  // Persist to localStorage whenever items change (after initialization)
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    if (isInitialized) {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    }
+  }, [items, isInitialized]);
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {
