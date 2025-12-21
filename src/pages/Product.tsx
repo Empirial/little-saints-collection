@@ -663,6 +663,12 @@ const Product = () => {
           <p className="font-inter text-sm opacity-80">
             © 2025 Little Saints. Inspiring faith in young hearts.
           </p>
+          <p className="font-inter text-xs opacity-60 mt-3">
+            Made by{" "}
+            <a href="https://www.empirialdesigns.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline">
+              www.empirialdesigns.com
+            </a>
+          </p>
         </div>
       </footer>
     </main>;
