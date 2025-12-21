@@ -113,7 +113,7 @@ async function sendOrderConfirmationEmail(order: any) {
                   
                   <!-- Contact -->
                   <p style="color: #374151; font-size: 14px; line-height: 1.6; margin: 0;">
-                    Questions? Contact us on WhatsApp: <a href="https://wa.me/27609549877" style="color: #8B5CF6; text-decoration: none; font-weight: 600;">+27 60 954 9877</a>
+                    Questions? Contact us on WhatsApp: <a href="https://wa.me/27791175714" style="color: #8B5CF6; text-decoration: none; font-weight: 600;">+27 79 117 5714</a>
                   </p>
                 </td>
               </tr>
