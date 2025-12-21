@@ -475,7 +475,7 @@ const Product = () => {
               {/* Add to Cart Button */}
               <Button onClick={handleAddToCart} className="w-full font-fredoka text-xl py-7 rounded-full shadow-xl hover:shadow-2xl transition-all mb-4" size="lg">
                 <ShoppingCart className="w-6 h-6 mr-2" />
-                {purchaseOption === "complete" ? "Get Your Collection Now - R270" : selectedPosters.length > 0 ? `Add to Cart - R${individualTotal}` : "Select Posters to Continue"}
+                {purchaseOption === "complete" ? "Add to Cart - R270" : selectedPosters.length > 0 ? `Add to Cart - R${individualTotal}` : "Select Posters to Continue"}
               </Button>
 
               {/* Trust Badges */}
@@ -635,7 +635,7 @@ const Product = () => {
           
           <Button onClick={() => navigate("/checkout")} size="lg" className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all">
             <ShoppingCart className="w-7 h-7 mr-3" />
-            Get Your Collection Now
+            Add to Cart
           </Button>
           
           <p className="font-inter text-sm text-muted-foreground mt-6">
