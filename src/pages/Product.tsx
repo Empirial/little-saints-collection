@@ -159,7 +159,6 @@ const Product = () => {
       const collectionInCart = cartItems.find(item => item.id === COLLECTION_ID);
       if (collectionInCart) {
         toast.info("Collection is already in your cart");
-        navigate("/cart");
         return;
       }
       
@@ -176,7 +175,6 @@ const Product = () => {
         image: poster1
       });
       toast.success("Complete collection added to cart!");
-      navigate("/cart");
     } else {
       // For individual posters, they're already added via togglePosterSelection
       if (selectedPosters.length === 0) {
