@@ -226,8 +226,13 @@ const Product = () => {
             Back to Home
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/cart")} className="relative">
               <ShoppingCart className="w-5 h-5" />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {cartItems.length > 9 ? "9+" : cartItems.length}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -621,8 +626,8 @@ const Product = () => {
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex items-center justify-center gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Star className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-accent fill-accent" />
+            <Star className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-accent fill-accent" />
             <Star className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-accent fill-accent" />
-            <Star className="w-10 h-10 text-accent fill-accent" />
           </div>
 
           <h2 className="font-fredoka text-5xl md:text-6xl font-bold mb-6">
@@ -633,9 +638,9 @@ const Product = () => {
             Transform your child's room into a faith-filled space that inspires learning and love for God's word. Premium quality, vibrant designs, delivered to your door.
           </p>
           
-          <Button onClick={() => navigate("/checkout")} size="lg" className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all">
+          <Button onClick={handleAddToCart} size="lg" className="font-fredoka text-2xl px-16 py-8 rounded-full shadow-xl hover:shadow-2xl transition-all">
             <ShoppingCart className="w-7 h-7 mr-3" />
-            Add to Cart
+            Add to Cart - R270
           </Button>
           
           <p className="font-inter text-sm text-muted-foreground mt-6">
@@ -658,7 +663,7 @@ const Product = () => {
           </div>
           <p className="font-fredoka text-2xl font-bold mb-2">Little Saints</p>
           <p className="font-inter text-sm opacity-80">
-            © 2024 Little Saints. Inspiring faith in young hearts.
+            © 2025 Little Saints. Inspiring faith in young hearts.
           </p>
         </div>
       </footer>
