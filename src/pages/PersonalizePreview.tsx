@@ -164,12 +164,12 @@ const PersonalizePreview = () => {
     }
   };
 
-  // Render a single book page
+  // Render a single book page - aspect ratio 37:21 (book dimensions 37cm x 21cm)
   const renderPage = (page: typeof book[0], index: number) => {
     return (
       <div
         key={index}
-        className={`relative aspect-[3/4] shadow-xl rounded-lg overflow-hidden border border-border ${
+        className={`relative aspect-[37/21] shadow-xl rounded-lg overflow-hidden border border-border ${
           page.type === "letter" && page.image ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
         }`}
       >
@@ -275,8 +275,8 @@ const PersonalizePreview = () => {
           Preview Your Book
         </h1>
 
-        {/* Book Pages Grid - 1 column on mobile, 2 columns on desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+        {/* Book Pages Grid - 1 column on all screens */}
+        <div className="grid grid-cols-1 gap-4 md:gap-6 max-w-4xl mx-auto">
           {book.map((page, index) => renderPage(page, index))}
         </div>
       </div>
