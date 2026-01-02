@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import { getLetterImage } from "@/utils/getLetterImage";
 
 // Child character imports
 import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
@@ -14,9 +15,18 @@ import charBoyDark from "@/assets/personalization/Blackboy/Blackboy.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
 
+type Theme = "superhero" | "fairytale" | "animal";
+
+interface Personalization {
+  childName: string;
+  gender: string;
+  skinTone?: string;
+  theme?: Theme;
+}
+
 const PersonalizePreview = () => {
   const navigate = useNavigate();
-  const [personalization, setPersonalization] = useState<{ childName: string; gender: string; skinTone?: string } | null>(null);
+  const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
@@ -78,9 +88,9 @@ const PersonalizePreview = () => {
   };
 
   // Build the book pages
-  const buildBook = (name: string) => {
+  const buildBook = (name: string, gender: string, skinTone: string, theme: Theme) => {
     const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
-    const pages: Array<{ type: string; content: string; letter?: string }> = [];
+    const pages: Array<{ type: string; content: string; letter?: string; image?: string }> = [];
 
     // Title Page
     pages.push({
@@ -88,14 +98,21 @@ const PersonalizePreview = () => {
       content: `${name}'s Great Name Chase`
     });
 
-    // Letter pages
+    // Letter pages with themed illustrations
     letters.forEach((letter) => {
       const options = storyBlocks[letter];
       if (options && options.length > 0) {
+        const letterImage = getLetterImage(
+          gender as 'boy' | 'girl',
+          skinTone as 'light' | 'dark',
+          theme,
+          letter
+        );
         pages.push({
           type: "letter",
           content: options[0],
-          letter: letter
+          letter: letter,
+          image: letterImage
         });
       }
     });
@@ -115,7 +132,12 @@ const PersonalizePreview = () => {
     return pages;
   };
 
-  const book = buildBook(personalization.childName);
+  const book = buildBook(
+    personalization.childName,
+    personalization.gender,
+    personalization.skinTone || 'light',
+    personalization.theme || 'superhero'
+  );
   const currentPage = book[currentPageIndex];
 
   const handleNextPage = () => {
@@ -160,46 +182,80 @@ const PersonalizePreview = () => {
             
             {/* Page View */}
             <div className="relative max-w-2xl mx-auto">
-              <div className={`relative aspect-[3/4] shadow-2xl rounded-lg overflow-hidden bg-gradient-to-br ${bgColors[currentPageIndex % bgColors.length]} border border-border`}>
-                {/* Character Image */}
-                {(currentPage?.type === "title" || currentPage?.type === "frame-climax") && (
-                  <img
-                    src={getChildCharacter(personalization.gender, personalization.skinTone)}
-                    alt="Child character"
-                    className="absolute bottom-4 right-4 w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-xl"
-                    loading="lazy"
-                  />
-                )}
-                
-                {/* Letter Display */}
-                {currentPage?.type === "letter" && currentPage.letter && (
-                  <div className="absolute top-4 left-4 w-16 h-16 md:w-20 md:h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                    <span className="font-fredoka text-3xl md:text-4xl text-primary-foreground font-bold">
-                      {currentPage.letter}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Text Content */}
-                <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
-                  <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
-                    {currentPage?.type === "title" ? (
-                      <h1 className="font-fredoka text-2xl md:text-4xl text-primary text-center leading-tight">
+              <div className={`relative aspect-[3/4] shadow-2xl rounded-lg overflow-hidden border border-border ${currentPage?.type === "letter" && currentPage?.image ? '' : `bg-gradient-to-br ${bgColors[currentPageIndex % bgColors.length]}`}`}>
+                {/* Letter Page with Themed Illustration */}
+                {currentPage?.type === "letter" && currentPage?.image && (
+                  <>
+                    <img
+                      src={currentPage.image}
+                      alt={`Letter ${currentPage.letter} illustration`}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                    {/* Letter Badge */}
+                    <div className="absolute top-4 left-4 w-12 h-12 md:w-16 md:h-16 bg-primary rounded-full flex items-center justify-center shadow-lg z-10">
+                      <span className="font-fredoka text-2xl md:text-3xl text-primary-foreground font-bold">
+                        {currentPage.letter}
+                      </span>
+                    </div>
+                    {/* Story Text Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+                      <p className="font-fredoka text-sm md:text-base text-white leading-relaxed text-center">
                         {currentPage.content}
-                      </h1>
-                    ) : currentPage?.type === "dedication" ? (
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Letter Page without illustration (fallback) */}
+                {currentPage?.type === "letter" && !currentPage?.image && (
+                  <>
+                    <div className="absolute top-4 left-4 w-16 h-16 md:w-20 md:h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                      <span className="font-fredoka text-3xl md:text-4xl text-primary-foreground font-bold">
+                        {currentPage.letter}
+                      </span>
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
+                      <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
+                        <p className="font-fredoka text-base md:text-lg text-foreground leading-relaxed text-center">
+                          {currentPage.content}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Title and Climax pages */}
+                {(currentPage?.type === "title" || currentPage?.type === "frame-climax") && (
+                  <>
+                    <img
+                      src={getChildCharacter(personalization.gender, personalization.skinTone)}
+                      alt="Child character"
+                      className="absolute bottom-4 right-4 w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-xl"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
+                      <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
+                        <h1 className="font-fredoka text-2xl md:text-4xl text-primary text-center leading-tight">
+                          {currentPage.content}
+                        </h1>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Dedication page */}
+                {currentPage?.type === "dedication" && (
+                  <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
+                    <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
                       <div className="font-fredoka text-base md:text-lg text-foreground text-center space-y-4">
                         {currentPage.content.split('\n\n').map((paragraph, idx) => (
                           <p key={idx} className="leading-relaxed">{paragraph}</p>
                         ))}
                       </div>
-                    ) : (
-                      <p className="font-fredoka text-base md:text-lg text-foreground leading-relaxed text-center">
-                        {currentPage?.content}
-                      </p>
-                    )}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
