@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft, Clock, Shield, Sparkles, PawPrint } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
-import charBoyDark from "@/assets/personalization/Blackboy/Blackboy.png";
+import charBoyDark from "@/assets/personalization/Blackboy/BB.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
 
