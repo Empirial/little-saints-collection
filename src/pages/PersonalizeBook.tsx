@@ -5,32 +5,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { ArrowLeft, Clock, Shield, Sparkles, PawPrint } from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
 import charBoyDark from "@/assets/personalization/Blackboy/BB.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
 
-type Theme = "superhero" | "fairytale" | "animal" | "";
-
 const PersonalizeBook = () => {
   const navigate = useNavigate();
   const [childName, setChildName] = useState("");
   const [gender, setGender] = useState("boy");
   const [skinTone, setSkinTone] = useState<"light" | "dark" | "">("");
-  const [theme, setTheme] = useState<Theme>("");
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [accessCode, setAccessCode] = useState("");
 
   const handleCreateBook = () => {
-    if (!childName.trim() || !skinTone || !theme) {
+    if (!childName.trim() || !skinTone) {
       return;
     }
     
     // Check for secret access code
     if (accessCode === "12345") {
-      localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone, theme }));
+      localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone }));
       navigate("/personalize-preview");
       return;
     }
@@ -84,7 +81,7 @@ const PersonalizeBook = () => {
                   {accessCode === "12345" && (
                     <Button
                       onClick={() => {
-                        localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone, theme }));
+                        localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone }));
                         navigate("/personalize-preview");
                       }}
                       className="mt-2 text-xs"
@@ -208,46 +205,6 @@ const PersonalizeBook = () => {
                   </div>
                 </div>
 
-                {/* Theme Selection */}
-                <div className="space-y-3">
-                  <Label className="font-inter text-foreground">Choose Your Theme</Label>
-                  <div className="grid grid-cols-3 gap-3">
-                    <Card
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        theme === "superhero" ? "border-primary border-4" : "border-border"
-                      }`}
-                      onClick={() => setTheme("superhero")}
-                    >
-                      <CardContent className="p-4 flex flex-col items-center gap-2">
-                        <Shield className="w-10 h-10 text-primary" />
-                        <span className="font-inter text-sm text-center">Superhero</span>
-                      </CardContent>
-                    </Card>
-                    <Card
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        theme === "fairytale" ? "border-primary border-4" : "border-border"
-                      }`}
-                      onClick={() => setTheme("fairytale")}
-                    >
-                      <CardContent className="p-4 flex flex-col items-center gap-2">
-                        <Sparkles className="w-10 h-10 text-primary" />
-                        <span className="font-inter text-sm text-center">Fairytale</span>
-                      </CardContent>
-                    </Card>
-                    <Card
-                      className={`cursor-pointer transition-all hover:shadow-md ${
-                        theme === "animal" ? "border-primary border-4" : "border-border"
-                      }`}
-                      onClick={() => setTheme("animal")}
-                    >
-                      <CardContent className="p-4 flex flex-col items-center gap-2">
-                        <PawPrint className="w-10 h-10 text-primary" />
-                        <span className="font-inter text-sm text-center">Wild Animal</span>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
-
                 {/* Secret access code input - subtle at bottom */}
                 <div className="pt-4">
                   <Input
@@ -261,7 +218,7 @@ const PersonalizeBook = () => {
 
                 <Button
                   onClick={handleCreateBook}
-                  disabled={!childName.trim() || !skinTone || !theme}
+                  disabled={!childName.trim() || !skinTone}
                   className="w-full font-inter text-base py-6"
                   size="lg"
                 >
