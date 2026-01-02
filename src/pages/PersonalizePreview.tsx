@@ -27,8 +27,16 @@ interface Personalization {
   childName: string;
   gender: string;
   skinTone?: string;
-  theme?: Theme;
 }
+
+// Get theme for a letter based on gender and occurrence count
+const getThemeForLetter = (occurrenceIndex: number, gender: string): Theme => {
+  const boyThemes: Theme[] = ['superhero', 'animal', 'fairytale'];
+  const girlThemes: Theme[] = ['fairytale', 'superhero', 'animal'];
+  
+  const themes = gender === 'boy' ? boyThemes : girlThemes;
+  return themes[occurrenceIndex % 3];
+};
 
 const PersonalizePreview = () => {
   const navigate = useNavigate();
@@ -94,10 +102,13 @@ const PersonalizePreview = () => {
     Z: ["A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z!"]
   };
 
-  // Build the book pages
-  const buildBook = (name: string, gender: string, skinTone: string, theme: Theme) => {
+  // Build the book pages with automatic theme assignment
+  const buildBook = (name: string, gender: string, skinTone: string) => {
     const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
     const pages: Array<{ type: string; content: string; letter?: string; image?: string }> = [];
+    
+    // Track letter occurrences for theme cycling
+    const letterOccurrences: Map<string, number> = new Map();
 
     // Title Page
     pages.push({
@@ -105,10 +116,19 @@ const PersonalizePreview = () => {
       content: `${name}'s Great Name Chase`
     });
 
-    // Letter pages with themed illustrations
+    // Letter pages with dynamically themed illustrations
     letters.forEach((letter) => {
       const options = storyBlocks[letter];
       if (options && options.length > 0) {
+        // Get current occurrence count for this letter
+        const occurrenceIndex = letterOccurrences.get(letter) || 0;
+        
+        // Get theme based on gender and occurrence
+        const theme = getThemeForLetter(occurrenceIndex, gender);
+        
+        // Increment occurrence count for this letter
+        letterOccurrences.set(letter, occurrenceIndex + 1);
+        
         const letterImage = getLetterImage(
           gender as 'boy' | 'girl',
           skinTone as 'light' | 'dark',
@@ -142,8 +162,7 @@ const PersonalizePreview = () => {
   const book = buildBook(
     personalization.childName,
     personalization.gender,
-    personalization.skinTone || 'light',
-    personalization.theme || 'superhero'
+    personalization.skinTone || 'light'
   );
 
   // Background colors for variety
@@ -155,14 +174,6 @@ const PersonalizePreview = () => {
     "from-pink-100 to-orange-100"
   ];
 
-  const getThemeLabel = (theme?: Theme) => {
-    switch (theme) {
-      case "superhero": return "Superhero";
-      case "fairytale": return "Fairytale";
-      case "animal": return "Animal";
-      default: return "Superhero";
-    }
-  };
 
   // Render a single book page - aspect ratio 37:21 (book dimensions 37cm x 21cm)
   const renderPage = (page: typeof book[0], index: number) => {
@@ -173,28 +184,14 @@ const PersonalizePreview = () => {
           page.type === "letter" && page.image ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
         }`}
       >
-        {/* Letter Page with Themed Illustration */}
+        {/* Letter Page with Themed Illustration - Clean, no overlays */}
         {page.type === "letter" && page.image && (
-          <>
-            <img
-              src={page.image}
-              alt={`Letter ${page.letter} illustration`}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-            />
-            {/* Letter Badge */}
-            <div className="absolute top-3 left-3 w-10 h-10 md:w-12 md:h-12 bg-primary rounded-full flex items-center justify-center shadow-lg z-10">
-              <span className="font-fredoka text-xl md:text-2xl text-primary-foreground font-bold">
-                {page.letter}
-              </span>
-            </div>
-            {/* Story Text Overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-              <p className="font-fredoka text-xs md:text-sm text-white leading-relaxed text-center">
-                {page.content}
-              </p>
-            </div>
-          </>
+          <img
+            src={page.image}
+            alt={`Letter ${page.letter} illustration`}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
         )}
 
         {/* Letter Page without illustration (fallback) */}
@@ -247,10 +244,6 @@ const PersonalizePreview = () => {
           </div>
         )}
 
-        {/* Page Number */}
-        <div className="absolute bottom-2 right-2 bg-background/70 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-inter text-muted-foreground">
-          {index + 1}
-        </div>
       </div>
     );
   };
@@ -348,7 +341,7 @@ const PersonalizePreview = () => {
                 <Palette className="w-5 h-5 text-primary" />
                 <div>
                   <p className="text-xs text-muted-foreground font-inter">Theme</p>
-                  <p className="font-fredoka text-foreground">{getThemeLabel(personalization.theme)}</p>
+                  <p className="font-fredoka text-foreground">Auto-assigned based on name</p>
                 </div>
               </div>
               
