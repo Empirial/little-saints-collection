@@ -1,11 +1,17 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageSquare, Info, User, Sparkles, Palette } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import { getLetterImage } from "@/utils/getLetterImage";
 
@@ -29,7 +35,8 @@ const PersonalizePreview = () => {
   const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [showSpecsModal, setShowSpecsModal] = useState(false);
+  const [showMessageModal, setShowMessageModal] = useState(false);
 
   // Get child character based on gender and skin tone
   const getChildCharacter = (gender: string, skinTone?: string) => {
@@ -76,7 +83,7 @@ const PersonalizePreview = () => {
     O: ["An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'"],
     P: ["A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'"],
     Q: ["A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock."],
-    R: ["A Resting Rhino was Resting, right on the R! 'It's for Respect!' he snorted, 'You'll surely go far!'"],
+    R: ["A Resting Rhino was Resting, right on the R. 'It's for Respect!' he snorted, 'You'll surely go far!'"],
     S: ["A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'"],
     T: ["A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'"],
     U: ["A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'"],
@@ -138,19 +145,6 @@ const PersonalizePreview = () => {
     personalization.skinTone || 'light',
     personalization.theme || 'superhero'
   );
-  const currentPage = book[currentPageIndex];
-
-  const handleNextPage = () => {
-    if (currentPageIndex < book.length - 1) {
-      setCurrentPageIndex(currentPageIndex + 1);
-    }
-  };
-
-  const handlePrevPage = () => {
-    if (currentPageIndex > 0) {
-      setCurrentPageIndex(currentPageIndex - 1);
-    }
-  };
 
   // Background colors for variety
   const bgColors = [
@@ -161,180 +155,261 @@ const PersonalizePreview = () => {
     "from-pink-100 to-orange-100"
   ];
 
+  const getThemeLabel = (theme?: Theme) => {
+    switch (theme) {
+      case "superhero": return "Superhero";
+      case "fairytale": return "Fairytale";
+      case "animal": return "Animal";
+      default: return "Superhero";
+    }
+  };
+
+  // Render a single book page
+  const renderPage = (page: typeof book[0], index: number) => {
+    return (
+      <div
+        key={index}
+        className={`relative aspect-[3/4] shadow-xl rounded-lg overflow-hidden border border-border ${
+          page.type === "letter" && page.image ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
+        }`}
+      >
+        {/* Letter Page with Themed Illustration */}
+        {page.type === "letter" && page.image && (
+          <>
+            <img
+              src={page.image}
+              alt={`Letter ${page.letter} illustration`}
+              className="absolute inset-0 w-full h-full object-cover"
+              loading="lazy"
+            />
+            {/* Letter Badge */}
+            <div className="absolute top-3 left-3 w-10 h-10 md:w-12 md:h-12 bg-primary rounded-full flex items-center justify-center shadow-lg z-10">
+              <span className="font-fredoka text-xl md:text-2xl text-primary-foreground font-bold">
+                {page.letter}
+              </span>
+            </div>
+            {/* Story Text Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-3 md:p-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+              <p className="font-fredoka text-xs md:text-sm text-white leading-relaxed text-center">
+                {page.content}
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Letter Page without illustration (fallback) */}
+        {page.type === "letter" && !page.image && (
+          <>
+            <div className="absolute top-3 left-3 w-12 h-12 md:w-14 md:h-14 bg-primary rounded-full flex items-center justify-center shadow-lg">
+              <span className="font-fredoka text-2xl md:text-3xl text-primary-foreground font-bold">
+                {page.letter}
+              </span>
+            </div>
+            <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
+              <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
+                <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed text-center">
+                  {page.content}
+                </p>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Title and Climax pages */}
+        {(page.type === "title" || page.type === "frame-climax") && (
+          <>
+            <img
+              src={getChildCharacter(personalization.gender, personalization.skinTone)}
+              alt="Child character"
+              className="absolute bottom-3 right-3 w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-xl"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
+              <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
+                <h1 className="font-fredoka text-lg md:text-2xl text-primary text-center leading-tight">
+                  {page.content}
+                </h1>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Dedication page */}
+        {page.type === "dedication" && (
+          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
+            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
+              <div className="font-fredoka text-sm md:text-base text-foreground text-center space-y-3">
+                {page.content.split('\n\n').map((paragraph, idx) => (
+                  <p key={idx} className="leading-relaxed">{paragraph}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Page Number */}
+        <div className="absolute bottom-2 right-2 bg-background/70 backdrop-blur-sm rounded-full px-2 py-0.5 text-xs font-inter text-muted-foreground">
+          {index + 1}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 md:py-16">
+      <div className="container mx-auto px-4 py-6 pb-28">
+        {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => navigate("/personalize-book")}
-          className="mb-6 font-inter"
+          className="mb-4 font-inter"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Personalization
+          Back
         </Button>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Preview Area */}
-          <div className="space-y-4">
-            <h2 className="font-fredoka text-2xl md:text-3xl text-primary">Book Preview</h2>
-            
-            {/* Page View */}
-            <div className="relative max-w-2xl mx-auto">
-              <div className={`relative aspect-[3/4] shadow-2xl rounded-lg overflow-hidden border border-border ${currentPage?.type === "letter" && currentPage?.image ? '' : `bg-gradient-to-br ${bgColors[currentPageIndex % bgColors.length]}`}`}>
-                {/* Letter Page with Themed Illustration */}
-                {currentPage?.type === "letter" && currentPage?.image && (
-                  <>
-                    <img
-                      src={currentPage.image}
-                      alt={`Letter ${currentPage.letter} illustration`}
-                      className="absolute inset-0 w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                    {/* Letter Badge */}
-                    <div className="absolute top-4 left-4 w-12 h-12 md:w-16 md:h-16 bg-primary rounded-full flex items-center justify-center shadow-lg z-10">
-                      <span className="font-fredoka text-2xl md:text-3xl text-primary-foreground font-bold">
-                        {currentPage.letter}
-                      </span>
-                    </div>
-                    {/* Story Text Overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-                      <p className="font-fredoka text-sm md:text-base text-white leading-relaxed text-center">
-                        {currentPage.content}
-                      </p>
-                    </div>
-                  </>
-                )}
+        {/* Page Title */}
+        <h1 className="font-fredoka text-2xl md:text-3xl text-primary mb-6">
+          Preview Your Book
+        </h1>
 
-                {/* Letter Page without illustration (fallback) */}
-                {currentPage?.type === "letter" && !currentPage?.image && (
-                  <>
-                    <div className="absolute top-4 left-4 w-16 h-16 md:w-20 md:h-20 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                      <span className="font-fredoka text-3xl md:text-4xl text-primary-foreground font-bold">
-                        {currentPage.letter}
-                      </span>
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
-                      <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
-                        <p className="font-fredoka text-base md:text-lg text-foreground leading-relaxed text-center">
-                          {currentPage.content}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Title and Climax pages */}
-                {(currentPage?.type === "title" || currentPage?.type === "frame-climax") && (
-                  <>
-                    <img
-                      src={getChildCharacter(personalization.gender, personalization.skinTone)}
-                      alt="Child character"
-                      className="absolute bottom-4 right-4 w-32 h-32 md:w-40 md:h-40 object-contain drop-shadow-xl"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
-                      <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
-                        <h1 className="font-fredoka text-2xl md:text-4xl text-primary text-center leading-tight">
-                          {currentPage.content}
-                        </h1>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Dedication page */}
-                {currentPage?.type === "dedication" && (
-                  <div className="absolute inset-0 flex items-center justify-center p-6 md:p-10">
-                    <div className="bg-background/90 backdrop-blur-sm rounded-2xl p-5 md:p-8 max-w-lg shadow-xl">
-                      <div className="font-fredoka text-base md:text-lg text-foreground text-center space-y-4">
-                        {currentPage.content.split('\n\n').map((paragraph, idx) => (
-                          <p key={idx} className="leading-relaxed">{paragraph}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handlePrevPage}
-                disabled={currentPageIndex === 0}
-                className="font-inter"
-              >
-                Previous Page
-              </Button>
-              <p className="font-inter text-sm text-muted-foreground">
-                Page {currentPageIndex + 1} of {book.length}
-              </p>
-              <Button
-                variant="outline"
-                onClick={handleNextPage}
-                disabled={currentPageIndex >= book.length - 1}
-                className="font-inter"
-              >
-                Next Page
-              </Button>
-            </div>
-          </div>
-
-          {/* Customization Form */}
-          <div className="space-y-4">
-            <h2 className="font-fredoka text-2xl md:text-3xl text-primary">Final Touches</h2>
-            <Card className="border-border shadow-lg">
-              <CardContent className="space-y-6 pt-6">
-                <div className="space-y-2">
-                  <Label htmlFor="from" className="font-inter text-foreground">
-                    From
-                  </Label>
-                  <Input
-                    id="from"
-                    placeholder="Who is this gift from?"
-                    value={fromField}
-                    onChange={(e) => setFromField(e.target.value)}
-                    className="font-inter"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="message" className="font-inter text-foreground">
-                    Personal Message (Dedication)
-                  </Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Write a special message for your child..."
-                    value={personalMessage}
-                    onChange={(e) => setPersonalMessage(e.target.value)}
-                    rows={5}
-                    className="font-inter resize-none"
-                  />
-                </div>
-
-                <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                  <h3 className="font-fredoka text-lg text-primary">Your Personalization</h3>
-                  <div className="font-inter text-sm space-y-1 text-foreground">
-                    <p><strong>Child's Name:</strong> {personalization.childName}</p>
-                    <p><strong>Gender:</strong> {personalization.gender === "boy" ? "Boy" : "Girl"}</p>
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleCheckout}
-                  className="w-full font-inter text-base py-6"
-                  size="lg"
-                >
-                  Proceed to Checkout
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Book Pages Grid - 1 column on mobile, 2 columns on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          {book.map((page, index) => renderPage(page, index))}
         </div>
       </div>
+
+      {/* Fixed Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border px-4 py-3 z-50">
+        <div className="container mx-auto flex items-center justify-center gap-3 md:gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setShowSpecsModal(true)}
+            className="font-inter flex-1 md:flex-none md:min-w-[120px]"
+          >
+            <Info className="w-4 h-4 mr-2" />
+            Specs
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setShowMessageModal(true)}
+            className="font-inter flex-1 md:flex-none md:min-w-[120px]"
+          >
+            <MessageSquare className="w-4 h-4 mr-2" />
+            Message
+          </Button>
+          <Button
+            onClick={handleCheckout}
+            className="font-inter flex-1 md:flex-none md:min-w-[140px]"
+          >
+            Proceed
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Specs Modal */}
+      <Dialog open={showSpecsModal} onOpenChange={setShowSpecsModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-fredoka text-xl text-primary">Book Specifications</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Child Character Preview */}
+            <div className="flex justify-center">
+              <img
+                src={getChildCharacter(personalization.gender, personalization.skinTone)}
+                alt="Child character"
+                className="w-24 h-24 object-contain drop-shadow-lg"
+              />
+            </div>
+            
+            {/* Info Items */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <User className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground font-inter">Child's Name</p>
+                  <p className="font-fredoka text-foreground">{personalization.childName}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground font-inter">Gender</p>
+                  <p className="font-fredoka text-foreground">{personalization.gender === "boy" ? "Boy" : "Girl"}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Palette className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground font-inter">Theme</p>
+                  <p className="font-fredoka text-foreground">{getThemeLabel(personalization.theme)}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Info className="w-5 h-5 text-primary" />
+                <div>
+                  <p className="text-xs text-muted-foreground font-inter">Total Pages</p>
+                  <p className="font-fredoka text-foreground">{book.length} pages</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowSpecsModal(false)} className="w-full font-inter">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Modal */}
+      <Dialog open={showMessageModal} onOpenChange={setShowMessageModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-fredoka text-xl text-primary">Add Your Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="from" className="font-inter text-foreground">
+                From
+              </Label>
+              <Input
+                id="from"
+                placeholder="Who is this gift from?"
+                value={fromField}
+                onChange={(e) => setFromField(e.target.value)}
+                className="font-inter"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="message" className="font-inter text-foreground">
+                Personal Message (Dedication)
+              </Label>
+              <Textarea
+                id="message"
+                placeholder="Write a special message for your child..."
+                value={personalMessage}
+                onChange={(e) => setPersonalMessage(e.target.value)}
+                rows={5}
+                className="font-inter resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowMessageModal(false)} className="w-full font-inter">
+              Save & Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
