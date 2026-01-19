@@ -1,40 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Story blocks for each letter
-const storyBlocks: Record<string, string> = {
-  A: "The A was with an Aardvark, digging up ants. 'It's for Awesome!' he said, 'Now, go on! Take a chance!'",
-  B: "A Big, Booming Baboon was balancing B. 'It's for Being so Brave! Now, take it from me!'",
-  C: "A Castle of clouds held the letter C high. 'It's for Caring!' a kind, clever pixie flew by.",
-  D: "A Dassie was Dozing, all snug on the D. 'It's for Dreaming,' he yawned, 'of all you can be!'",
-  E: "An Enormous Elephant, Ever-so-gentle and grand, held E in his trunk, right for your little hand.",
-  F: "A Fennec Fox, fluffy and Fast, hurried past. 'This F is for Faith! Hold it tight, make it last!'",
-  G: "A Giant Giraffe, with his head in the sky, was nibbling a cloud where the G drifted by.",
-  H: "A Happy-hippo-hero, named Harry-the-Brave, was using the H to make a big splashy wave!",
-  I: "An Impala was leaping, so nimble and high, 'This I is for Inspire! Like stars in the sky!'",
-  J: "A Jumping Jackal juggled the J with great glee. 'It's for Joy!' he yipped, 'It's the best thing to be!'",
-  K: "A Kingfisher, quick! with a click-clack-ka-cheer! dived down for the K and said, 'Keep Kindness right here!'",
-  L: "A Lazy Lion was Lounging on L. 'It's for Love,' he purred softly, 'and Living so well.'",
-  M: "A Marching Meerkat was holding the M. 'It's for Mercy!' he chirped, 'A most magical gem!'",
-  N: "A Nimble Nyala, stepped out from the trees. 'This N is for Nice! You're a breeze-on-a-breeze!'",
-  O: "An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'",
-  P: "A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'",
-  Q: "A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock.",
-  R: "A Resting Rhino was Resting, right on the R. 'It's for Respect!' he snorted, 'You'll surely go far!'",
-  S: "A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'",
-  T: "A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'",
-  U: "A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'",
-  V: "A Vervet monkey, with a voom and a vash, found the V in a Vine in a lightning-quick flash!",
-  W: "A Warthog was Wallowing, Watching the W. 'It's for Wonderful! Worthy! And Wise!'",
-  X: "An 'eXtra' special boX held the X just right. 'It's for eXtra Love! And eXtra bright light!'",
-  Y: "The Y was held by a hero, 'Mega-Yellow-Mongoose!' 'It's for YOU!' he announced, 'Now let's put it to use!'",
-  Z: "A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z!"
 };
 
 // Theme assignment based on gender and occurrence
@@ -80,8 +51,11 @@ interface OrderData {
 const PAGE_WIDTH = 524;
 const PAGE_HEIGHT = 595;
 
-// Helper to fetch image and determine its type
-async function fetchImage(url: string): Promise<{ bytes: Uint8Array; type: 'jpg' | 'png' } | null> {
+// App base URL for fetching images
+const APP_BASE_URL = "https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app";
+
+// Helper to fetch WebP image and convert to PNG bytes for pdf-lib
+async function fetchAndConvertImage(url: string): Promise<{ bytes: Uint8Array; type: 'png' } | null> {
   try {
     console.log("Fetching image:", url);
     const response = await fetch(url);
@@ -92,24 +66,31 @@ async function fetchImage(url: string): Promise<{ bytes: Uint8Array; type: 'jpg'
     const arrayBuffer = await response.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     
-    // Determine image type by checking magic bytes
-    // JPEG starts with FF D8 FF
-    // PNG starts with 89 50 4E 47
-    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
-      return { bytes, type: 'jpg' };
-    } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+    // Check if it's already a JPG or PNG
+    const isJpg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
+    
+    if (isPng) {
+      console.log("Image is already PNG:", url);
       return { bytes, type: 'png' };
     }
     
-    // Default to jpg for .jpg extension
-    if (url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg')) {
-      return { bytes, type: 'jpg' };
+    if (isJpg) {
+      // For JPG, we need to convert to PNG since we're using ImageScript
+      console.log("Converting JPG to PNG:", url);
+      const image = await Image.decode(bytes);
+      const pngBytes = await image.encode();
+      return { bytes: pngBytes, type: 'png' };
     }
     
-    console.error("Unknown image type for:", url);
-    return null;
+    // Assume WebP and convert to PNG using ImageScript
+    console.log("Converting WebP to PNG:", url);
+    const image = await Image.decode(bytes);
+    const pngBytes = await image.encode();
+    return { bytes: pngBytes, type: 'png' };
+    
   } catch (error) {
-    console.error("Error fetching image:", url, error);
+    console.error("Error fetching/converting image:", url, error);
     return null;
   }
 }
@@ -193,9 +174,6 @@ serve(async (req) => {
 
     const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    // Storage URL base for fetching images
-    const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
-
     // === TITLE PAGE ===
     const titlePage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
     titlePage.drawText(`${bookData.childName}'s`, {
@@ -220,67 +198,62 @@ serve(async (req) => {
       letterOccurrences.set(letter, occurrenceIndex + 1);
 
       const letterNum = letterToNumber(letter);
-      const storyText = storyBlocks[letter] || `The letter ${letter} appears in your name!`;
 
-      // Fetch letter image from storage
-      const imageUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.jpg`;
-      const imageData = await fetchImage(imageUrl);
+      // Fetch letter image from app assets (try .jpg first, then .webp)
+      let imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.jpg`;
+      let imageData = await fetchAndConvertImage(imageUrl);
+      
+      // If .jpg fails, try .webp
+      if (!imageData) {
+        imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.webp`;
+        imageData = await fetchAndConvertImage(imageUrl);
+      }
 
       const letterPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
 
       if (imageData) {
         try {
-          const image = imageData.type === 'jpg' 
-            ? await pdfDoc.embedJpg(imageData.bytes)
-            : await pdfDoc.embedPng(imageData.bytes);
+          const image = await pdfDoc.embedPng(imageData.bytes);
           
-          // Calculate dimensions to fit the page while maintaining aspect ratio
+          // Calculate dimensions to fit the page (full bleed)
           const imgDims = image.scale(1);
-          const scale = Math.min(
-            (PAGE_WIDTH - 40) / imgDims.width,
-            (PAGE_HEIGHT - 100) / imgDims.height
-          );
+          const scaleX = PAGE_WIDTH / imgDims.width;
+          const scaleY = PAGE_HEIGHT / imgDims.height;
+          const scale = Math.max(scaleX, scaleY); // Cover the page
+          
+          const scaledWidth = imgDims.width * scale;
+          const scaledHeight = imgDims.height * scale;
+          
+          // Center the image
+          const x = (PAGE_WIDTH - scaledWidth) / 2;
+          const y = (PAGE_HEIGHT - scaledHeight) / 2;
           
           letterPage.drawImage(image, {
-            x: 20,
-            y: 80,
-            width: imgDims.width * scale,
-            height: imgDims.height * scale,
+            x,
+            y,
+            width: scaledWidth,
+            height: scaledHeight,
           });
         } catch (embedError) {
           console.error("Error embedding image:", embedError);
           // Draw placeholder text if image fails
-          letterPage.drawText(`[Image: Letter ${letter}]`, {
-            x: PAGE_WIDTH / 2 - 50,
+          letterPage.drawText(`Letter ${letter}`, {
+            x: PAGE_WIDTH / 2 - 30,
             y: PAGE_HEIGHT / 2,
-            size: 16,
-            font,
-            color: rgb(0.5, 0.5, 0.5),
+            size: 48,
+            font: boldFont,
+            color: rgb(0.486, 0.227, 0.929),
           });
         }
       } else {
         // Draw placeholder if no image
-        letterPage.drawText(`[Image: Letter ${letter}]`, {
-          x: PAGE_WIDTH / 2 - 50,
+        letterPage.drawText(`Letter ${letter}`, {
+          x: PAGE_WIDTH / 2 - 30,
           y: PAGE_HEIGHT / 2,
-          size: 16,
-          font,
-          color: rgb(0.5, 0.5, 0.5),
+          size: 48,
+          font: boldFont,
+          color: rgb(0.486, 0.227, 0.929),
         });
-      }
-
-      // Add story text at bottom
-      const textLines = wrapText(storyText, PAGE_WIDTH - 40, 11);
-      let textY = 60;
-      for (const line of textLines) {
-        letterPage.drawText(line, {
-          x: 20,
-          y: textY,
-          size: 11,
-          font,
-          color: rgb(0.2, 0.2, 0.2),
-        });
-        textY -= 14;
       }
     }
 
