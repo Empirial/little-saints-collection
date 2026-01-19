@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -74,6 +75,68 @@ interface OrderData {
   book_data: BookData;
 }
 
+// Page dimensions in points (1 point = 1/72 inch)
+// 18.5cm x 21cm = ~524pt x 595pt
+const PAGE_WIDTH = 524;
+const PAGE_HEIGHT = 595;
+
+// Helper to fetch image and determine its type
+async function fetchImage(url: string): Promise<{ bytes: Uint8Array; type: 'jpg' | 'png' } | null> {
+  try {
+    console.log("Fetching image:", url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error("Failed to fetch image:", url, response.status);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    
+    // Determine image type by checking magic bytes
+    // JPEG starts with FF D8 FF
+    // PNG starts with 89 50 4E 47
+    if (bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+      return { bytes, type: 'jpg' };
+    } else if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47) {
+      return { bytes, type: 'png' };
+    }
+    
+    // Default to jpg for .jpg extension
+    if (url.toLowerCase().endsWith('.jpg') || url.toLowerCase().endsWith('.jpeg')) {
+      return { bytes, type: 'jpg' };
+    }
+    
+    console.error("Unknown image type for:", url);
+    return null;
+  } catch (error) {
+    console.error("Error fetching image:", url, error);
+    return null;
+  }
+}
+
+// Helper to wrap text into multiple lines
+function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  // Approximate characters per line based on font size and width
+  const avgCharWidth = fontSize * 0.5;
+  const maxCharsPerLine = Math.floor(maxWidth / avgCharWidth);
+  
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxCharsPerLine) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  
+  return lines;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -119,120 +182,203 @@ serve(async (req) => {
     console.log("Generating PDF for order:", order.order_number);
     console.log("Book data:", JSON.stringify(bookData));
 
-    // Build book structure
+    // Create PDF document
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+    // Build letter pages info
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
 
-    const pages: Array<{
-      type: string;
-      content: string;
-      letter?: string;
-      characterFolder?: string;
-      themeFolder?: string;
-      letterNum?: number;
-    }> = [];
+    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    // Title page
-    pages.push({
-      type: "title",
-      content: `${bookData.childName}'s Great Name Chase`
+    // Storage URL base for fetching images
+    const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
+
+    // === TITLE PAGE ===
+    const titlePage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    titlePage.drawText(`${bookData.childName}'s`, {
+      x: PAGE_WIDTH / 2 - (bookData.childName.length * 12),
+      y: PAGE_HEIGHT / 2 + 50,
+      size: 32,
+      font: boldFont,
+      color: rgb(0.486, 0.227, 0.929), // Purple
+    });
+    titlePage.drawText("Great Name Chase", {
+      x: PAGE_WIDTH / 2 - 100,
+      y: PAGE_HEIGHT / 2,
+      size: 28,
+      font: boldFont,
+      color: rgb(0.486, 0.227, 0.929),
     });
 
-    // Letter pages
+    // === LETTER PAGES ===
     for (const letter of letters) {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
       letterOccurrences.set(letter, occurrenceIndex + 1);
 
-      pages.push({
-        type: "letter",
-        content: storyBlocks[letter] || `The letter ${letter} appears in your name!`,
-        letter: letter,
-        characterFolder: getCharacterFolder(bookData.gender, bookData.skinTone),
-        themeFolder: theme,
-        letterNum: letterToNumber(letter)
+      const letterNum = letterToNumber(letter);
+      const storyText = storyBlocks[letter] || `The letter ${letter} appears in your name!`;
+
+      // Fetch letter image from storage
+      const imageUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.jpg`;
+      const imageData = await fetchImage(imageUrl);
+
+      const letterPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+
+      if (imageData) {
+        try {
+          const image = imageData.type === 'jpg' 
+            ? await pdfDoc.embedJpg(imageData.bytes)
+            : await pdfDoc.embedPng(imageData.bytes);
+          
+          // Calculate dimensions to fit the page while maintaining aspect ratio
+          const imgDims = image.scale(1);
+          const scale = Math.min(
+            (PAGE_WIDTH - 40) / imgDims.width,
+            (PAGE_HEIGHT - 100) / imgDims.height
+          );
+          
+          letterPage.drawImage(image, {
+            x: 20,
+            y: 80,
+            width: imgDims.width * scale,
+            height: imgDims.height * scale,
+          });
+        } catch (embedError) {
+          console.error("Error embedding image:", embedError);
+          // Draw placeholder text if image fails
+          letterPage.drawText(`[Image: Letter ${letter}]`, {
+            x: PAGE_WIDTH / 2 - 50,
+            y: PAGE_HEIGHT / 2,
+            size: 16,
+            font,
+            color: rgb(0.5, 0.5, 0.5),
+          });
+        }
+      } else {
+        // Draw placeholder if no image
+        letterPage.drawText(`[Image: Letter ${letter}]`, {
+          x: PAGE_WIDTH / 2 - 50,
+          y: PAGE_HEIGHT / 2,
+          size: 16,
+          font,
+          color: rgb(0.5, 0.5, 0.5),
+        });
+      }
+
+      // Add story text at bottom
+      const textLines = wrapText(storyText, PAGE_WIDTH - 40, 11);
+      let textY = 60;
+      for (const line of textLines) {
+        letterPage.drawText(line, {
+          x: 20,
+          y: textY,
+          size: 11,
+          font,
+          color: rgb(0.2, 0.2, 0.2),
+        });
+        textY -= 14;
+      }
+    }
+
+    // === CLIMAX PAGE ===
+    const climaxPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    const climaxText = `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize.`;
+    
+    climaxPage.drawText("The End of the Chase!", {
+      x: PAGE_WIDTH / 2 - 100,
+      y: PAGE_HEIGHT - 80,
+      size: 24,
+      font: boldFont,
+      color: rgb(0.486, 0.227, 0.929),
+    });
+
+    const climaxLines = wrapText(climaxText, PAGE_WIDTH - 60, 14);
+    let climaxY = PAGE_HEIGHT - 140;
+    for (const line of climaxLines) {
+      climaxPage.drawText(line, {
+        x: 30,
+        y: climaxY,
+        size: 14,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+      climaxY -= 20;
+    }
+
+    // === DEDICATION PAGE ===
+    const dedicationPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    
+    dedicationPage.drawText("With Love", {
+      x: PAGE_WIDTH / 2 - 50,
+      y: PAGE_HEIGHT - 100,
+      size: 24,
+      font: boldFont,
+      color: rgb(0.486, 0.227, 0.929),
+    });
+
+    let dedicationY = PAGE_HEIGHT - 160;
+    
+    dedicationPage.drawText(`To ${bookData.childName},`, {
+      x: 40,
+      y: dedicationY,
+      size: 16,
+      font: boldFont,
+      color: rgb(0.2, 0.2, 0.2),
+    });
+    dedicationY -= 30;
+
+    if (bookData.fromField) {
+      dedicationPage.drawText(`With love from ${bookData.fromField}`, {
+        x: 40,
+        y: dedicationY,
+        size: 14,
+        font,
+        color: rgb(0.2, 0.2, 0.2),
+      });
+      dedicationY -= 40;
+    }
+
+    if (bookData.personalMessage) {
+      const messageLines = wrapText(bookData.personalMessage, PAGE_WIDTH - 80, 12);
+      for (const line of messageLines) {
+        dedicationPage.drawText(line, {
+          x: 40,
+          y: dedicationY,
+          size: 12,
+          font,
+          color: rgb(0.3, 0.3, 0.3),
+        });
+        dedicationY -= 18;
+      }
+    } else {
+      dedicationPage.drawText("You are loved beyond measure.", {
+        x: 40,
+        y: dedicationY,
+        size: 12,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
       });
     }
 
-    // Climax page
-    pages.push({
-      type: "climax",
-      content: `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize.`
-    });
+    // Save PDF
+    const pdfBytes = await pdfDoc.save();
+    
+    // Convert to base64 for email attachment
+    // Using btoa with string conversion for Deno
+    let binary = '';
+    const len = pdfBytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(pdfBytes[i]);
+    }
+    const pdfBase64 = btoa(binary);
 
-    // Dedication page
-    pages.push({
-      type: "dedication",
-      content: `To ${bookData.childName}, with love${bookData.fromField ? ` from ${bookData.fromField}` : ''}.\n\n${bookData.personalMessage || 'You are loved beyond measure.'}`
-    });
+    console.log("PDF generated, size:", pdfBytes.byteLength, "bytes");
 
-    // Create email content with book details for printing
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-          h1 { color: #7c3aed; }
-          h2 { color: #6366f1; margin-top: 30px; }
-          .order-info { background: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
-          .page { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-          .page-header { font-weight: bold; color: #7c3aed; margin-bottom: 10px; }
-          .image-info { background: #fef3c7; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 12px; }
-          .spread-note { background: #dbeafe; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
-        </style>
-      </head>
-      <body>
-        <h1>📚 New Personalized Book Order</h1>
-        
-        <div class="order-info">
-          <p><strong>Order Number:</strong> ${order.order_number}</p>
-          <p><strong>Customer:</strong> ${order.customer_name}</p>
-          <p><strong>Email:</strong> ${order.customer_email}</p>
-          <p><strong>Child's Name:</strong> ${bookData.childName}</p>
-          <p><strong>Character:</strong> ${bookData.gender === 'boy' ? 'Boy' : 'Girl'} (${bookData.skinTone} skin tone)</p>
-          <p><strong>Total Pages:</strong> ${pages.length}</p>
-        </div>
-
-        <div class="spread-note">
-          <strong>📐 Print Specifications:</strong><br>
-          Each spread below should be printed at <strong>37cm × 21cm (landscape)</strong>.<br>
-          For final book assembly, cut each spread in half vertically to create two <strong>18.5cm × 21cm</strong> pages.
-        </div>
-
-        <h2>Book Pages</h2>
-        
-        ${pages.map((page, index) => {
-          let imageInfo = '';
-          if (page.type === 'letter' && page.characterFolder && page.themeFolder && page.letterNum) {
-            imageInfo = `
-              <div class="image-info">
-                <strong>Image Path:</strong> /personalization/${page.characterFolder}/${page.themeFolder}/${page.letterNum}.webp (or .jpg)<br>
-                Letter: ${page.letter} | Theme: ${page.themeFolder}
-              </div>
-            `;
-          }
-          
-          return `
-            <div class="page">
-              <div class="page-header">Page ${index + 1}: ${page.type.toUpperCase()}</div>
-              <p>${page.content.replace(/\n/g, '<br>')}</p>
-              ${imageInfo}
-            </div>
-          `;
-        }).join('')}
-
-        <h2>Dedication Message</h2>
-        <div class="page">
-          ${bookData.fromField ? `<p><strong>From:</strong> ${bookData.fromField}</p>` : ''}
-          <p>${bookData.personalMessage || 'You are loved beyond measure.'}</p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Send email via Brevo
+    // Send email via Brevo with PDF attachment
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -250,8 +396,21 @@ serve(async (req) => {
             name: "Production Team"
           }
         ],
-        subject: `📚 Book Order ${order.order_number} - ${bookData.childName}'s Great Name Chase`,
-        htmlContent: emailHtml
+        subject: `📚 Book Order ${order.order_number} - ${bookData.childName}'s Book PDF`,
+        htmlContent: `
+          <h2>New Personalized Book Order</h2>
+          <p><strong>Order Number:</strong> ${order.order_number}</p>
+          <p><strong>Customer:</strong> ${order.customer_name}</p>
+          <p><strong>Child's Name:</strong> ${bookData.childName}</p>
+          <p><strong>Character:</strong> ${bookData.gender === 'boy' ? 'Boy' : 'Girl'} (${bookData.skinTone} skin tone)</p>
+          <p>The personalized book PDF is attached to this email.</p>
+        `,
+        attachment: [
+          {
+            content: pdfBase64,
+            name: `${bookData.childName}-book-${order.order_number}.pdf`
+          }
+        ]
       })
     });
 
@@ -266,7 +425,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book details sent to production",
+        message: "Book PDF generated and sent",
         orderNumber: order.order_number
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
