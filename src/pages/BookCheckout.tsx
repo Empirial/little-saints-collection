@@ -99,13 +99,8 @@ const BookCheckout = () => {
         pageCount: personalization?.childName ? personalization.childName.replace(/[^a-zA-Z]/g, '').length + 3 : 0
       };
 
-      const { data, error } = await supabase.functions.invoke('create-book-checkout', {
+      const { data, error } = await supabase.functions.invoke('submit-book-order', {
         body: {
-          amount: total,
-          currency: "ZAR",
-          successUrl: `${window.location.origin}/payment-success`,
-          cancelUrl: `${window.location.origin}/payment-cancelled`,
-          failureUrl: `${window.location.origin}/payment-cancelled`,
           customerName: formData.name,
           customerEmail: formData.email,
           customerPhone: formData.phone,
@@ -120,21 +115,22 @@ const BookCheckout = () => {
 
       if (error) throw error;
 
-      if (data?.redirectUrl) {
-        // Store order details for thank you page
+      if (data?.success) {
+        // Store order details for success page
         sessionStorage.setItem('lastOrder', JSON.stringify({
           orderId: data.orderId,
+          orderNumber: data.orderNumber,
           customerName: formData.name,
           customerEmail: formData.email,
           total: total,
           bookData: bookData
         }));
         
-        window.location.href = data.redirectUrl;
+        navigate('/payment-success');
       }
     } catch (error) {
       console.error("Checkout error:", error);
-      toast.error("Failed to process checkout. Please try again.");
+      toast.error("Failed to submit order. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -333,11 +329,11 @@ const BookCheckout = () => {
                   size="lg"
                 >
                   {isLoading ? (
-                    <>Processing...</>
+                    <>Submitting...</>
                   ) : (
                     <>
                       <Package className="w-4 h-4 mr-2" />
-                      Pay R{(total / 100).toFixed(2)}
+                      Place Order
                     </>
                   )}
                 </Button>
