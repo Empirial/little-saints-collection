@@ -65,7 +65,7 @@ const PersonalizePreview = () => {
 
   const handleCheckout = () => {
     localStorage.setItem("customization", JSON.stringify({ fromField, personalMessage }));
-    navigate("/checkout");
+    navigate("/book-checkout");
   };
 
   if (!personalization) {

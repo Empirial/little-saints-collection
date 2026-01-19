@@ -14,6 +14,7 @@ import PaymentCancelled from "./pages/PaymentCancelled";
 import NotFound from "./pages/NotFound";
 import PersonalizeBook from "./pages/PersonalizeBook";
 import PersonalizePreview from "./pages/PersonalizePreview";
+import BookCheckout from "./pages/BookCheckout";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/cart" element={<Cart />} />
             <Route path="/personalize-book" element={<PersonalizeBook />} />
             <Route path="/personalize-preview" element={<PersonalizePreview />} />
+            <Route path="/book-checkout" element={<BookCheckout />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
