@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       orders: {
         Row: {
+          book_data: Json | null
           created_at: string | null
           customer_email: string
           customer_name: string
@@ -26,6 +27,7 @@ export type Database = {
           id: string
           order_notes: string | null
           order_number: string | null
+          order_type: string
           paid_at: string | null
           status: string
           subtotal: number
@@ -35,6 +37,7 @@ export type Database = {
           yoco_payment_id: string | null
         }
         Insert: {
+          book_data?: Json | null
           created_at?: string | null
           customer_email: string
           customer_name: string
@@ -45,6 +48,7 @@ export type Database = {
           id?: string
           order_notes?: string | null
           order_number?: string | null
+          order_type?: string
           paid_at?: string | null
           status?: string
           subtotal: number
@@ -54,6 +58,7 @@ export type Database = {
           yoco_payment_id?: string | null
         }
         Update: {
+          book_data?: Json | null
           created_at?: string | null
           customer_email?: string
           customer_name?: string
@@ -64,6 +69,7 @@ export type Database = {
           id?: string
           order_notes?: string | null
           order_number?: string | null
+          order_type?: string
           paid_at?: string | null
           status?: string
           subtotal?: number

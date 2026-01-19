@@ -220,6 +220,32 @@ serve(async (req) => {
         } else {
           console.log('Order updated successfully:', order);
 
+          // Check if this is a book order and trigger PDF generation
+          if (order.order_type === 'book') {
+            console.log('Book order detected, triggering PDF generation...');
+            try {
+              const supabaseFunctionsUrl = supabaseUrl.replace('.supabase.co', '.supabase.co/functions/v1');
+              const pdfResponse = await fetch(`${supabaseFunctionsUrl}/generate-book-pdf`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${supabaseServiceKey}`
+                },
+                body: JSON.stringify({ orderId: order.id })
+              });
+
+              if (!pdfResponse.ok) {
+                const pdfError = await pdfResponse.text();
+                console.error('PDF generation failed:', pdfError);
+              } else {
+                const pdfResult = await pdfResponse.json();
+                console.log('PDF generation triggered:', pdfResult);
+              }
+            } catch (pdfError) {
+              console.error('Error triggering PDF generation:', pdfError);
+            }
+          }
+
           // Send customer confirmation email via Brevo
           const emailSent = await sendOrderConfirmationEmail(order);
           console.log('Customer email sent:', emailSent);
