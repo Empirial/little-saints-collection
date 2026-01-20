@@ -1,14 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
-import { Image } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Theme assignment based on gender and occurrence
+// Theme assignment based on gender and occurrence (preserved for future use)
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   const boyThemes = ['Superherotheme', 'Wildanimaltheme', 'Fairytaletheme'];
   const girlThemes = ['Fairytaletheme', 'Superherotheme', 'Wildanimaltheme'];
@@ -27,17 +26,13 @@ const getCharacterFolder = (gender: string, skinTone: string): string => {
 // Map character + theme to actual storage folder names
 const getStorageFolder = (characterFolder: string, theme: string): string => {
   const folderMap: Record<string, string> = {
-    // Whiteboy folders
     'whiteboy_Wildanimaltheme': 'WildanimalthemeWB',
     'whiteboy_Superherotheme': 'SuperherothemeWB',
     'whiteboy_Fairytaletheme': 'FairytalethemeWB',
-    // Add more mappings as you upload:
-    // 'whitegirl_Fairytaletheme': 'FairytalethemeWG',
-    // 'Blackboy_Superherotheme': 'SuperherothemeBB',
   };
   
   const key = `${characterFolder}_${theme}`;
-  return folderMap[key] || 'WildanimalthemeWB'; // Default fallback
+  return folderMap[key] || 'WildanimalthemeWB';
 };
 
 // Convert letter to number (A=1, B=2, etc.)
@@ -54,31 +49,17 @@ interface BookData {
   pageCount?: number;
 }
 
-interface OrderData {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  customer_email: string;
-  book_data: BookData;
-}
+// A4 Landscape with bleed: full spread dimensions
+// 37cm x 21cm spread = 1049pt x 595pt (1cm = 28.35pt)
+const SPREAD_WIDTH = 1049;
+const SPREAD_HEIGHT = 595;
 
-// A4 Landscape is 297x210mm.
-// 10mm bleed on each side means the total canvas is 317x230mm.
-// In points (1mm = 2.83465pt):
-// 317mm = 898.58pt
-// 230mm = 651.97pt
-const PAGE_WIDTH = 898.58;
-const PAGE_HEIGHT = 651.97;
-
-// Supabase Storage base URL for fetching images (set dynamically in serve)
-
-// Helper to fetch image and split it in half
-async function fetchAndSplitImage(url: string, fallbackUrl?: string): Promise<{ left: Uint8Array; right: Uint8Array } | null> {
+// Helper to fetch image as bytes (no splitting - full spread)
+async function fetchImage(url: string, fallbackUrl?: string): Promise<Uint8Array | null> {
   try {
-    console.log("Fetching image for splitting:", url);
+    console.log("Fetching image:", url);
     let response = await fetch(url);
     
-    // Try fallback URL if primary fails
     if (!response.ok && fallbackUrl) {
       console.log("Primary URL failed, trying fallback:", fallbackUrl);
       response = await fetch(fallbackUrl);
@@ -88,24 +69,11 @@ async function fetchAndSplitImage(url: string, fallbackUrl?: string): Promise<{ 
       console.error("Failed to fetch image:", url, response.status);
       return null;
     }
+    
     const arrayBuffer = await response.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    
-    const image = await Image.decode(bytes);
-    const width = image.width;
-    const height = image.height;
-    
-    // Split image in half
-    const leftHalf = image.crop(0, 0, Math.floor(width / 2), height);
-    const rightHalf = image.crop(Math.floor(width / 2), 0, Math.ceil(width / 2), height);
-    
-    const leftBytes = await leftHalf.encode();
-    const rightBytes = await rightHalf.encode();
-    
-    return { left: leftBytes, right: rightBytes };
-    
+    return new Uint8Array(arrayBuffer);
   } catch (error) {
-    console.error("Error fetching/splitting image:", url, error);
+    console.error("Error fetching image:", url, error);
     return null;
   }
 }
@@ -160,8 +128,6 @@ serve(async (req) => {
     // Build letter pages info
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
-    // Temporary: Force whiteboy character until other assets are uploaded
-    const characterFolder = 'whiteboy'; // was: getCharacterFolder(bookData.gender, bookData.skinTone)
 
     // === LETTER PAGES ===
     // Temporary: Use only WildanimalthemeWB until other theme folders are uploaded
@@ -170,8 +136,6 @@ serve(async (req) => {
     
     for (const letter of letters) {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      // Theme logic preserved for future use when more folders are uploaded
-      // const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
       letterOccurrences.set(letter, occurrenceIndex + 1);
 
       const letterNum = letterToNumber(letter);
@@ -180,31 +144,31 @@ serve(async (req) => {
       const imageUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.jpg`;
       const fallbackUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.webp`;
       
-      const splitData = await fetchAndSplitImage(imageUrl, fallbackUrl);
+      const imageBytes = await fetchImage(imageUrl, fallbackUrl);
 
-      if (splitData) {
+      if (imageBytes) {
         try {
-          // Add Left Page
-          const leftPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-          const leftImage = await pdfDoc.embedPng(splitData.left);
-          leftPage.drawImage(leftImage, {
+          // Add full spread as single page (no splitting to save CPU)
+          const page = pdfDoc.addPage([SPREAD_WIDTH, SPREAD_HEIGHT]);
+          
+          // Detect image type and embed accordingly
+          let embeddedImage;
+          if (imageUrl.endsWith('.jpg') || imageUrl.endsWith('.jpeg')) {
+            embeddedImage = await pdfDoc.embedJpg(imageBytes);
+          } else {
+            embeddedImage = await pdfDoc.embedPng(imageBytes);
+          }
+          
+          page.drawImage(embeddedImage, {
             x: 0,
             y: 0,
-            width: PAGE_WIDTH,
-            height: PAGE_HEIGHT,
+            width: SPREAD_WIDTH,
+            height: SPREAD_HEIGHT,
           });
-
-          // Add Right Page
-          const rightPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-          const rightImage = await pdfDoc.embedPng(splitData.right);
-          rightPage.drawImage(rightImage, {
-            x: 0,
-            y: 0,
-            width: PAGE_WIDTH,
-            height: PAGE_HEIGHT,
-          });
+          
+          console.log("Added spread for letter:", letter);
         } catch (embedError) {
-          console.error("Error embedding image:", embedError);
+          console.error("Error embedding image for letter:", letter, embedError);
         }
       } else {
         console.error("Could not fetch image for letter:", letter);
