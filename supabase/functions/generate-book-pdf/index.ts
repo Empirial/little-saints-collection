@@ -1,35 +1,24 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
-import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Frontend app URL where assets are served
-const APP_BASE_URL = "https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app";
-
 // Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
-  const boyThemes = ['Superherotheme', 'Wildanimaltheme', 'Fairytaletheme'];
-  const girlThemes = ['Fairytaletheme', 'Superherotheme', 'Wildanimaltheme'];
+  const boyThemes = ['Superhero', 'Wild Animal', 'Fairytale'];
+  const girlThemes = ['Fairytale', 'Superhero', 'Wild Animal'];
   const themes = gender === 'boy' ? boyThemes : girlThemes;
   return themes[occurrenceIndex % 3];
 };
 
-// Character folder mapping
-const getCharacterFolder = (gender: string, skinTone: string): string => {
-  if (gender === 'boy') {
-    return skinTone === 'dark' ? 'Blackboy' : 'whiteboy';
-  }
-  return skinTone === 'dark' ? 'Blackgirl' : 'whitegirl';
-};
-
-// Convert letter to number (A=1, B=2, etc.)
-const letterToNumber = (letter: string): number => {
-  return letter.toUpperCase().charCodeAt(0) - 64;
+// Character description
+const getCharacterDescription = (gender: string, skinTone: string): string => {
+  const genderLabel = gender === 'boy' ? 'Boy' : 'Girl';
+  const skinLabel = skinTone === 'dark' ? 'Dark skin' : 'Light skin';
+  return `${genderLabel} (${skinLabel})`;
 };
 
 interface BookData {
@@ -39,36 +28,6 @@ interface BookData {
   fromField?: string;
   personalMessage?: string;
   pageCount?: number;
-}
-
-// A4 Landscape dimensions in points (595pt x 842pt for standard A4 landscape)
-const PAGE_WIDTH = 842;
-const PAGE_HEIGHT = 595;
-
-// Helper to fetch image and convert WebP to PNG bytes for pdf-lib
-async function fetchAndConvertImage(url: string): Promise<Uint8Array | null> {
-  try {
-    console.log("Fetching image:", url);
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      console.error("Failed to fetch image:", url, response.status);
-      return null;
-    }
-    
-    const arrayBuffer = await response.arrayBuffer();
-    const imageBytes = new Uint8Array(arrayBuffer);
-    
-    // Use imagescript to decode WebP and encode as PNG
-    const image = await Image.decode(imageBytes);
-    const pngBytes = await image.encode();
-    
-    console.log("Converted image to PNG, size:", pngBytes.length, "bytes");
-    return pngBytes;
-  } catch (error) {
-    console.error("Error fetching/converting image:", url, error);
-    return null;
-  }
 }
 
 serve(async (req) => {
@@ -113,93 +72,30 @@ serve(async (req) => {
       throw new Error("No book data found for this order");
     }
 
-    console.log("Generating PDF for order:", order.order_number);
-    console.log("Book data:", JSON.stringify(bookData));
+    console.log("Processing book order:", order.order_number);
 
-    // Create PDF document
-    const pdfDoc = await PDFDocument.create();
-
-    // Get character folder based on gender and skin tone
-    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
-    console.log("Character folder:", characterFolder);
-
-    // Build letter pages info
+    // Build letter breakdown with themes
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
-
-    // Process each letter
-    for (const letter of letters) {
+    
+    const letterBreakdown = letters.map((letter) => {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       letterOccurrences.set(letter, occurrenceIndex + 1);
-
-      // Get theme based on occurrence and gender
       const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
-      const letterNum = letterToNumber(letter);
+      const letterNum = letter.charCodeAt(0) - 64;
+      return `<tr>
+        <td style="padding: 8px; border: 1px solid #ddd;">${letter}</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${letterNum}.webp</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${theme}</td>
+      </tr>`;
+    }).join('');
 
-      // Build URL to frontend asset
-      const imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.webp`;
-      console.log("Fetching letter", letter, "from:", imageUrl);
+    // Character folder for asset reference
+    const characterFolder = bookData.gender === 'boy' 
+      ? (bookData.skinTone === 'dark' ? 'Blackboy' : 'whiteboy')
+      : (bookData.skinTone === 'dark' ? 'Blackgirl' : 'whitegirl');
 
-      const pngBytes = await fetchAndConvertImage(imageUrl);
-
-      if (pngBytes) {
-        try {
-          // Add page for this letter
-          const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-          
-          // Embed PNG image
-          const embeddedImage = await pdfDoc.embedPng(pngBytes);
-          
-          // Scale image to fit page while maintaining aspect ratio
-          const imgAspect = embeddedImage.width / embeddedImage.height;
-          const pageAspect = PAGE_WIDTH / PAGE_HEIGHT;
-          
-          let drawWidth, drawHeight, drawX, drawY;
-          
-          if (imgAspect > pageAspect) {
-            // Image is wider than page
-            drawWidth = PAGE_WIDTH;
-            drawHeight = PAGE_WIDTH / imgAspect;
-            drawX = 0;
-            drawY = (PAGE_HEIGHT - drawHeight) / 2;
-          } else {
-            // Image is taller than page
-            drawHeight = PAGE_HEIGHT;
-            drawWidth = PAGE_HEIGHT * imgAspect;
-            drawX = (PAGE_WIDTH - drawWidth) / 2;
-            drawY = 0;
-          }
-          
-          page.drawImage(embeddedImage, {
-            x: drawX,
-            y: drawY,
-            width: drawWidth,
-            height: drawHeight,
-          });
-          
-          console.log("Added page for letter:", letter, "theme:", theme);
-        } catch (embedError) {
-          console.error("Error embedding image for letter:", letter, embedError);
-        }
-      } else {
-        console.error("Could not fetch image for letter:", letter);
-      }
-    }
-
-    // Save PDF
-    const pdfBytes = await pdfDoc.save();
-    
-    // Convert to base64 for email attachment
-    let binary = '';
-    const len = pdfBytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(pdfBytes[i]);
-    }
-    const pdfBase64 = btoa(binary);
-
-    console.log("PDF generated, size:", pdfBytes.byteLength, "bytes");
-
-    // Send email via Brevo with PDF attachment
+    // Send detailed email with all production info
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -217,24 +113,62 @@ serve(async (req) => {
             name: "Production Team"
           }
         ],
-        subject: `📚 Book Order ${order.order_number} - ${bookData.childName}'s Book PDF`,
+        subject: `📚 Book Order ${order.order_number} - ${bookData.childName}'s Book`,
         htmlContent: `
-          <h2>New Personalized Book Order</h2>
-          <p><strong>Order Number:</strong> ${order.order_number}</p>
-          <p><strong>Customer:</strong> ${order.customer_name}</p>
-          <p><strong>Child's Name:</strong> ${bookData.childName}</p>
-          <p><strong>Character:</strong> ${bookData.gender === 'boy' ? 'Boy' : 'Girl'} (${bookData.skinTone} skin tone)</p>
-          <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
-          <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
-          <hr/>
-          <p>The personalized book PDF is attached. Each letter page uses the appropriate theme rotation.</p>
-        `,
-        attachment: [
-          {
-            content: pdfBase64,
-            name: `${bookData.childName}-book-${order.order_number}.pdf`
-          }
-        ]
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #333; border-bottom: 2px solid #5c4d9a; padding-bottom: 10px;">
+              📚 New Personalized Book Order
+            </h1>
+            
+            <div style="background: #f8f8f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0; color: #5c4d9a;">Order Details</h2>
+              <p><strong>Order Number:</strong> ${order.order_number}</p>
+              <p><strong>Customer:</strong> ${order.customer_name}</p>
+              <p><strong>Email:</strong> ${order.customer_email}</p>
+              <p><strong>Phone:</strong> ${order.customer_phone}</p>
+              <p><strong>Delivery:</strong> ${order.delivery_method} - ${order.delivery_address}</p>
+            </div>
+
+            <div style="background: #fff8e6; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f5a623;">
+              <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
+              <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
+              <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
+              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">src/assets/personalization/${characterFolder}/</code></p>
+              <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
+              <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
+            </div>
+
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0; color: #2e7d32;">Letter Pages (${letters.length} pages)</h2>
+              <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #2e7d32; color: white;">
+                    <th style="padding: 8px; border: 1px solid #ddd;">Letter</th>
+                    <th style="padding: 8px; border: 1px solid #ddd;">Image File</th>
+                    <th style="padding: 8px; border: 1px solid #ddd;">Theme</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${letterBreakdown}
+                </tbody>
+              </table>
+            </div>
+
+            <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0; color: #1565c0;">Theme Folder Mapping</h2>
+              <p>Use these folders for each theme:</p>
+              <ul>
+                <li><strong>Superhero:</strong> <code>${characterFolder}/Superherotheme/</code></li>
+                <li><strong>Wild Animal:</strong> <code>${characterFolder}/Wildanimaltheme/</code></li>
+                <li><strong>Fairytale:</strong> <code>${characterFolder}/Fairytaletheme/</code></li>
+              </ul>
+            </div>
+
+            <p style="color: #666; font-size: 12px; margin-top: 30px;">
+              Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
+            </p>
+          </div>
+        `
       })
     });
 
@@ -244,12 +178,12 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
-    console.log("Book PDF email sent successfully for order:", order.order_number);
+    console.log("Book order email sent successfully for order:", order.order_number);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book PDF generated and sent",
+        message: "Book order details sent to production",
         orderNumber: order.order_number
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
