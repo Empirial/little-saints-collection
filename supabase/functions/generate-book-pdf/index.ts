@@ -164,16 +164,19 @@ serve(async (req) => {
     const characterFolder = 'whiteboy'; // was: getCharacterFolder(bookData.gender, bookData.skinTone)
 
     // === LETTER PAGES ===
+    // Temporary: Use only WildanimalthemeWB until other theme folders are uploaded
+    const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
+    const storageFolder = 'WildanimalthemeWB'; // Hardcoded until more folders exist
+    
     for (const letter of letters) {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
+      // Theme logic preserved for future use when more folders are uploaded
+      // const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
       letterOccurrences.set(letter, occurrenceIndex + 1);
 
       const letterNum = letterToNumber(letter);
 
-      // Fetch letter image from Supabase Storage using mapped folder name
-      const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
-      const storageFolder = getStorageFolder(characterFolder, theme);
+      // Fetch letter image from Supabase Storage
       const imageUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.jpg`;
       const fallbackUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.webp`;
       
