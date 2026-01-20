@@ -54,14 +54,20 @@ interface OrderData {
 const PAGE_WIDTH = 898.58;
 const PAGE_HEIGHT = 651.97;
 
-// App base URL for fetching images
-const APP_BASE_URL = "https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app";
+// Supabase Storage base URL for fetching images (set dynamically in serve)
 
 // Helper to fetch image and split it in half
-async function fetchAndSplitImage(url: string): Promise<{ left: Uint8Array; right: Uint8Array } | null> {
+async function fetchAndSplitImage(url: string, fallbackUrl?: string): Promise<{ left: Uint8Array; right: Uint8Array } | null> {
   try {
     console.log("Fetching image for splitting:", url);
-    const response = await fetch(url);
+    let response = await fetch(url);
+    
+    // Try fallback URL if primary fails
+    if (!response.ok && fallbackUrl) {
+      console.log("Primary URL failed, trying fallback:", fallbackUrl);
+      response = await fetch(fallbackUrl);
+    }
+    
     if (!response.ok) {
       console.error("Failed to fetch image:", url, response.status);
       return null;
@@ -148,15 +154,12 @@ serve(async (req) => {
 
       const letterNum = letterToNumber(letter);
 
-      // Fetch letter image from app assets (try .jpg first, then .webp)
-      let imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.jpg`;
-      let splitData = await fetchAndSplitImage(imageUrl);
+      // Fetch letter image from Supabase Storage
+      const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
+      const imageUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.jpg`;
+      const fallbackUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.webp`;
       
-      // If .jpg fails, try .webp
-      if (!splitData) {
-        imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.webp`;
-        splitData = await fetchAndSplitImage(imageUrl);
-      }
+      const splitData = await fetchAndSplitImage(imageUrl, fallbackUrl);
 
       if (splitData) {
         try {
