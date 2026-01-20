@@ -1,13 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Theme assignment based on gender and occurrence (preserved for future use)
+// Frontend app URL where assets are served
+const APP_BASE_URL = "https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app";
+
+// Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   const boyThemes = ['Superherotheme', 'Wildanimaltheme', 'Fairytaletheme'];
   const girlThemes = ['Fairytaletheme', 'Superherotheme', 'Wildanimaltheme'];
@@ -15,24 +19,12 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   return themes[occurrenceIndex % 3];
 };
 
-// Character folder mapping (currently unused - hardcoded to whiteboy)
+// Character folder mapping
 const getCharacterFolder = (gender: string, skinTone: string): string => {
   if (gender === 'boy') {
     return skinTone === 'dark' ? 'Blackboy' : 'whiteboy';
   }
   return skinTone === 'dark' ? 'Blackgirl' : 'whitegirl';
-};
-
-// Map character + theme to actual storage folder names
-const getStorageFolder = (characterFolder: string, theme: string): string => {
-  const folderMap: Record<string, string> = {
-    'whiteboy_Wildanimaltheme': 'WildanimalthemeWB',
-    'whiteboy_Superherotheme': 'SuperherothemeWB',
-    'whiteboy_Fairytaletheme': 'FairytalethemeWB',
-  };
-  
-  const key = `${characterFolder}_${theme}`;
-  return folderMap[key] || 'WildanimalthemeWB';
 };
 
 // Convert letter to number (A=1, B=2, etc.)
@@ -49,21 +41,15 @@ interface BookData {
   pageCount?: number;
 }
 
-// A4 Landscape with bleed: full spread dimensions
-// 37cm x 21cm spread = 1049pt x 595pt (1cm = 28.35pt)
-const SPREAD_WIDTH = 1049;
-const SPREAD_HEIGHT = 595;
+// A4 Landscape dimensions in points (595pt x 842pt for standard A4 landscape)
+const PAGE_WIDTH = 842;
+const PAGE_HEIGHT = 595;
 
-// Helper to fetch image as bytes (no splitting - full spread)
-async function fetchImage(url: string, fallbackUrl?: string): Promise<Uint8Array | null> {
+// Helper to fetch image and convert WebP to PNG bytes for pdf-lib
+async function fetchAndConvertImage(url: string): Promise<Uint8Array | null> {
   try {
     console.log("Fetching image:", url);
-    let response = await fetch(url);
-    
-    if (!response.ok && fallbackUrl) {
-      console.log("Primary URL failed, trying fallback:", fallbackUrl);
-      response = await fetch(fallbackUrl);
-    }
+    const response = await fetch(url);
     
     if (!response.ok) {
       console.error("Failed to fetch image:", url, response.status);
@@ -71,9 +57,16 @@ async function fetchImage(url: string, fallbackUrl?: string): Promise<Uint8Array
     }
     
     const arrayBuffer = await response.arrayBuffer();
-    return new Uint8Array(arrayBuffer);
+    const imageBytes = new Uint8Array(arrayBuffer);
+    
+    // Use imagescript to decode WebP and encode as PNG
+    const image = await Image.decode(imageBytes);
+    const pngBytes = await image.encode();
+    
+    console.log("Converted image to PNG, size:", pngBytes.length, "bytes");
+    return pngBytes;
   } catch (error) {
-    console.error("Error fetching image:", url, error);
+    console.error("Error fetching/converting image:", url, error);
     return null;
   }
 }
@@ -121,52 +114,70 @@ serve(async (req) => {
     }
 
     console.log("Generating PDF for order:", order.order_number);
+    console.log("Book data:", JSON.stringify(bookData));
 
     // Create PDF document
     const pdfDoc = await PDFDocument.create();
+
+    // Get character folder based on gender and skin tone
+    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
+    console.log("Character folder:", characterFolder);
 
     // Build letter pages info
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
 
-    // === LETTER PAGES ===
-    // Temporary: Use only WildanimalthemeWB until other theme folders are uploaded
-    const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
-    const storageFolder = 'WildanimalthemeWB'; // Hardcoded until more folders exist
-    
+    // Process each letter
     for (const letter of letters) {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       letterOccurrences.set(letter, occurrenceIndex + 1);
 
+      // Get theme based on occurrence and gender
+      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
       const letterNum = letterToNumber(letter);
 
-      // Fetch letter image from Supabase Storage
-      const imageUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.jpg`;
-      const fallbackUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.webp`;
-      
-      const imageBytes = await fetchImage(imageUrl, fallbackUrl);
+      // Build URL to frontend asset
+      const imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.webp`;
+      console.log("Fetching letter", letter, "from:", imageUrl);
 
-      if (imageBytes) {
+      const pngBytes = await fetchAndConvertImage(imageUrl);
+
+      if (pngBytes) {
         try {
-          // Add full spread as single page (no splitting to save CPU)
-          const page = pdfDoc.addPage([SPREAD_WIDTH, SPREAD_HEIGHT]);
+          // Add page for this letter
+          const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
           
-          // Detect image type and embed accordingly
-          let embeddedImage;
-          if (imageUrl.endsWith('.jpg') || imageUrl.endsWith('.jpeg')) {
-            embeddedImage = await pdfDoc.embedJpg(imageBytes);
+          // Embed PNG image
+          const embeddedImage = await pdfDoc.embedPng(pngBytes);
+          
+          // Scale image to fit page while maintaining aspect ratio
+          const imgAspect = embeddedImage.width / embeddedImage.height;
+          const pageAspect = PAGE_WIDTH / PAGE_HEIGHT;
+          
+          let drawWidth, drawHeight, drawX, drawY;
+          
+          if (imgAspect > pageAspect) {
+            // Image is wider than page
+            drawWidth = PAGE_WIDTH;
+            drawHeight = PAGE_WIDTH / imgAspect;
+            drawX = 0;
+            drawY = (PAGE_HEIGHT - drawHeight) / 2;
           } else {
-            embeddedImage = await pdfDoc.embedPng(imageBytes);
+            // Image is taller than page
+            drawHeight = PAGE_HEIGHT;
+            drawWidth = PAGE_HEIGHT * imgAspect;
+            drawX = (PAGE_WIDTH - drawWidth) / 2;
+            drawY = 0;
           }
           
           page.drawImage(embeddedImage, {
-            x: 0,
-            y: 0,
-            width: SPREAD_WIDTH,
-            height: SPREAD_HEIGHT,
+            x: drawX,
+            y: drawY,
+            width: drawWidth,
+            height: drawHeight,
           });
           
-          console.log("Added spread for letter:", letter);
+          console.log("Added page for letter:", letter, "theme:", theme);
         } catch (embedError) {
           console.error("Error embedding image for letter:", letter, embedError);
         }
@@ -213,7 +224,10 @@ serve(async (req) => {
           <p><strong>Customer:</strong> ${order.customer_name}</p>
           <p><strong>Child's Name:</strong> ${bookData.childName}</p>
           <p><strong>Character:</strong> ${bookData.gender === 'boy' ? 'Boy' : 'Girl'} (${bookData.skinTone} skin tone)</p>
-          <p>The personalized book PDF is attached to this email. It is formatted in A4 landscape with 10mm bleed, with images split into single pages.</p>
+          <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
+          <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
+          <hr/>
+          <p>The personalized book PDF is attached. Each letter page uses the appropriate theme rotation.</p>
         `,
         attachment: [
           {
