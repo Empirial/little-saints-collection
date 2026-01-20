@@ -46,18 +46,21 @@ interface OrderData {
   book_data: BookData;
 }
 
-// Page dimensions in points (1 point = 1/72 inch)
-// 18.5cm x 21cm = ~524pt x 595pt
-const PAGE_WIDTH = 524;
-const PAGE_HEIGHT = 595;
+// A4 Landscape is 297x210mm.
+// 10mm bleed on each side means the total canvas is 317x230mm.
+// In points (1mm = 2.83465pt):
+// 317mm = 898.58pt
+// 230mm = 651.97pt
+const PAGE_WIDTH = 898.58;
+const PAGE_HEIGHT = 651.97;
 
 // App base URL for fetching images
 const APP_BASE_URL = "https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app";
 
-// Helper to fetch WebP image and convert to PNG bytes for pdf-lib
-async function fetchAndConvertImage(url: string): Promise<{ bytes: Uint8Array; type: 'png' } | null> {
+// Helper to fetch image and split it in half
+async function fetchAndSplitImage(url: string): Promise<{ left: Uint8Array; right: Uint8Array } | null> {
   try {
-    console.log("Fetching image:", url);
+    console.log("Fetching image for splitting:", url);
     const response = await fetch(url);
     if (!response.ok) {
       console.error("Failed to fetch image:", url, response.status);
@@ -66,56 +69,23 @@ async function fetchAndConvertImage(url: string): Promise<{ bytes: Uint8Array; t
     const arrayBuffer = await response.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     
-    // Check if it's already a JPG or PNG
-    const isJpg = bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
-    const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47;
-    
-    if (isPng) {
-      console.log("Image is already PNG:", url);
-      return { bytes, type: 'png' };
-    }
-    
-    if (isJpg) {
-      // For JPG, we need to convert to PNG since we're using ImageScript
-      console.log("Converting JPG to PNG:", url);
-      const image = await Image.decode(bytes);
-      const pngBytes = await image.encode();
-      return { bytes: pngBytes, type: 'png' };
-    }
-    
-    // Assume WebP and convert to PNG using ImageScript
-    console.log("Converting WebP to PNG:", url);
     const image = await Image.decode(bytes);
-    const pngBytes = await image.encode();
-    return { bytes: pngBytes, type: 'png' };
+    const width = image.width;
+    const height = image.height;
+    
+    // Split image in half
+    const leftHalf = image.crop(0, 0, Math.floor(width / 2), height);
+    const rightHalf = image.crop(Math.floor(width / 2), 0, Math.ceil(width / 2), height);
+    
+    const leftBytes = await leftHalf.encode();
+    const rightBytes = await rightHalf.encode();
+    
+    return { left: leftBytes, right: rightBytes };
     
   } catch (error) {
-    console.error("Error fetching/converting image:", url, error);
+    console.error("Error fetching/splitting image:", url, error);
     return null;
   }
-}
-
-// Helper to wrap text into multiple lines
-function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
-  const words = text.split(' ');
-  const lines: string[] = [];
-  let currentLine = '';
-  
-  // Approximate characters per line based on font size and width
-  const avgCharWidth = fontSize * 0.5;
-  const maxCharsPerLine = Math.floor(maxWidth / avgCharWidth);
-  
-  for (const word of words) {
-    if (currentLine.length + word.length + 1 <= maxCharsPerLine) {
-      currentLine += (currentLine ? ' ' : '') + word;
-    } else {
-      if (currentLine) lines.push(currentLine);
-      currentLine = word;
-    }
-  }
-  if (currentLine) lines.push(currentLine);
-  
-  return lines;
 }
 
 serve(async (req) => {
@@ -161,35 +131,14 @@ serve(async (req) => {
     }
 
     console.log("Generating PDF for order:", order.order_number);
-    console.log("Book data:", JSON.stringify(bookData));
 
     // Create PDF document
     const pdfDoc = await PDFDocument.create();
-    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     // Build letter pages info
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
-
     const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
-
-    // === TITLE PAGE ===
-    const titlePage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    titlePage.drawText(`${bookData.childName}'s`, {
-      x: PAGE_WIDTH / 2 - (bookData.childName.length * 12),
-      y: PAGE_HEIGHT / 2 + 50,
-      size: 32,
-      font: boldFont,
-      color: rgb(0.486, 0.227, 0.929), // Purple
-    });
-    titlePage.drawText("Great Name Chase", {
-      x: PAGE_WIDTH / 2 - 100,
-      y: PAGE_HEIGHT / 2,
-      size: 28,
-      font: boldFont,
-      color: rgb(0.486, 0.227, 0.929),
-    });
 
     // === LETTER PAGES ===
     for (const letter of letters) {
@@ -201,147 +150,47 @@ serve(async (req) => {
 
       // Fetch letter image from app assets (try .jpg first, then .webp)
       let imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.jpg`;
-      let imageData = await fetchAndConvertImage(imageUrl);
+      let splitData = await fetchAndSplitImage(imageUrl);
       
       // If .jpg fails, try .webp
-      if (!imageData) {
+      if (!splitData) {
         imageUrl = `${APP_BASE_URL}/src/assets/personalization/${characterFolder}/${theme}/${letterNum}.webp`;
-        imageData = await fetchAndConvertImage(imageUrl);
+        splitData = await fetchAndSplitImage(imageUrl);
       }
 
-      const letterPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-
-      if (imageData) {
+      if (splitData) {
         try {
-          const image = await pdfDoc.embedPng(imageData.bytes);
-          
-          // Calculate dimensions to fit the page (full bleed)
-          const imgDims = image.scale(1);
-          const scaleX = PAGE_WIDTH / imgDims.width;
-          const scaleY = PAGE_HEIGHT / imgDims.height;
-          const scale = Math.max(scaleX, scaleY); // Cover the page
-          
-          const scaledWidth = imgDims.width * scale;
-          const scaledHeight = imgDims.height * scale;
-          
-          // Center the image
-          const x = (PAGE_WIDTH - scaledWidth) / 2;
-          const y = (PAGE_HEIGHT - scaledHeight) / 2;
-          
-          letterPage.drawImage(image, {
-            x,
-            y,
-            width: scaledWidth,
-            height: scaledHeight,
+          // Add Left Page
+          const leftPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          const leftImage = await pdfDoc.embedPng(splitData.left);
+          leftPage.drawImage(leftImage, {
+            x: 0,
+            y: 0,
+            width: PAGE_WIDTH,
+            height: PAGE_HEIGHT,
+          });
+
+          // Add Right Page
+          const rightPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          const rightImage = await pdfDoc.embedPng(splitData.right);
+          rightPage.drawImage(rightImage, {
+            x: 0,
+            y: 0,
+            width: PAGE_WIDTH,
+            height: PAGE_HEIGHT,
           });
         } catch (embedError) {
           console.error("Error embedding image:", embedError);
-          // Draw placeholder text if image fails
-          letterPage.drawText(`Letter ${letter}`, {
-            x: PAGE_WIDTH / 2 - 30,
-            y: PAGE_HEIGHT / 2,
-            size: 48,
-            font: boldFont,
-            color: rgb(0.486, 0.227, 0.929),
-          });
         }
       } else {
-        // Draw placeholder if no image
-        letterPage.drawText(`Letter ${letter}`, {
-          x: PAGE_WIDTH / 2 - 30,
-          y: PAGE_HEIGHT / 2,
-          size: 48,
-          font: boldFont,
-          color: rgb(0.486, 0.227, 0.929),
-        });
+        console.error("Could not fetch image for letter:", letter);
       }
-    }
-
-    // === CLIMAX PAGE ===
-    const climaxPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    const climaxText = `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize.`;
-    
-    climaxPage.drawText("The End of the Chase!", {
-      x: PAGE_WIDTH / 2 - 100,
-      y: PAGE_HEIGHT - 80,
-      size: 24,
-      font: boldFont,
-      color: rgb(0.486, 0.227, 0.929),
-    });
-
-    const climaxLines = wrapText(climaxText, PAGE_WIDTH - 60, 14);
-    let climaxY = PAGE_HEIGHT - 140;
-    for (const line of climaxLines) {
-      climaxPage.drawText(line, {
-        x: 30,
-        y: climaxY,
-        size: 14,
-        font,
-        color: rgb(0.2, 0.2, 0.2),
-      });
-      climaxY -= 20;
-    }
-
-    // === DEDICATION PAGE ===
-    const dedicationPage = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    
-    dedicationPage.drawText("With Love", {
-      x: PAGE_WIDTH / 2 - 50,
-      y: PAGE_HEIGHT - 100,
-      size: 24,
-      font: boldFont,
-      color: rgb(0.486, 0.227, 0.929),
-    });
-
-    let dedicationY = PAGE_HEIGHT - 160;
-    
-    dedicationPage.drawText(`To ${bookData.childName},`, {
-      x: 40,
-      y: dedicationY,
-      size: 16,
-      font: boldFont,
-      color: rgb(0.2, 0.2, 0.2),
-    });
-    dedicationY -= 30;
-
-    if (bookData.fromField) {
-      dedicationPage.drawText(`With love from ${bookData.fromField}`, {
-        x: 40,
-        y: dedicationY,
-        size: 14,
-        font,
-        color: rgb(0.2, 0.2, 0.2),
-      });
-      dedicationY -= 40;
-    }
-
-    if (bookData.personalMessage) {
-      const messageLines = wrapText(bookData.personalMessage, PAGE_WIDTH - 80, 12);
-      for (const line of messageLines) {
-        dedicationPage.drawText(line, {
-          x: 40,
-          y: dedicationY,
-          size: 12,
-          font,
-          color: rgb(0.3, 0.3, 0.3),
-        });
-        dedicationY -= 18;
-      }
-    } else {
-      dedicationPage.drawText("You are loved beyond measure.", {
-        x: 40,
-        y: dedicationY,
-        size: 12,
-        font,
-        color: rgb(0.3, 0.3, 0.3),
-      });
     }
 
     // Save PDF
     const pdfBytes = await pdfDoc.save();
     
     // Convert to base64 for email attachment
-    // Using btoa with string conversion for Deno
     let binary = '';
     const len = pdfBytes.byteLength;
     for (let i = 0; i < len; i++) {
@@ -376,7 +225,7 @@ serve(async (req) => {
           <p><strong>Customer:</strong> ${order.customer_name}</p>
           <p><strong>Child's Name:</strong> ${bookData.childName}</p>
           <p><strong>Character:</strong> ${bookData.gender === 'boy' ? 'Boy' : 'Girl'} (${bookData.skinTone} skin tone)</p>
-          <p>The personalized book PDF is attached to this email.</p>
+          <p>The personalized book PDF is attached to this email. It is formatted in A4 landscape with 10mm bleed, with images split into single pages.</p>
         `,
         attachment: [
           {
