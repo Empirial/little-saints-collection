@@ -16,12 +16,28 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   return themes[occurrenceIndex % 3];
 };
 
-// Character folder mapping
+// Character folder mapping (currently unused - hardcoded to whiteboy)
 const getCharacterFolder = (gender: string, skinTone: string): string => {
   if (gender === 'boy') {
     return skinTone === 'dark' ? 'Blackboy' : 'whiteboy';
   }
   return skinTone === 'dark' ? 'Blackgirl' : 'whitegirl';
+};
+
+// Map character + theme to actual storage folder names
+const getStorageFolder = (characterFolder: string, theme: string): string => {
+  const folderMap: Record<string, string> = {
+    // Whiteboy folders
+    'whiteboy_Wildanimaltheme': 'WildanimalthemeWB',
+    'whiteboy_Superherotheme': 'SuperherothemeWB',
+    'whiteboy_Fairytaletheme': 'FairytalethemeWB',
+    // Add more mappings as you upload:
+    // 'whitegirl_Fairytaletheme': 'FairytalethemeWG',
+    // 'Blackboy_Superherotheme': 'SuperherothemeBB',
+  };
+  
+  const key = `${characterFolder}_${theme}`;
+  return folderMap[key] || 'WildanimalthemeWB'; // Default fallback
 };
 
 // Convert letter to number (A=1, B=2, etc.)
@@ -144,7 +160,8 @@ serve(async (req) => {
     // Build letter pages info
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
-    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
+    // Temporary: Force whiteboy character until other assets are uploaded
+    const characterFolder = 'whiteboy'; // was: getCharacterFolder(bookData.gender, bookData.skinTone)
 
     // === LETTER PAGES ===
     for (const letter of letters) {
@@ -154,10 +171,11 @@ serve(async (req) => {
 
       const letterNum = letterToNumber(letter);
 
-      // Fetch letter image from Supabase Storage
+      // Fetch letter image from Supabase Storage using mapped folder name
       const storageBaseUrl = `${SUPABASE_URL}/storage/v1/object/public/book-assets`;
-      const imageUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.jpg`;
-      const fallbackUrl = `${storageBaseUrl}/${characterFolder}/${theme}/${letterNum}.webp`;
+      const storageFolder = getStorageFolder(characterFolder, theme);
+      const imageUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.jpg`;
+      const fallbackUrl = `${storageBaseUrl}/${storageFolder}/${letterNum}.webp`;
       
       const splitData = await fetchAndSplitImage(imageUrl, fallbackUrl);
 
