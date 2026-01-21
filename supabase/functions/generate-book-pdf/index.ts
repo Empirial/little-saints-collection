@@ -18,7 +18,7 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   return themes[occurrenceIndex % 3];
 };
 
-// Get character folder based on gender and skin tone - matches storage folder names
+// Get character folder based on gender and skin tone - matches storage folder structure
 const getCharacterFolder = (gender: string, skinTone: string): string => {
   if (gender === 'boy') {
     return skinTone === 'dark' ? 'Blackboy' : 'Whiteboy';
@@ -113,14 +113,24 @@ serve(async (req) => {
       const themeFolder = getThemeFolder(theme);
       const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
       
-      // Storage path: {character}/{theme}/{letterNum}.jpg
+      // Storage URL: bucket/{character}/{theme}/{letterNum}.jpg
       const imageUrl = `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
       console.log(`Fetching image: ${imageUrl}`);
       
       try {
         const imageResponse = await fetch(imageUrl);
+        const contentType = imageResponse.headers.get('content-type');
+        console.log(`Response for ${letter}: status=${imageResponse.status}, content-type=${contentType}`);
+        
         if (!imageResponse.ok) {
           console.error(`Failed to fetch image for letter ${letter}: ${imageResponse.status}`);
+          continue;
+        }
+        
+        // Check if response is actually an image
+        if (!contentType || !contentType.includes('image')) {
+          const textPreview = await imageResponse.text();
+          console.error(`Got non-image response for ${letter}: ${textPreview.substring(0, 200)}`);
           continue;
         }
         
