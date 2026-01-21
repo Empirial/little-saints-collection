@@ -215,22 +215,7 @@ serve(async (req) => {
     
     console.log(`PDF generated with ${pdfDoc.getPageCount()} pages`);
 
-    // Reset letter occurrences for email breakdown
-    letterOccurrences.clear();
-    
-    const letterBreakdown = letters.map((letter) => {
-      const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      letterOccurrences.set(letter, occurrenceIndex + 1);
-      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
-      const letterNum = letter.charCodeAt(0) - 64;
-      return `<tr>
-        <td style="padding: 8px; border: 1px solid #ddd;">${letter}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${letterNum}.jpg</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${theme}</td>
-      </tr>`;
-    }).join('');
-
-    // Send detailed email with PDF attachment
+    // Send production email with PDF attachment
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -248,11 +233,11 @@ serve(async (req) => {
             name: "Production Team"
           }
         ],
-        subject: `📚 Book Order ${order.order_number} - ${bookData.childName}'s Book`,
+        subject: `Book Order ${order.order_number} - ${bookData.childName}'s Book`,
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #333; border-bottom: 2px solid #5c4d9a; padding-bottom: 10px;">
-              📚 New Personalized Book Order
+            <h1 style="color: #5c4d9a; border-bottom: 2px solid #5c4d9a; padding-bottom: 10px;">
+              New Personalized Book Order
             </h1>
             
             <div style="background: #f8f8f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
@@ -261,48 +246,17 @@ serve(async (req) => {
               <p><strong>Customer:</strong> ${order.customer_name}</p>
               <p><strong>Email:</strong> ${order.customer_email}</p>
               <p><strong>Phone:</strong> ${order.customer_phone}</p>
-              <p><strong>Delivery:</strong> ${order.delivery_method} - ${order.delivery_address}</p>
+              <p><strong>Delivery:</strong> ${order.delivery_method}</p>
+              <p><strong>Address:</strong> ${order.delivery_address}</p>
             </div>
 
             <div style="background: #fff8e6; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f5a623;">
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">${characterFolder}/</code></p>
+              <p><strong>Total Pages:</strong> ${pdfDoc.getPageCount()} pages</p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
-              <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
-            </div>
-
-            <div style="background: #fce4ec; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #c2185b;">📖 Book Structure</h2>
-              <ul style="margin: 0; padding-left: 20px;">
-                <li><strong>Cover:</strong> 1 spread (front + back)</li>
-                <li><strong>Intro:</strong> 2 spreads (4 pages)</li>
-                <li><strong>Letter Pages:</strong> ${letters.length} spreads (${letters.length * 2} pages)</li>
-                <li><strong>Ending:</strong> 2 spreads (4 pages)</li>
-                <li><strong>Total:</strong> ${pdfDoc.getPageCount()} pages</li>
-              </ul>
-            </div>
-
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #2e7d32;">Letter Pages (${letters.length} spreads)</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                  <tr style="background: #2e7d32; color: white;">
-                    <th style="padding: 8px; border: 1px solid #ddd;">Letter</th>
-                    <th style="padding: 8px; border: 1px solid #ddd;">Image File</th>
-                    <th style="padding: 8px; border: 1px solid #ddd;">Theme</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${letterBreakdown}
-                </tbody>
-              </table>
-            </div>
-
-            <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #1565c0;">📎 PDF Attached</h2>
-              <p>The generated book PDF is attached to this email.</p>
+              ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
             </div>
 
             <p style="color: #666; font-size: 12px; margin-top: 30px;">
