@@ -52,6 +52,60 @@ interface BookData {
   pageCount?: number;
 }
 
+// Helper function to fetch and embed a spread image, splitting it into two PDF pages
+async function embedSpreadImage(
+  pdfDoc: PDFDocument, 
+  imageUrl: string, 
+  label: string
+): Promise<boolean> {
+  try {
+    console.log(`Fetching ${label}: ${imageUrl}`);
+    const imageResponse = await fetch(imageUrl);
+    const contentType = imageResponse.headers.get('content-type');
+    
+    if (!imageResponse.ok) {
+      console.error(`Failed to fetch ${label}: ${imageResponse.status}`);
+      return false;
+    }
+    
+    if (!contentType || !contentType.includes('image')) {
+      const textPreview = await imageResponse.text();
+      console.error(`Got non-image response for ${label}: ${textPreview.substring(0, 200)}`);
+      return false;
+    }
+    
+    const imageBytes = await imageResponse.arrayBuffer();
+    const jpgImage = await pdfDoc.embedJpg(imageBytes);
+    
+    const { width, height } = jpgImage.scale(1);
+    const halfWidth = width / 2;
+    
+    // Left page of spread
+    const leftPage = pdfDoc.addPage([halfWidth, height]);
+    leftPage.drawImage(jpgImage, {
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+    });
+    
+    // Right page of spread
+    const rightPage = pdfDoc.addPage([halfWidth, height]);
+    rightPage.drawImage(jpgImage, {
+      x: -halfWidth,
+      y: 0,
+      width: width,
+      height: height,
+    });
+    
+    console.log(`Added 2 pages for ${label} (split spread)`);
+    return true;
+  } catch (error) {
+    console.error(`Error processing ${label}:`, error);
+    return false;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -105,6 +159,25 @@ serve(async (req) => {
     console.log("Starting PDF generation...");
     const pdfDoc = await PDFDocument.create();
 
+    // ============ 1. COVER PAGE ============
+    // Cover spread: left = back cover, right = front cover
+    // We add it at the start, but the RIGHT side is the front cover (first visible page)
+    const coverUrl = `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`;
+    const coverSuccess = await embedSpreadImage(pdfDoc, coverUrl, "Cover");
+    if (!coverSuccess) {
+      console.warn("Cover image not found, continuing without cover");
+    }
+
+    // ============ 2. INTRO PAGES ============
+    // Intro page 1
+    const intro1Url = `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`;
+    await embedSpreadImage(pdfDoc, intro1Url, "Intro 1");
+
+    // Intro page 2
+    const intro2Url = `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`;
+    await embedSpreadImage(pdfDoc, intro2Url, "Intro 2");
+
+    // ============ 3. LETTER PAGES ============
     for (const letter of letters) {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       letterOccurrences.set(letter, occurrenceIndex + 1);
@@ -113,57 +186,18 @@ serve(async (req) => {
       const themeFolder = getThemeFolder(theme);
       const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
       
-      // Storage URL: bucket/{character}/{theme}/{letterNum}.jpg
       const imageUrl = `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
-      console.log(`Fetching image: ${imageUrl}`);
-      
-      try {
-        const imageResponse = await fetch(imageUrl);
-        const contentType = imageResponse.headers.get('content-type');
-        console.log(`Response for ${letter}: status=${imageResponse.status}, content-type=${contentType}`);
-        
-        if (!imageResponse.ok) {
-          console.error(`Failed to fetch image for letter ${letter}: ${imageResponse.status}`);
-          continue;
-        }
-        
-        // Check if response is actually an image
-        if (!contentType || !contentType.includes('image')) {
-          const textPreview = await imageResponse.text();
-          console.error(`Got non-image response for ${letter}: ${textPreview.substring(0, 200)}`);
-          continue;
-        }
-        
-        const imageBytes = await imageResponse.arrayBuffer();
-        const jpgImage = await pdfDoc.embedJpg(imageBytes);
-        
-        // Get original image dimensions
-        const { width, height } = jpgImage.scale(1);
-        const halfWidth = width / 2;
-        
-        // Page 1: Left half of the spread (landscape orientation)
-        const page1 = pdfDoc.addPage([halfWidth, height]);
-        page1.drawImage(jpgImage, {
-          x: 0,
-          y: 0,
-          width: width,
-          height: height,
-        });
-        
-        // Page 2: Right half of the spread (landscape orientation)
-        const page2 = pdfDoc.addPage([halfWidth, height]);
-        page2.drawImage(jpgImage, {
-          x: -halfWidth,  // Shift image left to show right half
-          y: 0,
-          width: width,
-          height: height,
-        });
-        
-        console.log(`Added 2 pages for letter ${letter} with theme ${theme} (split spread)`);
-      } catch (imageError) {
-        console.error(`Error processing image for letter ${letter}:`, imageError);
-      }
+      await embedSpreadImage(pdfDoc, imageUrl, `Letter ${letter}`);
     }
+
+    // ============ 4. ENDING PAGES ============
+    // Ending page 1
+    const ending1Url = `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`;
+    await embedSpreadImage(pdfDoc, ending1Url, "Ending 1");
+
+    // Ending page 2
+    const ending2Url = `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`;
+    await embedSpreadImage(pdfDoc, ending2Url, "Ending 2");
 
     const pdfBytes = await pdfDoc.save();
 
@@ -234,13 +268,24 @@ serve(async (req) => {
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">personalizationjpg/${characterFolder}/</code></p>
+              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">${characterFolder}/</code></p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
               <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
             </div>
 
+            <div style="background: #fce4ec; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h2 style="margin-top: 0; color: #c2185b;">📖 Book Structure</h2>
+              <ul style="margin: 0; padding-left: 20px;">
+                <li><strong>Cover:</strong> 1 spread (front + back)</li>
+                <li><strong>Intro:</strong> 2 spreads (4 pages)</li>
+                <li><strong>Letter Pages:</strong> ${letters.length} spreads (${letters.length * 2} pages)</li>
+                <li><strong>Ending:</strong> 2 spreads (4 pages)</li>
+                <li><strong>Total:</strong> ${pdfDoc.getPageCount()} pages</li>
+              </ul>
+            </div>
+
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #2e7d32;">Letter Pages (${letters.length} pages)</h2>
+              <h2 style="margin-top: 0; color: #2e7d32;">Letter Pages (${letters.length} spreads)</h2>
               <table style="width: 100%; border-collapse: collapse;">
                 <thead>
                   <tr style="background: #2e7d32; color: white;">

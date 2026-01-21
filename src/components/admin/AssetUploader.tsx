@@ -7,7 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface AssetUploaderProps {
   character: string;
-  theme: string;
+  folder: string;
+  folderType: "special" | "theme";
+  expectedFileCount: number;
   onComplete: () => void;
 }
 
@@ -17,7 +19,7 @@ interface FileUploadStatus {
   error?: string;
 }
 
-const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => {
+const AssetUploader = ({ character, folder, folderType, expectedFileCount, onComplete }: AssetUploaderProps) => {
   const { toast } = useToast();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
@@ -26,10 +28,32 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const validateFileName = (name: string): boolean => {
-    const match = name.match(/^(\d+)\.jpg$/i);
+    const lowerName = name.toLowerCase();
+    
+    // For Cover folder, expect "cover.jpg"
+    if (folder === "Cover") {
+      return lowerName === "cover.jpg";
+    }
+    
+    // For Intro and Ending folders, expect "1.jpg" or "2.jpg"
+    if (folder === "Intro" || folder === "Ending") {
+      const match = lowerName.match(/^(\d+)\.jpg$/);
+      if (!match) return false;
+      const num = parseInt(match[1], 10);
+      return num >= 1 && num <= 2;
+    }
+    
+    // For theme folders, expect "1.jpg" to "26.jpg"
+    const match = lowerName.match(/^(\d+)\.jpg$/);
     if (!match) return false;
     const num = parseInt(match[1], 10);
     return num >= 1 && num <= 26;
+  };
+
+  const getExpectedFileNames = (): string => {
+    if (folder === "Cover") return "cover.jpg";
+    if (folder === "Intro" || folder === "Ending") return "1.jpg, 2.jpg";
+    return "1.jpg to 26.jpg";
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -53,7 +77,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
     if (droppedFiles.length === 0) {
       toast({
         title: "Invalid files",
-        description: "Please drop JPG files named 1.jpg to 26.jpg",
+        description: `Please drop JPG files named ${getExpectedFileNames()}`,
         variant: "destructive",
       });
       return;
@@ -63,7 +87,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
     setUploadStatuses(
       droppedFiles.map((f) => ({ name: f.name, status: "pending" }))
     );
-  }, [toast]);
+  }, [toast, folder]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -75,7 +99,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
     if (selectedFiles.length === 0) {
       toast({
         title: "Invalid files",
-        description: "Please select JPG files named 1.jpg to 26.jpg",
+        description: `Please select JPG files named ${getExpectedFileNames()}`,
         variant: "destructive",
       });
       return;
@@ -85,7 +109,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
     setUploadStatuses(
       selectedFiles.map((f) => ({ name: f.name, status: "pending" }))
     );
-  }, [toast]);
+  }, [toast, folder]);
 
   const uploadFiles = async () => {
     if (files.length === 0) return;
@@ -98,7 +122,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const filePath = `${character}/${theme}/${file.name.toLowerCase()}`;
+      const filePath = `${character}/${folder}/${file.name.toLowerCase()}`;
 
       setUploadStatuses((prev) =>
         prev.map((s) =>
@@ -137,7 +161,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
     const successCount = uploadStatuses.filter(s => s.status === "success").length + 1;
     toast({
       title: "Upload complete",
-      description: `${successCount} files uploaded to ${character}/${theme}`,
+      description: `${successCount} files uploaded to ${character}/${folder}`,
     });
 
     setTimeout(() => {
@@ -166,7 +190,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
           Drag and drop JPG files here, or click to select
         </p>
         <p className="text-xs text-muted-foreground mb-4">
-          Files should be named 1.jpg to 26.jpg
+          Expected files: <strong>{getExpectedFileNames()}</strong>
         </p>
         <input
           type="file"
@@ -188,7 +212,7 @@ const AssetUploader = ({ character, theme, onComplete }: AssetUploaderProps) => 
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
-              {files.length} files selected
+              {files.length} files selected (expecting {expectedFileCount})
             </span>
             <Button
               onClick={uploadFiles}
