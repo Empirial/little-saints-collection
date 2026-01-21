@@ -231,6 +231,10 @@ serve(async (req) => {
           {
             email: "mphelalufuno1.0@gmail.com",
             name: "Production Team"
+          },
+          {
+            email: "cateramaboea12@gmail.com",
+            name: "Production Team"
           }
         ],
         subject: `Book Order ${order.order_number} - ${bookData.childName}'s Book`,
