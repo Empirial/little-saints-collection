@@ -125,18 +125,29 @@ serve(async (req) => {
         const imageBytes = await imageResponse.arrayBuffer();
         const jpgImage = await pdfDoc.embedJpg(imageBytes);
         
-        // Create page with image dimensions (or standard page size)
+        // Get original image dimensions
         const { width, height } = jpgImage.scale(1);
-        const page = pdfDoc.addPage([width, height]);
+        const halfWidth = width / 2;
         
-        page.drawImage(jpgImage, {
+        // Page 1: Left half of the spread (landscape orientation)
+        const page1 = pdfDoc.addPage([halfWidth, height]);
+        page1.drawImage(jpgImage, {
           x: 0,
           y: 0,
           width: width,
           height: height,
         });
         
-        console.log(`Added page for letter ${letter} with theme ${theme}`);
+        // Page 2: Right half of the spread (landscape orientation)
+        const page2 = pdfDoc.addPage([halfWidth, height]);
+        page2.drawImage(jpgImage, {
+          x: -halfWidth,  // Shift image left to show right half
+          y: 0,
+          width: width,
+          height: height,
+        });
+        
+        console.log(`Added 2 pages for letter ${letter} with theme ${theme} (split spread)`);
       } catch (imageError) {
         console.error(`Error processing image for letter ${letter}:`, imageError);
       }
