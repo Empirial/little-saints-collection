@@ -72,40 +72,10 @@ const PersonalizePreview = () => {
     return null;
   }
 
-  // A-Z Story-Block Engine
-  const storyBlocks: Record<string, string[]> = {
-    A: ["The A was with an Aardvark, digging up ants. 'It's for Awesome!' he said, 'Now, go on! Take a chance!'"],
-    B: ["A Big, Booming Baboon was balancing B. 'It's for Being so Brave! Now, take it from me!'"],
-    C: ["A Castle of clouds held the letter C high. 'It's for Caring!' a kind, clever pixie flew by."],
-    D: ["A Dassie was Dozing, all snug on the D. 'It's for Dreaming,' he yawned, 'of all you can be!'"],
-    E: ["An Enormous Elephant, Ever-so-gentle and grand, held E in his trunk, right for your little hand."],
-    F: ["A Fennec Fox, fluffy and Fast, hurried past. 'This F is for Faith! Hold it tight, make it last!'"],
-    G: ["A Giant Giraffe, with his head in the sky, was nibbling a cloud where the G drifted by."],
-    H: ["A Happy-hippo-hero, named Harry-the-Brave, was using the H to make a big splashy wave!"],
-    I: ["An Impala was leaping, so nimble and high, 'This I is for Inspire! Like stars in the sky!'"],
-    J: ["A Jumping Jackal juggled the J with great glee. 'It's for Joy!' he yipped, 'It's the best thing to be!'"],
-    K: ["A Kingfisher, quick! with a click-clack-ka-cheer! dived down for the K and said, 'Keep Kindness right here!'"],
-    L: ["A Lazy Lion was Lounging on L. 'It's for Love,' he purred softly, 'and Living so well.'"],
-    M: ["A Marching Meerkat was holding the M. 'It's for Mercy!' he chirped, 'A most magical gem!'"],
-    N: ["A Nimble Nyala, stepped out from the trees. 'This N is for Nice! You're a breeze-on-a-breeze!'"],
-    O: ["An Ostrich, so tall, peeked his head from the ground. 'This O is for Open! To all that's around!'"],
-    P: ["A Pangolin, covered in plates, held the P. 'It's for Patience,' he mumbled, 'as all grown-ups should be.'"],
-    Q: ["A Quiet Quelea (a small finch) in a flock found the Q on a Quiver tree, high on a rock."],
-    R: ["A Resting Rhino was Resting, right on the R. 'It's for Respect!' he snorted, 'You'll surely go far!'"],
-    S: ["A Springbok was Sleeping right under the S. 'It's for Strong!' he awoke, 'and for Saying your \"Yes!\"'"],
-    T: ["A Tortoise, so slow, was Trudging on T. 'It's for Thoughtful,' he mused, 'and Taking-your-time, you see.'"],
-    U: ["A Uni-Zebra (a Unicorn, it's true!) was guarding the U and said, 'It's for Unique-You!'"],
-    V: ["A Vervet monkey, with a voom and a vash, found the V in a Vine in a lightning-quick flash!"],
-    W: ["A Warthog was Wallowing, Watching the W. 'It's for Wonderful! Worthy! And Wise!'"],
-    X: ["An 'eXtra' special boX held the X just right. 'It's for eXtra Love! And eXtra bright light!'"],
-    Y: ["The Y was held by a hero, 'Mega-Yellow-Mongoose!' 'It's for YOU!' he announced, 'Now let's put it to use!'"],
-    Z: ["A Zebra, all Zig-Zagged and Zippy, you see, was Zooming right past with the letter Z!"]
-  };
-
   // Build the book pages with automatic theme assignment
   const buildBook = (name: string, gender: string, skinTone: string) => {
     const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
-    const pages: Array<{ type: string; content: string; letter?: string; image?: string }> = [];
+    const pages: Array<{ type: string; content?: string; letter?: string; image?: string }> = [];
     
     // Track letter occurrences for theme cycling
     const letterOccurrences: Map<string, number> = new Map();
@@ -118,30 +88,26 @@ const PersonalizePreview = () => {
 
     // Letter pages with dynamically themed illustrations
     letters.forEach((letter) => {
-      const options = storyBlocks[letter];
-      if (options && options.length > 0) {
-        // Get current occurrence count for this letter
-        const occurrenceIndex = letterOccurrences.get(letter) || 0;
-        
-        // Get theme based on gender and occurrence
-        const theme = getThemeForLetter(occurrenceIndex, gender);
-        
-        // Increment occurrence count for this letter
-        letterOccurrences.set(letter, occurrenceIndex + 1);
-        
-        const letterImage = getLetterImage(
-          gender as 'boy' | 'girl',
-          skinTone as 'light' | 'dark',
-          theme,
-          letter
-        );
-        pages.push({
-          type: "letter",
-          content: options[0],
-          letter: letter,
-          image: letterImage
-        });
-      }
+      // Get current occurrence count for this letter
+      const occurrenceIndex = letterOccurrences.get(letter) || 0;
+      
+      // Get theme based on gender and occurrence
+      const theme = getThemeForLetter(occurrenceIndex, gender);
+      
+      // Increment occurrence count for this letter
+      letterOccurrences.set(letter, occurrenceIndex + 1);
+      
+      const letterImage = getLetterImage(
+        gender as 'boy' | 'girl',
+        skinTone as 'light' | 'dark',
+        theme,
+        letter
+      );
+      pages.push({
+        type: "letter",
+        letter: letter,
+        image: letterImage
+      });
     });
 
     // Climax
@@ -194,22 +160,13 @@ const PersonalizePreview = () => {
           />
         )}
 
-        {/* Letter Page without illustration (fallback) */}
+        {/* Letter Page without illustration (fallback placeholder) */}
         {page.type === "letter" && !page.image && (
-          <>
-            <div className="absolute top-3 left-3 w-12 h-12 md:w-14 md:h-14 bg-primary rounded-full flex items-center justify-center shadow-lg">
-              <span className="font-fredoka text-2xl md:text-3xl text-primary-foreground font-bold">
-                {page.letter}
-              </span>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
-              <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
-                <p className="font-fredoka text-sm md:text-base text-foreground leading-relaxed text-center">
-                  {page.content}
-                </p>
-              </div>
-            </div>
-          </>
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <span className="font-fredoka text-4xl text-muted-foreground">
+              {page.letter}
+            </span>
+          </div>
         )}
 
         {/* Title and Climax pages */}
