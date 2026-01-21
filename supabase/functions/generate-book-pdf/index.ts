@@ -7,7 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const APP_BASE_URL = 'https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app';
+// Supabase Storage public URL for book-assets bucket
+const STORAGE_URL = 'https://udaudwkblphataokaexq.supabase.co/storage/v1/object/public/book-assets';
 
 // Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
@@ -17,15 +18,15 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   return themes[occurrenceIndex % 3];
 };
 
-// Get character folder based on gender and skin tone
+// Get character folder based on gender and skin tone - matches storage folder names
 const getCharacterFolder = (gender: string, skinTone: string): string => {
   if (gender === 'boy') {
-    return skinTone === 'dark' ? 'Blackboy' : 'whiteboy';
+    return skinTone === 'dark' ? 'Blackboy' : 'Whiteboy';
   }
-  return skinTone === 'dark' ? 'Blackgirl' : 'whitegirl';
+  return skinTone === 'dark' ? 'Blackgirl' : 'Whitegirl';
 };
 
-// Map theme name to folder name
+// Map theme name to storage folder name
 const getThemeFolder = (theme: string): string => {
   const themeMap: Record<string, string> = {
     'Superhero': 'Superherotheme',
@@ -112,7 +113,8 @@ serve(async (req) => {
       const themeFolder = getThemeFolder(theme);
       const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
       
-      const imageUrl = `${APP_BASE_URL}/src/assets/personalizationjpg/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
+      // Storage path: {character}/{theme}/{letterNum}.jpg
+      const imageUrl = `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
       console.log(`Fetching image: ${imageUrl}`);
       
       try {
