@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,20 @@ import useEmblaCarousel from "embla-carousel-react";
 import heroImage from "@/assets/poster/hero-image.webp";
 import posterCollection from "@/assets/poster/poster-collection.webp";
 import classroom from "@/assets/poster/CLassroom.webp";
+
+// Preload critical first image
+const preloadImage = (src: string) => {
+  const link = document.createElement("link");
+  link.rel = "preload";
+  link.as = "image";
+  link.href = src;
+  document.head.appendChild(link);
+};
+
+// Preload hero image immediately
+if (typeof window !== "undefined") {
+  preloadImage(heroImage);
+}
 
 interface CarouselSlide {
   image: string;
@@ -84,7 +98,7 @@ const HeroCarousel = () => {
   return (
     <section className="relative min-h-svh pt-16 overflow-hidden">
       <div className="embla h-full" ref={emblaRef}>
-        <div className="embla__container flex h-full">
+        <div className="embla__container flex h-full will-change-transform">
           {slides.map((slide, index) => (
             <div
               key={index}
@@ -96,6 +110,8 @@ const HeroCarousel = () => {
                 alt={slide.title}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
+                decoding={index === 0 ? "sync" : "async"}
+                fetchPriority={index === 0 ? "high" : "low"}
               />
               {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-b from-primary/20 via-background/70 to-background" />
@@ -103,7 +119,7 @@ const HeroCarousel = () => {
               {/* Content */}
               <div className="relative z-10 flex items-center justify-center h-full px-4">
                 <div className="text-center max-w-5xl mx-auto">
-                  <p className="font-fredoka text-xl md:text-2xl text-foreground mb-2 animate-fade-in">
+                  <p className="font-fredoka text-xl md:text-2xl text-foreground mb-2">
                     {slide.subtitle}
                   </p>
                   <h2 className="font-fredoka text-3xl xs:text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-bold text-foreground mb-4 leading-tight drop-shadow-lg">
@@ -115,7 +131,7 @@ const HeroCarousel = () => {
                   <Button
                     onClick={() => navigate(slide.buttonPath)}
                     size="lg"
-                    className="font-fredoka text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-all"
+                    className="font-fredoka text-lg sm:text-xl px-8 sm:px-12 py-6 sm:py-7 rounded-full shadow-xl hover:shadow-2xl transition-shadow"
                   >
                     {slide.buttonText}
                   </Button>
@@ -148,7 +164,7 @@ const HeroCarousel = () => {
           <button
             key={index}
             onClick={() => emblaApi?.scrollTo(index)}
-            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all ${
+            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${
               index === selectedIndex
                 ? "bg-primary w-6 sm:w-8"
                 : "bg-foreground/30 hover:bg-foreground/50"
@@ -161,4 +177,4 @@ const HeroCarousel = () => {
   );
 };
 
-export default HeroCarousel;
+export default memo(HeroCarousel);
