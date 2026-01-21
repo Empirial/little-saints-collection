@@ -166,7 +166,18 @@ serve(async (req) => {
     }
 
     const pdfBytes = await pdfDoc.save();
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+
+    // Convert to base64 in chunks to avoid stack overflow
+    const uint8Array = new Uint8Array(pdfBytes);
+    const chunkSize = 8192; // Process 8KB at a time
+    let binaryString = '';
+
+    for (let i = 0; i < uint8Array.length; i += chunkSize) {
+      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
+    }
+
+    const pdfBase64 = btoa(binaryString);
     
     console.log(`PDF generated with ${pdfDoc.getPageCount()} pages`);
 
