@@ -29,8 +29,20 @@ interface Personalization {
   skinTone?: string;
 }
 
-// Get theme for a letter based on gender and occurrence count
+// Supabase Storage URL for compulsory pages
+const STORAGE_URL = 'https://udaudwkblphataokaexq.supabase.co/storage/v1/object/public/book-assets';
+
+// Get character folder for storage (capitalized names as in storage)
+const getCharacterFolder = (gender: string, skinTone: string): string => {
+  if (gender === 'boy') {
+    return skinTone === 'dark' ? 'Blackboy' : 'Whiteboy';
+  }
+  return skinTone === 'dark' ? 'Blackgirl' : 'Whitegirl';
+};
+
+// Get theme for a letter based on gender and occurrence count - matches PDF generator
 const getThemeForLetter = (occurrenceIndex: number, gender: string): Theme => {
+  // Must match the edge function order exactly
   const boyThemes: Theme[] = ['superhero', 'animal', 'fairytale'];
   const girlThemes: Theme[] = ['fairytale', 'superhero', 'animal'];
   
@@ -72,29 +84,35 @@ const PersonalizePreview = () => {
     return null;
   }
 
-  // Build the book pages with automatic theme assignment
+  // Build the book pages with automatic theme assignment - matches PDF structure
   const buildBook = (name: string, gender: string, skinTone: string) => {
     const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
+    const characterFolder = getCharacterFolder(gender, skinTone);
     const pages: Array<{ type: string; content?: string; letter?: string; image?: string }> = [];
     
     // Track letter occurrences for theme cycling
     const letterOccurrences: Map<string, number> = new Map();
 
-    // Title Page
+    // ============ COVER PAGE ============
     pages.push({
-      type: "title",
-      content: `${name}'s Great Name Chase`
+      type: "cover",
+      image: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`
     });
 
-    // Letter pages with dynamically themed illustrations
+    // ============ INTRO PAGES ============
+    pages.push({
+      type: "intro",
+      image: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`
+    });
+    pages.push({
+      type: "intro",
+      image: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`
+    });
+
+    // ============ LETTER PAGES ============
     letters.forEach((letter) => {
-      // Get current occurrence count for this letter
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      
-      // Get theme based on gender and occurrence
       const theme = getThemeForLetter(occurrenceIndex, gender);
-      
-      // Increment occurrence count for this letter
       letterOccurrences.set(letter, occurrenceIndex + 1);
       
       const letterImage = getLetterImage(
@@ -110,16 +128,14 @@ const PersonalizePreview = () => {
       });
     });
 
-    // Climax
+    // ============ ENDING PAGES ============
     pages.push({
-      type: "frame-climax",
-      content: `The chase was all over! The letters were found. They zipped and they zoomed with a magical sound. Each one was a piece of what makes YOU so you! Your name is a marvel, a joy, and a prize.`
+      type: "ending",
+      image: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`
     });
-
-    // Dedication
     pages.push({
-      type: "dedication",
-      content: `To ${name}, with love${fromField ? ` from ${fromField}` : ''}.\n\n${personalMessage || 'You are loved beyond measure.'}`
+      type: "ending",
+      image: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`
     });
 
     return pages;
@@ -143,13 +159,27 @@ const PersonalizePreview = () => {
 
   // Render a single book page - aspect ratio 37:21 (book dimensions 37cm x 21cm)
   const renderPage = (page: typeof book[0], index: number) => {
+    // Check if this is a page with a full-bleed image (cover, intro, ending, letter with image)
+    const hasFullBleedImage = ['cover', 'intro', 'ending'].includes(page.type) || 
+                              (page.type === 'letter' && page.image);
+    
     return (
       <div
         key={index}
         className={`relative aspect-[37/21] shadow-xl rounded-lg overflow-hidden border border-border ${
-          page.type === "letter" && page.image ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
+          hasFullBleedImage ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
         }`}
       >
+        {/* Cover, Intro, Ending pages - full bleed images from storage */}
+        {['cover', 'intro', 'ending'].includes(page.type) && page.image && (
+          <img
+            src={page.image}
+            alt={`${page.type} page`}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading={index < 3 ? "eager" : "lazy"}
+          />
+        )}
+
         {/* Letter Page with Themed Illustration - Clean, no overlays */}
         {page.type === "letter" && page.image && (
           <img
@@ -168,39 +198,6 @@ const PersonalizePreview = () => {
             </span>
           </div>
         )}
-
-        {/* Title and Climax pages */}
-        {(page.type === "title" || page.type === "frame-climax") && (
-          <>
-            <img
-              src={getChildCharacter(personalization.gender, personalization.skinTone)}
-              alt="Child character"
-              className="absolute bottom-3 right-3 w-24 h-24 md:w-32 md:h-32 object-contain drop-shadow-xl"
-              loading="lazy"
-            />
-            <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
-              <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
-                <h1 className="font-fredoka text-lg md:text-2xl text-primary text-center leading-tight">
-                  {page.content}
-                </h1>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* Dedication page */}
-        {page.type === "dedication" && (
-          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6">
-            <div className="bg-background/90 backdrop-blur-sm rounded-xl p-4 md:p-6 max-w-full shadow-xl">
-              <div className="font-fredoka text-sm md:text-base text-foreground text-center space-y-3">
-                {page.content.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx} className="leading-relaxed">{paragraph}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
       </div>
     );
   };
