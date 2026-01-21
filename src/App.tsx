@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import PersonalizeBook from "./pages/PersonalizeBook";
 import PersonalizePreview from "./pages/PersonalizePreview";
 import BookCheckout from "./pages/BookCheckout";
+import UploadAssets from "./pages/admin/UploadAssets";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/thank-you" element={<ThankYou />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+            <Route path="/admin/upload-assets" element={<UploadAssets />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
