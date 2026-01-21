@@ -1,10 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const APP_BASE_URL = 'https://id-preview--458c56aa-94e0-4a2e-a88b-39f542ebabc3.lovable.app';
 
 // Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
@@ -12,6 +15,24 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   const girlThemes = ['Fairytale', 'Superhero', 'Wild Animal'];
   const themes = gender === 'boy' ? boyThemes : girlThemes;
   return themes[occurrenceIndex % 3];
+};
+
+// Get character folder based on gender and skin tone
+const getCharacterFolder = (gender: string, skinTone: string): string => {
+  if (gender === 'boy') {
+    return skinTone === 'dark' ? 'Blackboy' : 'whiteboy';
+  }
+  return skinTone === 'dark' ? 'Blackgirl' : 'whitegirl';
+};
+
+// Map theme name to folder name
+const getThemeFolder = (theme: string): string => {
+  const themeMap: Record<string, string> = {
+    'Superhero': 'Superherotheme',
+    'Wild Animal': 'Wildanimaltheme',
+    'Fairytale': 'Fairytaletheme'
+  };
+  return themeMap[theme] || 'Superherotheme';
 };
 
 // Character description
@@ -77,6 +98,57 @@ serve(async (req) => {
     // Build letter breakdown with themes
     const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
     const letterOccurrences: Map<string, number> = new Map();
+    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
+
+    // Generate PDF
+    console.log("Starting PDF generation...");
+    const pdfDoc = await PDFDocument.create();
+
+    for (const letter of letters) {
+      const occurrenceIndex = letterOccurrences.get(letter) || 0;
+      letterOccurrences.set(letter, occurrenceIndex + 1);
+      
+      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
+      const themeFolder = getThemeFolder(theme);
+      const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
+      
+      const imageUrl = `${APP_BASE_URL}/src/assets/personalizationjpg/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
+      console.log(`Fetching image: ${imageUrl}`);
+      
+      try {
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) {
+          console.error(`Failed to fetch image for letter ${letter}: ${imageResponse.status}`);
+          continue;
+        }
+        
+        const imageBytes = await imageResponse.arrayBuffer();
+        const jpgImage = await pdfDoc.embedJpg(imageBytes);
+        
+        // Create page with image dimensions (or standard page size)
+        const { width, height } = jpgImage.scale(1);
+        const page = pdfDoc.addPage([width, height]);
+        
+        page.drawImage(jpgImage, {
+          x: 0,
+          y: 0,
+          width: width,
+          height: height,
+        });
+        
+        console.log(`Added page for letter ${letter} with theme ${theme}`);
+      } catch (imageError) {
+        console.error(`Error processing image for letter ${letter}:`, imageError);
+      }
+    }
+
+    const pdfBytes = await pdfDoc.save();
+    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBytes)));
+    
+    console.log(`PDF generated with ${pdfDoc.getPageCount()} pages`);
+
+    // Reset letter occurrences for email breakdown
+    letterOccurrences.clear();
     
     const letterBreakdown = letters.map((letter) => {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
@@ -85,17 +157,12 @@ serve(async (req) => {
       const letterNum = letter.charCodeAt(0) - 64;
       return `<tr>
         <td style="padding: 8px; border: 1px solid #ddd;">${letter}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${letterNum}.webp</td>
+        <td style="padding: 8px; border: 1px solid #ddd;">${letterNum}.jpg</td>
         <td style="padding: 8px; border: 1px solid #ddd;">${theme}</td>
       </tr>`;
     }).join('');
 
-    // Character folder for asset reference
-    const characterFolder = bookData.gender === 'boy' 
-      ? (bookData.skinTone === 'dark' ? 'Blackboy' : 'whiteboy')
-      : (bookData.skinTone === 'dark' ? 'Blackgirl' : 'whitegirl');
-
-    // Send detailed email with all production info
+    // Send detailed email with PDF attachment
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -133,7 +200,7 @@ serve(async (req) => {
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">src/assets/personalization/${characterFolder}/</code></p>
+              <p><strong>Asset Folder:</strong> <code style="background: #eee; padding: 2px 6px; border-radius: 4px;">personalizationjpg/${characterFolder}/</code></p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
               <p><strong>Personal Message:</strong> ${bookData.personalMessage || 'None'}</p>
             </div>
@@ -155,20 +222,21 @@ serve(async (req) => {
             </div>
 
             <div style="background: #e3f2fd; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #1565c0;">Theme Folder Mapping</h2>
-              <p>Use these folders for each theme:</p>
-              <ul>
-                <li><strong>Superhero:</strong> <code>${characterFolder}/Superherotheme/</code></li>
-                <li><strong>Wild Animal:</strong> <code>${characterFolder}/Wildanimaltheme/</code></li>
-                <li><strong>Fairytale:</strong> <code>${characterFolder}/Fairytaletheme/</code></li>
-              </ul>
+              <h2 style="margin-top: 0; color: #1565c0;">📎 PDF Attached</h2>
+              <p>The generated book PDF is attached to this email.</p>
             </div>
 
             <p style="color: #666; font-size: 12px; margin-top: 30px;">
               Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
             </p>
           </div>
-        `
+        `,
+        attachment: [
+          {
+            content: pdfBase64,
+            name: `${bookData.childName}-book-${order.order_number}.pdf`
+          }
+        ]
       })
     });
 
@@ -178,13 +246,14 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
-    console.log("Book order email sent successfully for order:", order.order_number);
+    console.log("Book order email with PDF sent successfully for order:", order.order_number);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book order details sent to production",
-        orderNumber: order.order_number
+        message: "Book PDF generated and sent to production",
+        orderNumber: order.order_number,
+        pageCount: pdfDoc.getPageCount()
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
