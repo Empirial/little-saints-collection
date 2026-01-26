@@ -16,9 +16,14 @@ Deno.serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Parse query params for specific folder deletion
+    const url = new URL(req.url);
+    const specificCharacter = url.searchParams.get("character");
+    const specificTheme = url.searchParams.get("theme");
+    
     const bucketName = "book-assets";
-    const characterFolders = ["Blackboy", "Blackgirl", "Whiteboy", "Whitegirl"];
-    const themeFolders = ["Cover", "Intro", "Ending", "Superherotheme", "Wildanimaltheme", "Fairytaletheme"];
+    const characterFolders = specificCharacter ? [specificCharacter] : ["Blackboy", "Blackgirl", "Whiteboy", "Whitegirl"];
+    const themeFolders = specificTheme ? [specificTheme] : ["Cover", "Intro", "Ending", "Superherotheme", "Wildanimaltheme", "Fairytaletheme"];
     
     const deletedFiles: string[] = [];
     const errors: string[] = [];
