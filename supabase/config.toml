@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.submit-book-order]
 verify_jwt = false
+
+[functions.delete-bucket-files]
+verify_jwt = false
