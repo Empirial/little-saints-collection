@@ -20,6 +20,7 @@ import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
 import charBoyDark from "@/assets/personalization/Blackboy/BB.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
+import dedicationBackground from "@/assets/personalization/dedication-background.jpg";
 
 type Theme = "superhero" | "fairytale" | "animal";
 
@@ -141,6 +142,51 @@ const PersonalizePreview = () => {
     return pages;
   };
 
+  // Render dedication slide with text overlay
+  const renderDedicationSlide = () => {
+    if (!fromField.trim() && !personalMessage.trim()) {
+      return null;
+    }
+
+    return (
+      <div
+        className="relative aspect-[37/21] shadow-xl rounded-lg overflow-hidden border border-border"
+      >
+        {/* Dedication background image */}
+        <img
+          src={dedicationBackground}
+          alt="Dedication page"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        
+        {/* Text overlay container - split into left and right halves */}
+        <div className="absolute inset-0 flex">
+          {/* Left half - From field */}
+          <div className="w-1/2 flex flex-col items-center justify-center p-4 md:p-8">
+            {fromField.trim() && (
+              <div className="text-center max-w-[80%]">
+                <p className="font-fredoka text-lg md:text-2xl lg:text-3xl text-foreground drop-shadow-sm">
+                  {fromField}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          {/* Right half - Personal message */}
+          <div className="w-1/2 flex flex-col items-center justify-center p-4 md:p-8">
+            {personalMessage.trim() && (
+              <div className="text-center max-w-[80%]">
+                <p className="font-fredoka text-sm md:text-lg lg:text-xl text-foreground leading-relaxed drop-shadow-sm whitespace-pre-wrap">
+                  {personalMessage}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const book = buildBook(
     personalization.childName,
     personalization.gender,
@@ -225,6 +271,8 @@ const PersonalizePreview = () => {
         {/* Book Pages Grid - 1 column on all screens */}
         <div className="grid grid-cols-1 gap-4 md:gap-6 max-w-4xl mx-auto">
           {book.map((page, index) => renderPage(page, index))}
+          {/* Dedication slide at the end */}
+          {renderDedicationSlide()}
         </div>
       </div>
 
