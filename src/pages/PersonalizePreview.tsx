@@ -150,7 +150,7 @@ const PersonalizePreview = () => {
 
     return (
       <div
-        className="relative aspect-[37/21] shadow-xl rounded-lg overflow-hidden border border-border"
+        className="relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border"
       >
         {/* Dedication background image */}
         <img
@@ -212,7 +212,7 @@ const PersonalizePreview = () => {
     return (
       <div
         key={index}
-        className={`relative aspect-[37/21] shadow-xl rounded-lg overflow-hidden border border-border ${
+        className={`relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border ${
           hasFullBleedImage ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
         }`}
       >
