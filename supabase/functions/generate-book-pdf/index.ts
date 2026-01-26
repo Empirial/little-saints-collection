@@ -18,7 +18,7 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   return themes[occurrenceIndex % 3];
 };
 
-// Get character folder based on gender and skin tone - matches storage folder structure
+// Get character folder based on gender and skin tone
 const getCharacterFolder = (gender: string, skinTone: string): string => {
   if (gender === 'boy') {
     return skinTone === 'dark' ? 'Blackboy' : 'Whiteboy';
@@ -36,7 +36,7 @@ const getThemeFolder = (theme: string): string => {
   return themeMap[theme] || 'Superherotheme';
 };
 
-// Character description
+// Character description for email
 const getCharacterDescription = (gender: string, skinTone: string): string => {
   const genderLabel = gender === 'boy' ? 'Boy' : 'Girl';
   const skinLabel = skinTone === 'dark' ? 'Dark skin' : 'Light skin';
@@ -106,6 +106,143 @@ async function embedSpreadImage(
   }
 }
 
+// Create a batch PDF from a list of image URLs
+async function createBatchPdf(
+  imageUrls: Array<{url: string, label: string}>
+): Promise<Uint8Array> {
+  const batchPdf = await PDFDocument.create();
+  
+  for (const {url, label} of imageUrls) {
+    await embedSpreadImage(batchPdf, url, label);
+  }
+  
+  return await batchPdf.save();
+}
+
+// Create dedication PDF with text overlays
+async function createDedicationPdf(
+  bookData: BookData
+): Promise<Uint8Array | null> {
+  try {
+    const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
+    console.log(`Fetching Dedication: ${dedicationUrl}`);
+    
+    const dedicationResponse = await fetch(dedicationUrl);
+    if (!dedicationResponse.ok) {
+      console.warn("Dedication background not found, skipping dedication page");
+      return null;
+    }
+    
+    const pdfDoc = await PDFDocument.create();
+    const dedicationBytes = await dedicationResponse.arrayBuffer();
+    const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
+    
+    const { width, height } = dedicationImage.scale(1);
+    const halfWidth = width / 2;
+    
+    // Embed fonts for text overlay
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    
+    // Left page with "From" text
+    const leftPage = pdfDoc.addPage([halfWidth, height]);
+    leftPage.drawImage(dedicationImage, {
+      x: 0,
+      y: 0,
+      width: width,
+      height: height,
+    });
+    
+    if (bookData.fromField) {
+      const fromText = bookData.fromField;
+      const fontSize = Math.min(72, 600 / fromText.length);
+      const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+      
+      leftPage.drawText(fromText, {
+        x: (halfWidth - textWidth) / 2,
+        y: height / 2,
+        size: fontSize,
+        font: boldFont,
+        color: rgb(0.15, 0.15, 0.15),
+      });
+    }
+    
+    // Right page with personal message
+    const rightPage = pdfDoc.addPage([halfWidth, height]);
+    rightPage.drawImage(dedicationImage, {
+      x: -halfWidth,
+      y: 0,
+      width: width,
+      height: height,
+    });
+    
+    if (bookData.personalMessage) {
+      const messageText = bookData.personalMessage;
+      const maxLineWidth = halfWidth * 0.7;
+      const fontSize = 36;
+      
+      // Word-wrap for message
+      const words = messageText.split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+        
+        if (testWidth <= maxLineWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      
+      // Center the text block vertically
+      const lineHeight = fontSize * 1.4;
+      const totalHeight = lines.length * lineHeight;
+      let y = (height + totalHeight) / 2 - fontSize;
+      
+      for (const line of lines) {
+        const lineWidth = font.widthOfTextAtSize(line, fontSize);
+        rightPage.drawText(line, {
+          x: (halfWidth - lineWidth) / 2,
+          y: y,
+          size: fontSize,
+          font: font,
+          color: rgb(0.15, 0.15, 0.15),
+        });
+        y -= lineHeight;
+      }
+    }
+    
+    console.log("Added 2 pages for Dedication (split spread with text overlay)");
+    return await pdfDoc.save();
+  } catch (error) {
+    console.error("Error creating dedication page:", error);
+    return null;
+  }
+}
+
+// Merge multiple PDF batches into a single PDF
+async function mergePdfs(
+  pdfBatches: Uint8Array[]
+): Promise<PDFDocument> {
+  const finalPdf = await PDFDocument.create();
+  
+  for (const batchBytes of pdfBatches) {
+    const batchPdf = await PDFDocument.load(batchBytes);
+    const pages = await finalPdf.copyPages(
+      batchPdf, 
+      batchPdf.getPageIndices()
+    );
+    pages.forEach(page => finalPdf.addPage(page));
+  }
+  
+  return finalPdf;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -155,155 +292,76 @@ serve(async (req) => {
     const letterOccurrences: Map<string, number> = new Map();
     const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    // Generate PDF
-    console.log("Starting PDF generation...");
-    const pdfDoc = await PDFDocument.create();
+    console.log("Starting batched PDF generation...");
+    const allBatches: Uint8Array[] = [];
 
-    // ============ 1. COVER PAGE ============
-    // Cover spread: left = back cover, right = front cover
-    // We add it at the start, but the RIGHT side is the front cover (first visible page)
-    const coverUrl = `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`;
-    const coverSuccess = await embedSpreadImage(pdfDoc, coverUrl, "Cover");
-    if (!coverSuccess) {
-      console.warn("Cover image not found, continuing without cover");
-    }
+    // ============ BATCH 1: Cover + Intro ============
+    console.log("Creating Batch 1: Cover + Intro...");
+    const batch1Urls = [
+      { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" },
+      { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
+      { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
+    ];
+    const batch1 = await createBatchPdf(batch1Urls);
+    allBatches.push(batch1);
+    console.log("Batch 1 complete: Cover + Intro (6 pages)");
 
-    // ============ 2. INTRO PAGES ============
-    // Intro page 1
-    const intro1Url = `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`;
-    await embedSpreadImage(pdfDoc, intro1Url, "Intro 1");
-
-    // Intro page 2
-    const intro2Url = `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`;
-    await embedSpreadImage(pdfDoc, intro2Url, "Intro 2");
-
-    // ============ 3. LETTER PAGES ============
-    for (const letter of letters) {
-      const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      letterOccurrences.set(letter, occurrenceIndex + 1);
+    // ============ BATCH 2: Letter Pages (in chunks of 3) ============
+    const lettersPerBatch = 3;
+    let batchNum = 2;
+    
+    for (let i = 0; i < letters.length; i += lettersPerBatch) {
+      const letterChunk = letters.slice(i, i + lettersPerBatch);
+      console.log(`Creating Letter Batch ${batchNum}: Letters ${letterChunk.join(', ')}...`);
       
-      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
-      const themeFolder = getThemeFolder(theme);
-      const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
-      
-      const imageUrl = `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`;
-      await embedSpreadImage(pdfDoc, imageUrl, `Letter ${letter}`);
-    }
-
-    // ============ 4. ENDING PAGES ============
-    // Ending page 1
-    const ending1Url = `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`;
-    await embedSpreadImage(pdfDoc, ending1Url, "Ending 1");
-
-    // Ending page 2
-    const ending2Url = `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`;
-    await embedSpreadImage(pdfDoc, ending2Url, "Ending 2");
-
-    // ============ 5. DEDICATION PAGE (with text overlay) ============
-    if (bookData.fromField || bookData.personalMessage) {
-      try {
-        const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
-        console.log(`Fetching Dedication: ${dedicationUrl}`);
+      const letterUrls = letterChunk.map((letter: string) => {
+        const occurrenceIndex = letterOccurrences.get(letter) || 0;
+        letterOccurrences.set(letter, occurrenceIndex + 1);
         
-        const dedicationResponse = await fetch(dedicationUrl);
-        if (dedicationResponse.ok) {
-          const dedicationBytes = await dedicationResponse.arrayBuffer();
-          const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
-          
-          const { width, height } = dedicationImage.scale(1);
-          const halfWidth = width / 2;
-          
-          // Embed font for text overlay
-          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-          const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-          
-          // Left page with "From" text
-          const leftPage = pdfDoc.addPage([halfWidth, height]);
-          leftPage.drawImage(dedicationImage, {
-            x: 0,
-            y: 0,
-            width: width,
-            height: height,
-          });
-          
-          if (bookData.fromField) {
-            const fromText = bookData.fromField;
-            const fontSize = Math.min(72, 600 / fromText.length); // Auto-scale based on length
-            const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
-            
-            leftPage.drawText(fromText, {
-              x: (halfWidth - textWidth) / 2,
-              y: height / 2,
-              size: fontSize,
-              font: boldFont,
-              color: rgb(0.15, 0.15, 0.15),
-            });
-          }
-          
-          // Right page with personal message
-          const rightPage = pdfDoc.addPage([halfWidth, height]);
-          rightPage.drawImage(dedicationImage, {
-            x: -halfWidth,
-            y: 0,
-            width: width,
-            height: height,
-          });
-          
-          if (bookData.personalMessage) {
-            const messageText = bookData.personalMessage;
-            const maxLineWidth = halfWidth * 0.7;
-            const fontSize = 36;
-            
-            // Simple word-wrap for message
-            const words = messageText.split(' ');
-            const lines: string[] = [];
-            let currentLine = '';
-            
-            for (const word of words) {
-              const testLine = currentLine ? `${currentLine} ${word}` : word;
-              const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-              
-              if (testWidth <= maxLineWidth) {
-                currentLine = testLine;
-              } else {
-                if (currentLine) lines.push(currentLine);
-                currentLine = word;
-              }
-            }
-            if (currentLine) lines.push(currentLine);
-            
-            // Center the text block vertically
-            const lineHeight = fontSize * 1.4;
-            const totalHeight = lines.length * lineHeight;
-            let y = (height + totalHeight) / 2 - fontSize;
-            
-            for (const line of lines) {
-              const lineWidth = font.widthOfTextAtSize(line, fontSize);
-              rightPage.drawText(line, {
-                x: (halfWidth - lineWidth) / 2,
-                y: y,
-                size: fontSize,
-                font: font,
-                color: rgb(0.15, 0.15, 0.15),
-              });
-              y -= lineHeight;
-            }
-          }
-          
-          console.log("Added 2 pages for Dedication (split spread with text overlay)");
-        } else {
-          console.warn("Dedication background not found, skipping dedication page");
-        }
-      } catch (dedicationError) {
-        console.error("Error adding dedication page:", dedicationError);
+        const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
+        const themeFolder = getThemeFolder(theme);
+        const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
+        
+        return {
+          url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`,
+          label: `Letter ${letter}`
+        };
+      });
+      
+      const letterBatch = await createBatchPdf(letterUrls);
+      allBatches.push(letterBatch);
+      console.log(`Letter Batch ${batchNum} complete (${letterChunk.length * 2} pages)`);
+      batchNum++;
+    }
+
+    // ============ BATCH 3: Ending Pages ============
+    console.log("Creating Ending Batch...");
+    const endingUrls = [
+      { url: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`, label: "Ending 1" },
+      { url: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`, label: "Ending 2" },
+    ];
+    const endingBatch = await createBatchPdf(endingUrls);
+    allBatches.push(endingBatch);
+    console.log("Ending Batch complete (4 pages)");
+
+    // ============ BATCH 4: Dedication (if applicable) ============
+    if (bookData.fromField || bookData.personalMessage) {
+      console.log("Creating Dedication Batch...");
+      const dedicationBatch = await createDedicationPdf(bookData);
+      if (dedicationBatch) {
+        allBatches.push(dedicationBatch);
+        console.log("Dedication Batch complete (2 pages)");
       }
     }
 
-    const pdfBytes = await pdfDoc.save();
+    // ============ MERGE ALL BATCHES ============
+    console.log(`Merging ${allBatches.length} batches into final PDF...`);
+    const finalPdf = await mergePdfs(allBatches);
+    const pdfBytes = await finalPdf.save();
 
     // Convert to base64 in chunks to avoid stack overflow
     const uint8Array = new Uint8Array(pdfBytes);
-    const chunkSize = 8192; // Process 8KB at a time
+    const chunkSize = 8192;
     let binaryString = '';
 
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
@@ -313,7 +371,7 @@ serve(async (req) => {
 
     const pdfBase64 = btoa(binaryString);
     
-    console.log(`PDF generated with ${pdfDoc.getPageCount()} pages`);
+    console.log(`PDF generated with ${finalPdf.getPageCount()} pages`);
 
     // Send production email with PDF attachment
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -358,7 +416,7 @@ serve(async (req) => {
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Total Pages:</strong> ${pdfDoc.getPageCount()} pages</p>
+              <p><strong>Total Pages:</strong> ${finalPdf.getPageCount()} pages</p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
               ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
             </div>
@@ -390,7 +448,7 @@ serve(async (req) => {
         success: true, 
         message: "Book PDF generated and sent to production",
         orderNumber: order.order_number,
-        pageCount: pdfDoc.getPageCount()
+        pageCount: finalPdf.getPageCount()
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
