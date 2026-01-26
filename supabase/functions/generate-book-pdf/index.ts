@@ -52,6 +52,12 @@ interface BookData {
   pageCount?: number;
 }
 
+interface BatchInfo {
+  url: string;
+  name: string;
+  pageCount: number;
+}
+
 // Helper function to fetch and embed a spread image, splitting it into two PDF pages
 async function embedSpreadImage(
   pdfDoc: PDFDocument, 
@@ -106,23 +112,53 @@ async function embedSpreadImage(
   }
 }
 
-// Create a batch PDF from a list of image URLs
-async function createBatchPdf(
+// Create a batch PDF from a list of image URLs and upload immediately
+// deno-lint-ignore no-explicit-any
+async function createAndUploadBatch(
+  supabase: any,
+  orderNumber: string,
+  batchIndex: number,
+  batchName: string,
   imageUrls: Array<{url: string, label: string}>
-): Promise<Uint8Array> {
+): Promise<BatchInfo> {
   const batchPdf = await PDFDocument.create();
   
   for (const {url, label} of imageUrls) {
     await embedSpreadImage(batchPdf, url, label);
   }
   
-  return await batchPdf.save();
+  const pdfBytes = await batchPdf.save();
+  const pageCount = batchPdf.getPageCount();
+  
+  // Upload immediately to free memory
+  const filename = `orders/${orderNumber}/batch-${batchIndex}-${batchName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
+  
+  const { error } = await supabase.storage
+    .from('book-assets')
+    .upload(filename, pdfBytes, {
+      contentType: 'application/pdf',
+      upsert: true
+    });
+  
+  if (error) {
+    console.error(`Failed to upload ${batchName}:`, error);
+    throw new Error(`Storage upload failed: ${error.message}`);
+  }
+  
+  const url = `${STORAGE_URL}/${filename}`;
+  console.log(`Uploaded ${batchName} (${pageCount} pages): ${url}`);
+  
+  return { url, name: batchName, pageCount };
 }
 
-// Create dedication PDF with text overlays
-async function createDedicationPdf(
+// Create dedication PDF with text overlays and upload
+// deno-lint-ignore no-explicit-any
+async function createAndUploadDedication(
+  supabase: any,
+  orderNumber: string,
+  batchIndex: number,
   bookData: BookData
-): Promise<Uint8Array | null> {
+): Promise<BatchInfo | null> {
   try {
     const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
     console.log(`Fetching Dedication: ${dedicationUrl}`);
@@ -217,30 +253,32 @@ async function createDedicationPdf(
       }
     }
     
-    console.log("Added 2 pages for Dedication (split spread with text overlay)");
-    return await pdfDoc.save();
+    const pdfBytes = await pdfDoc.save();
+    const pageCount = pdfDoc.getPageCount();
+    
+    // Upload immediately
+    const filename = `orders/${orderNumber}/batch-${batchIndex}-dedication.pdf`;
+    
+    const { error } = await supabase.storage
+      .from('book-assets')
+      .upload(filename, pdfBytes, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+    
+    if (error) {
+      console.error(`Failed to upload Dedication:`, error);
+      throw new Error(`Storage upload failed: ${error.message}`);
+    }
+    
+    const url = `${STORAGE_URL}/${filename}`;
+    console.log(`Uploaded Dedication (${pageCount} pages): ${url}`);
+    
+    return { url, name: 'Dedication', pageCount };
   } catch (error) {
     console.error("Error creating dedication page:", error);
     return null;
   }
-}
-
-// Merge multiple PDF batches into a single PDF
-async function mergePdfs(
-  pdfBatches: Uint8Array[]
-): Promise<PDFDocument> {
-  const finalPdf = await PDFDocument.create();
-  
-  for (const batchBytes of pdfBatches) {
-    const batchPdf = await PDFDocument.load(batchBytes);
-    const pages = await finalPdf.copyPages(
-      batchPdf, 
-      batchPdf.getPageIndices()
-    );
-    pages.forEach(page => finalPdf.addPage(page));
-  }
-  
-  return finalPdf;
 }
 
 serve(async (req) => {
@@ -292,88 +330,96 @@ serve(async (req) => {
     const letterOccurrences: Map<string, number> = new Map();
     const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    console.log("Starting batched PDF generation...");
-    const allBatches: Uint8Array[] = [];
+    console.log("Starting PDF generation with immediate upload...");
+    const uploadedBatches: BatchInfo[] = [];
+    let batchIndex = 1;
+    let totalPages = 0;
 
     // ============ BATCH 1: Cover + Intro ============
-    console.log("Creating Batch 1: Cover + Intro...");
-    const batch1Urls = [
-      { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" },
-      { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
-      { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
-    ];
-    const batch1 = await createBatchPdf(batch1Urls);
-    allBatches.push(batch1);
-    console.log("Batch 1 complete: Cover + Intro (6 pages)");
+    console.log("Creating & uploading Batch 1: Cover + Intro...");
+    const batch1 = await createAndUploadBatch(
+      supabase,
+      order.order_number,
+      batchIndex++,
+      "Cover-Intro",
+      [
+        { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" },
+        { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
+        { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
+      ]
+    );
+    uploadedBatches.push(batch1);
+    totalPages += batch1.pageCount;
+    console.log(`Batch 1 complete: ${batch1.pageCount} pages, memory freed`);
 
-    // ============ BATCH 2: Letter Pages (in chunks of 3) ============
-    const lettersPerBatch = 3;
-    let batchNum = 2;
-    
-    for (let i = 0; i < letters.length; i += lettersPerBatch) {
-      const letterChunk = letters.slice(i, i + lettersPerBatch);
-      console.log(`Creating Letter Batch ${batchNum}: Letters ${letterChunk.join(', ')}...`);
+    // ============ BATCH 2+: Letter Pages (one letter at a time to minimize memory) ============
+    for (let i = 0; i < letters.length; i++) {
+      const letter = letters[i];
+      const occurrenceIndex = letterOccurrences.get(letter) || 0;
+      letterOccurrences.set(letter, occurrenceIndex + 1);
       
-      const letterUrls = letterChunk.map((letter: string) => {
-        const occurrenceIndex = letterOccurrences.get(letter) || 0;
-        letterOccurrences.set(letter, occurrenceIndex + 1);
-        
-        const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
-        const themeFolder = getThemeFolder(theme);
-        const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
-        
-        return {
-          url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`,
-          label: `Letter ${letter}`
-        };
-      });
+      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
+      const themeFolder = getThemeFolder(theme);
+      const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
       
-      const letterBatch = await createBatchPdf(letterUrls);
-      allBatches.push(letterBatch);
-      console.log(`Letter Batch ${batchNum} complete (${letterChunk.length * 2} pages)`);
-      batchNum++;
+      console.log(`Creating & uploading Letter ${letter}...`);
+      const letterBatch = await createAndUploadBatch(
+        supabase,
+        order.order_number,
+        batchIndex++,
+        `Letter-${letter}`,
+        [
+          { url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`, label: `Letter ${letter}` }
+        ]
+      );
+      uploadedBatches.push(letterBatch);
+      totalPages += letterBatch.pageCount;
     }
 
-    // ============ BATCH 3: Ending Pages ============
-    console.log("Creating Ending Batch...");
-    const endingUrls = [
-      { url: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`, label: "Ending 1" },
-      { url: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`, label: "Ending 2" },
-    ];
-    const endingBatch = await createBatchPdf(endingUrls);
-    allBatches.push(endingBatch);
-    console.log("Ending Batch complete (4 pages)");
+    // ============ ENDING BATCH ============
+    console.log("Creating & uploading Ending Batch...");
+    const endingBatch = await createAndUploadBatch(
+      supabase,
+      order.order_number,
+      batchIndex++,
+      "Ending",
+      [
+        { url: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`, label: "Ending 1" },
+        { url: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`, label: "Ending 2" },
+      ]
+    );
+    uploadedBatches.push(endingBatch);
+    totalPages += endingBatch.pageCount;
+    console.log(`Ending Batch complete: ${endingBatch.pageCount} pages`);
 
-    // ============ BATCH 4: Dedication (if applicable) ============
+    // ============ DEDICATION BATCH (if applicable) ============
     if (bookData.fromField || bookData.personalMessage) {
-      console.log("Creating Dedication Batch...");
-      const dedicationBatch = await createDedicationPdf(bookData);
+      console.log("Creating & uploading Dedication Batch...");
+      const dedicationBatch = await createAndUploadDedication(
+        supabase,
+        order.order_number,
+        batchIndex++,
+        bookData
+      );
       if (dedicationBatch) {
-        allBatches.push(dedicationBatch);
-        console.log("Dedication Batch complete (2 pages)");
+        uploadedBatches.push(dedicationBatch);
+        totalPages += dedicationBatch.pageCount;
+        console.log(`Dedication Batch complete: ${dedicationBatch.pageCount} pages`);
       }
     }
 
-    // ============ MERGE ALL BATCHES ============
-    console.log(`Merging ${allBatches.length} batches into final PDF...`);
-    const finalPdf = await mergePdfs(allBatches);
-    const pdfBytes = await finalPdf.save();
+    console.log(`All ${uploadedBatches.length} PDF batches uploaded. Total pages: ${totalPages}`);
 
-    // Convert to base64 in chunks to avoid stack overflow
-    const uint8Array = new Uint8Array(pdfBytes);
-    const chunkSize = 8192;
-    let binaryString = '';
+    // Generate download links HTML
+    const downloadLinksHtml = uploadedBatches.map((batch, idx) => 
+      `<li style="margin: 8px 0;">
+        <a href="${batch.url}" style="color: #5c4d9a; font-weight: bold;">
+          Part ${idx + 1}: ${batch.name} (${batch.pageCount} pages)
+        </a>
+      </li>`
+    ).join('');
 
-    for (let i = 0; i < uint8Array.length; i += chunkSize) {
-      const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
-      binaryString += String.fromCharCode.apply(null, Array.from(chunk));
-    }
-
-    const pdfBase64 = btoa(binaryString);
-    
-    console.log(`PDF generated with ${finalPdf.getPageCount()} pages`);
-
-    // Send production email with PDF attachment
+    // Send production email with download links (no attachment)
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -416,22 +462,27 @@ serve(async (req) => {
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Total Pages:</strong> ${finalPdf.getPageCount()} pages</p>
+              <p><strong>Total Pages:</strong> ${totalPages} pages</p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
               ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
+            </div>
+
+            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
+              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download PDF Files</h2>
+              <p style="color: #555;">Print all parts in the order listed below:</p>
+              <ol style="padding-left: 20px;">
+                ${downloadLinksHtml}
+              </ol>
+              <p style="color: #888; font-size: 12px; margin-top: 15px;">
+                ⚠️ Download links are valid for 30 days. Save files locally for backup.
+              </p>
             </div>
 
             <p style="color: #666; font-size: 12px; margin-top: 30px;">
               Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
             </p>
           </div>
-        `,
-        attachment: [
-          {
-            content: pdfBase64,
-            name: `${bookData.childName}-book-${order.order_number}.pdf`
-          }
-        ]
+        `
       })
     });
 
@@ -441,14 +492,16 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
-    console.log("Book order email with PDF sent successfully for order:", order.order_number);
+    console.log("Book order email with download links sent successfully for order:", order.order_number);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book PDF generated and sent to production",
+        message: "Book PDFs generated, uploaded, and email sent to production",
         orderNumber: order.order_number,
-        pageCount: finalPdf.getPageCount()
+        pageCount: totalPages,
+        batchCount: uploadedBatches.length,
+        downloadUrls: uploadedBatches.map(b => b.url)
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
