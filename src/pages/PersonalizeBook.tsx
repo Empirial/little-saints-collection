@@ -95,11 +95,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("light")}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 flex items-center justify-center">
                           <img
                             src={charBoyLight}
                             alt="Lighter skin tone boy"
-                            className="w-full h-auto rounded-lg"
+                            className="w-full h-32 object-contain rounded-lg"
                           />
                         </CardContent>
                       </Card>
@@ -109,11 +109,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("dark")}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 flex items-center justify-center">
                           <img
                             src={charBoyDark}
                             alt="Darker skin tone boy"
-                            className="w-full h-auto rounded-lg"
+                            className="w-full h-32 object-contain rounded-lg"
                           />
                         </CardContent>
                       </Card>
@@ -126,11 +126,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("light")}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 flex items-center justify-center">
                           <img
                             src={charGirlLight}
                             alt="Lighter skin tone girl"
-                            className="w-full h-auto rounded-lg"
+                            className="w-full h-32 object-contain rounded-lg"
                           />
                         </CardContent>
                       </Card>
@@ -140,11 +140,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("dark")}
                       >
-                        <CardContent className="p-4">
+                        <CardContent className="p-4 flex items-center justify-center">
                           <img
                             src={charGirlDark}
                             alt="Darker skin tone girl"
-                            className="w-full h-auto rounded-lg"
+                            className="w-full h-32 object-contain rounded-lg"
                           />
                         </CardContent>
                       </Card>
