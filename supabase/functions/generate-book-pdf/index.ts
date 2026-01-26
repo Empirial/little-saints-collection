@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -198,6 +198,106 @@ serve(async (req) => {
     // Ending page 2
     const ending2Url = `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`;
     await embedSpreadImage(pdfDoc, ending2Url, "Ending 2");
+
+    // ============ 5. DEDICATION PAGE (with text overlay) ============
+    if (bookData.fromField || bookData.personalMessage) {
+      try {
+        const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
+        console.log(`Fetching Dedication: ${dedicationUrl}`);
+        
+        const dedicationResponse = await fetch(dedicationUrl);
+        if (dedicationResponse.ok) {
+          const dedicationBytes = await dedicationResponse.arrayBuffer();
+          const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
+          
+          const { width, height } = dedicationImage.scale(1);
+          const halfWidth = width / 2;
+          
+          // Embed font for text overlay
+          const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+          const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+          
+          // Left page with "From" text
+          const leftPage = pdfDoc.addPage([halfWidth, height]);
+          leftPage.drawImage(dedicationImage, {
+            x: 0,
+            y: 0,
+            width: width,
+            height: height,
+          });
+          
+          if (bookData.fromField) {
+            const fromText = bookData.fromField;
+            const fontSize = Math.min(72, 600 / fromText.length); // Auto-scale based on length
+            const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+            
+            leftPage.drawText(fromText, {
+              x: (halfWidth - textWidth) / 2,
+              y: height / 2,
+              size: fontSize,
+              font: boldFont,
+              color: rgb(0.15, 0.15, 0.15),
+            });
+          }
+          
+          // Right page with personal message
+          const rightPage = pdfDoc.addPage([halfWidth, height]);
+          rightPage.drawImage(dedicationImage, {
+            x: -halfWidth,
+            y: 0,
+            width: width,
+            height: height,
+          });
+          
+          if (bookData.personalMessage) {
+            const messageText = bookData.personalMessage;
+            const maxLineWidth = halfWidth * 0.7;
+            const fontSize = 36;
+            
+            // Simple word-wrap for message
+            const words = messageText.split(' ');
+            const lines: string[] = [];
+            let currentLine = '';
+            
+            for (const word of words) {
+              const testLine = currentLine ? `${currentLine} ${word}` : word;
+              const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+              
+              if (testWidth <= maxLineWidth) {
+                currentLine = testLine;
+              } else {
+                if (currentLine) lines.push(currentLine);
+                currentLine = word;
+              }
+            }
+            if (currentLine) lines.push(currentLine);
+            
+            // Center the text block vertically
+            const lineHeight = fontSize * 1.4;
+            const totalHeight = lines.length * lineHeight;
+            let y = (height + totalHeight) / 2 - fontSize;
+            
+            for (const line of lines) {
+              const lineWidth = font.widthOfTextAtSize(line, fontSize);
+              rightPage.drawText(line, {
+                x: (halfWidth - lineWidth) / 2,
+                y: y,
+                size: fontSize,
+                font: font,
+                color: rgb(0.15, 0.15, 0.15),
+              });
+              y -= lineHeight;
+            }
+          }
+          
+          console.log("Added 2 pages for Dedication (split spread with text overlay)");
+        } else {
+          console.warn("Dedication background not found, skipping dedication page");
+        }
+      } catch (dedicationError) {
+        console.error("Error adding dedication page:", dedicationError);
+      }
+    }
 
     const pdfBytes = await pdfDoc.save();
 
