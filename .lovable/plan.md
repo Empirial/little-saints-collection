@@ -1,140 +1,190 @@
 
-## Plan: Fix Preview Aspect Ratio and Add Dedication Page to PDF
+
+## Plan: Fix PDF Memory Issue + Clean Up Storage Bucket
 
 ### Overview
 
-This plan addresses two issues:
-
-1. **Fix preview aspect ratio** - Currently using wrong dimensions (37:21 instead of 634:230)
-2. **Add dedication page to PDF** - Include the dedication spread with text overlays in the generated PDF
+This plan addresses three issues:
+1. **Fix PDF merge step memory overflow** - The merge process still exceeds memory limits
+2. **Create Shared folder and upload dedication background** - Required for dedication page
+3. **Delete orphaned storage files** - Clean up useless folders
 
 ---
 
-### Part 1: Fix Preview Slide Dimensions
+### Part 1: Fix PDF Merge Memory Issue
 
 #### The Problem
 
-The preview slides are using `aspect-[37/21]` (1.76:1 ratio) but the actual book spreads are **63.4cm wide by 23cm high**, which is a 2.76:1 ratio.
-
-#### The Fix
-
-Update `src/pages/PersonalizePreview.tsx` to use the correct aspect ratio:
-
-```text
-Before: aspect-[37/21]
-After:  aspect-[634/230]
+The batched approach works for generation, but the merge step loads all batch PDFs simultaneously, causing memory overflow. The logs show:
+```
+Merging 4 batches into final PDF...
+Memory limit exceeded
 ```
 
-**Files to modify:**
-- `src/pages/PersonalizePreview.tsx` - Change aspect ratio in two places:
-  - Line 153 (dedication slide container)
-  - Line 215 (book page container in renderPage function)
+#### The Solution: Incremental Merge + Email Without Attachment
+
+Since the 300dpi images are too large for Edge Function memory limits, we need a different approach:
+
+**Option A: Progressive Merge (One batch at a time)**
+- Merge batches incrementally instead of all at once
+- After adding each batch, save and reload to free memory
+- Higher chance of success but still risky with large images
+
+**Option B: Skip PDF Attachment, Send Image Links Instead** (Recommended for now)
+- Generate PDF batches
+- Upload each batch PDF to Supabase Storage
+- Email production team with download links instead of attachment
+- Production team downloads PDFs as needed
+
+**Option C: Use External PDF Service**
+- Send images to a dedicated PDF generation service (like PDFShift, APITemplate.io)
+- Offload heavy processing to a service designed for large documents
+
+#### Recommended Implementation (Option B)
+
+```typescript
+// Instead of merging + attaching, upload batches to storage
+for (let i = 0; i < allBatches.length; i++) {
+  const filename = `orders/${order.order_number}/batch-${i}.pdf`;
+  await supabase.storage
+    .from('book-assets')
+    .upload(filename, allBatches[i], {
+      contentType: 'application/pdf'
+    });
+}
+
+// Email with links instead of attachment
+const downloadLinks = allBatches.map((_, i) => 
+  `${STORAGE_URL}/orders/${order.order_number}/batch-${i}.pdf`
+);
+
+// Email body includes download links
+```
+
+This bypasses the memory-intensive merge step entirely.
 
 ---
 
-### Part 2: Add Dedication Page to PDF Generation
+### Part 2: Create Shared Folder for Dedication
 
-#### What It Does
+#### Action Required
 
-After the ending pages, add a dedication spread that:
-- Uses the same dedication background image (needs to be uploaded to Supabase Storage)
-- Draws the "From" text on the left half of the spread
-- Draws the "Personal Message" text on the right half of the spread
-- Only added if the user has entered content in either field
+Create a SQL migration to add the dedication background to storage. Since the asset exists locally at `src/assets/personalization/dedication-background.jpg`, you'll need to:
 
-#### Technical Implementation
+1. **Manual upload approach**: 
+   - Go to [Supabase Storage](https://supabase.com/dashboard/project/udaudwkblphataokaexq/storage/buckets/book-assets)
+   - Create folder: `Shared`
+   - Upload: `dedication-background.jpg` renamed to `dedication.jpg`
 
-**File to modify:**
-- `supabase/functions/generate-book-pdf/index.ts`
+OR
 
-**Changes:**
+2. **Programmatic approach**: Use the existing `delete-bucket-files` Edge Function pattern to create an upload function
 
-1. **Upload dedication background** - The `dedication-background.jpg` needs to be uploaded to Supabase Storage in a shared location (e.g., `book-assets/Shared/dedication.jpg`)
+---
 
-2. **Add font embedding** - Use pdf-lib's standard fonts or embed a custom font for text rendering
+### Part 3: Delete Orphaned Storage Files
 
-3. **Create dedication page logic** - After ending pages, if `fromField` or `personalMessage` exists:
-   - Fetch the dedication background image
-   - Create a spread-sized page (63.4cm x 23cm)
-   - Draw text overlays:
-     - Left half: "From" text centered
-     - Right half: Personal message centered
-   - Split into two pages like other spreads
+#### Files to Remove
 
-4. **Text styling**:
-   - Font: Helvetica (standard PDF font, clean and readable)
-   - Size: Auto-scaled based on text length
-   - Color: Dark gray/black
-   - Positioning: Centered in each half
+| Path | Reason |
+|------|--------|
+| `Fairytale/.emptyFolderPlaceholder` | Empty placeholder, unused |
+| `Whiteboy/.emptyFolderPlaceholder` | Empty placeholder, unused |
+| `WildanimalthemeWB/1.jpg` | Orphaned - wrong folder structure |
+| `WildanimalthemeWB/6.jpg` - `WildanimalthemeWB/20.jpg` | 15 more orphaned files |
 
-#### PDF Structure After Update
+**Total: 18 files to delete**
 
-```text
-1. Cover spread (split into 2 pages)
-2. Intro 1 spread (split into 2 pages)
-3. Intro 2 spread (split into 2 pages)
-4. Letter pages (split into 2 pages each)
-5. Ending 1 spread (split into 2 pages)
-6. Ending 2 spread (split into 2 pages)
-7. Dedication spread (split into 2 pages) ← NEW
+#### Implementation
+
+Use the existing `delete-bucket-files` Edge Function or SQL to clean up:
+
+```sql
+DELETE FROM storage.objects 
+WHERE bucket_id = 'book-assets' 
+AND (
+  name LIKE 'Fairytale/.emptyFolderPlaceholder' 
+  OR name LIKE 'Whiteboy/.emptyFolderPlaceholder'
+  OR name LIKE 'WildanimalthemeWB/%'
+);
 ```
 
 ---
 
 ### Summary of Changes
 
-| File | Change |
-|------|--------|
-| `src/pages/PersonalizePreview.tsx` | Fix aspect ratio from `37/21` to `634/230` (2 locations) |
-| `supabase/functions/generate-book-pdf/index.ts` | Add dedication page with text overlay logic |
-| Supabase Storage | Upload `dedication.jpg` to `book-assets/Shared/` |
+| Component | Change | Priority |
+|-----------|--------|----------|
+| `supabase/functions/generate-book-pdf/index.ts` | Upload batch PDFs to storage + email links instead of attachment | Critical |
+| Supabase Storage | Create `Shared/dedication.jpg` | High |
+| Supabase Storage | Delete 18 orphaned files | Medium |
+| SQL Migration | Clean up orphaned storage objects | Medium |
 
 ---
 
-### Technical Details for PDF Text Overlay
+### Technical Implementation Details
 
-```typescript
-// Dedication page generation pseudocode
-if (bookData.fromField || bookData.personalMessage) {
-  // Fetch dedication background
-  const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
-  const dedicationImage = await fetchAndEmbed(dedicationUrl);
-  
-  // Create two pages from the spread
-  const { width, height } = dedicationImage.scale(1);
-  const halfWidth = width / 2;
-  
-  // Left page with "From" text
-  const leftPage = pdfDoc.addPage([halfWidth, height]);
-  leftPage.drawImage(dedicationImage, { x: 0, y: 0, width, height });
-  if (bookData.fromField) {
-    leftPage.drawText(bookData.fromField, {
-      x: halfWidth / 2,
-      y: height / 2,
-      size: 36,
-      font: helveticaFont,
-      color: rgb(0.2, 0.2, 0.2)
-    });
-  }
-  
-  // Right page with personal message
-  const rightPage = pdfDoc.addPage([halfWidth, height]);
-  rightPage.drawImage(dedicationImage, { x: -halfWidth, y: 0, width, height });
-  if (bookData.personalMessage) {
-    // Draw wrapped text centered on right half
-    drawCenteredText(rightPage, bookData.personalMessage, ...);
-  }
-}
+#### Modified Edge Function Flow
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    Generate Batches                         │
+│  (Same as before - Cover, Letters, Ending, Dedication)      │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│                Upload Each Batch to Storage                 │
+│  - Upload to: orders/{order_number}/batch-1.pdf             │
+│  - Upload to: orders/{order_number}/batch-2.pdf             │
+│  - etc.                                                     │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│              Email with Download Links                      │
+│  - Include links to all batch PDFs                          │
+│  - Production team downloads and prints                     │
+│  - Optional: Include instructions for page ordering         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Email Template Update
+
+```html
+<h2>Download Book PDF Files</h2>
+<ul>
+  <li><a href="...">Part 1: Cover & Intro (6 pages)</a></li>
+  <li><a href="...">Part 2: Letters J-A-K (6 pages)</a></li>
+  <li><a href="...">Part 3: Letter E (2 pages)</a></li>
+  <li><a href="...">Part 4: Ending (4 pages)</a></li>
+</ul>
+<p>Print all parts in order listed above.</p>
 ```
 
 ---
 
-### Pre-requisite Action Required
+### Alternative: Progressive Merge Approach
 
-Before implementing the PDF changes, you need to **upload the dedication background image** to Supabase Storage:
+If the production team absolutely needs a single PDF file:
 
-1. Go to: [Supabase Storage - book-assets bucket](https://supabase.com/dashboard/project/udaudwkblphataokaexq/storage/buckets/book-assets)
-2. Create a folder called `Shared`
-3. Upload `dedication-background.jpg` as `dedication.jpg`
+```typescript
+// Progressive merge - merge one batch at a time
+let accumulatedPdf = await PDFDocument.load(allBatches[0]);
 
-This ensures the Edge Function can access the same background image used in the preview.
+for (let i = 1; i < allBatches.length; i++) {
+  const nextBatch = await PDFDocument.load(allBatches[i]);
+  const pages = await accumulatedPdf.copyPages(
+    nextBatch, 
+    nextBatch.getPageIndices()
+  );
+  pages.forEach(page => accumulatedPdf.addPage(page));
+  
+  // Save and reload to free memory
+  const tempBytes = await accumulatedPdf.save();
+  accumulatedPdf = await PDFDocument.load(tempBytes);
+}
+
+const finalBytes = await accumulatedPdf.save();
+```
+
+This saves and reloads after each merge to release memory, but may still hit limits with very large images.
+
