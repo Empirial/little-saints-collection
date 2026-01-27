@@ -471,82 +471,8 @@ async function createAndUploadDedication(
   }
 }
 
-// Streaming progressive merge: fetch batches from Storage URLs and merge into single PDF
-// deno-lint-ignore no-explicit-any
-async function mergeFromStorageUrls(
-  supabase: any,
-  orderNumber: string,
-  batchUrls: string[]
-): Promise<{ url: string; totalPages: number } | null> {
-  try {
-    console.log(`Starting progressive merge of ${batchUrls.length} batches...`);
-    
-    let mergedPdf = await PDFDocument.create();
-    let totalPages = 0;
-    let pagesInCurrentSession = 0;
-    const PAGES_BEFORE_RELOAD = 10; // Save and reload every 10 pages to free memory
-    
-    for (let i = 0; i < batchUrls.length; i++) {
-      const batchUrl = batchUrls[i];
-      console.log(`Fetching batch ${i + 1}/${batchUrls.length}: ${batchUrl}`);
-      
-      const response = await fetch(batchUrl);
-      if (!response.ok) {
-        console.error(`Failed to fetch batch ${i + 1}: ${response.status}`);
-        continue;
-      }
-      
-      const pdfBytes = await response.arrayBuffer();
-      const sourcePdf = await PDFDocument.load(pdfBytes);
-      const pageIndices = sourcePdf.getPageIndices();
-      
-      // Copy pages from source to merged
-      const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
-      for (const page of copiedPages) {
-        mergedPdf.addPage(page);
-        totalPages++;
-        pagesInCurrentSession++;
-        
-        // Memory management: save and reload periodically
-        if (pagesInCurrentSession >= PAGES_BEFORE_RELOAD && i < batchUrls.length - 1) {
-          console.log(`Saving and reloading merged PDF (${totalPages} pages so far)...`);
-          const intermediateBytes = await mergedPdf.save();
-          mergedPdf = await PDFDocument.load(intermediateBytes);
-          pagesInCurrentSession = 0;
-        }
-      }
-      
-      console.log(`Added ${pageIndices.length} pages from batch ${i + 1}`);
-    }
-    
-    // Save final merged PDF
-    const finalBytes = await mergedPdf.save();
-    console.log(`Merged PDF complete: ${totalPages} total pages, ${finalBytes.byteLength} bytes`);
-    
-    // Upload merged PDF
-    const filename = `orders/${orderNumber}/complete-book.pdf`;
-    
-    const { error } = await supabase.storage
-      .from('book-assets')
-      .upload(filename, finalBytes, {
-        contentType: 'application/pdf',
-        upsert: true
-      });
-    
-    if (error) {
-      console.error(`Failed to upload merged PDF:`, error);
-      throw new Error(`Storage upload failed: ${error.message}`);
-    }
-    
-    const url = `${STORAGE_URL}/${filename}`;
-    console.log(`Uploaded complete book: ${url}`);
-    
-    return { url, totalPages };
-  } catch (error) {
-    console.error("Error merging PDFs:", error);
-    return null;
-  }
-}
+// Merge function removed to avoid memory limit issues
+// Batch PDFs are sent directly to production via email
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -675,18 +601,7 @@ serve(async (req) => {
 
     console.log(`All ${uploadedBatches.length} PDF batches uploaded. Total pages: ${totalPages}`);
 
-    // ============ MERGE ALL BATCHES INTO SINGLE PDF ============
-    console.log("Merging all batches into single complete-book.pdf...");
-    const batchUrls = uploadedBatches.map(b => b.url);
-    const mergeResult = await mergeFromStorageUrls(supabase, order.order_number, batchUrls);
-    
-    let completeBookUrl = '';
-    if (mergeResult) {
-      completeBookUrl = mergeResult.url;
-      console.log(`Complete book merged successfully: ${completeBookUrl}`);
-    }
-
-    // Generate download links HTML (batch links as fallback)
+    // Generate download links HTML for all batches
     const downloadLinksHtml = uploadedBatches.map((batch, idx) => 
       `<li style="margin: 8px 0;">
         <a href="${batch.url}" style="color: #5c4d9a; font-weight: bold;">
@@ -695,7 +610,8 @@ serve(async (req) => {
       </li>`
     ).join('');
 
-    // Send production email with merged PDF link + batch fallbacks
+    // Send production email with batch download links
+    console.log("Sending production email with batch links...");
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -743,26 +659,15 @@ serve(async (req) => {
               ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
             </div>
 
-            ${completeBookUrl ? `
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
-              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download Complete Book</h2>
-              <p style="margin: 15px 0;">
-                <a href="${completeBookUrl}" style="display: inline-block; background: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-                  ⬇️ Download Complete PDF (${totalPages} pages)
-                </a>
-              </p>
-              <p style="color: #555; font-size: 13px;">
-                This PDF includes 10mm bleed and crop marks for professional printing.
-              </p>
-            </div>
-            ` : ''}
-
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
-              <h3 style="margin-top: 0; color: #666;">📁 Individual Batch Files (Backup)</h3>
-              <p style="color: #888; font-size: 12px;">If the complete PDF fails to download, use these individual files:</p>
+              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download Book PDF Files</h2>
+              <p style="color: #555; font-size: 14px;">Download all parts below and combine them for printing:</p>
               <ol style="padding-left: 20px; color: #555;">
                 ${downloadLinksHtml}
               </ol>
+              <p style="color: #555; font-size: 13px; margin-top: 15px;">
+                Each PDF includes 10mm bleed and crop marks for professional printing.
+              </p>
             </div>
 
             <p style="color: #888; font-size: 12px; margin-top: 15px;">
@@ -783,16 +688,15 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
-    console.log("Book order email with merged PDF link sent successfully for order:", order.order_number);
+    console.log("Book order email sent successfully for order:", order.order_number);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book PDF generated with bleed and crop marks, merged, and email sent to production",
+        message: "Book PDF generated and email sent to production",
         orderNumber: order.order_number,
         pageCount: totalPages,
         batchCount: uploadedBatches.length,
-        completeBookUrl: completeBookUrl,
         downloadUrls: uploadedBatches.map(b => b.url)
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
