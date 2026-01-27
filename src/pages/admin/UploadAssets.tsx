@@ -49,7 +49,10 @@ const UploadAssets = () => {
           .list(`${character}/${folder}`);
 
         const expectedCount = FOLDER_FILE_COUNTS[folder];
-        const uploadedCount = error ? 0 : (data?.filter(f => f.name.endsWith('.jpg')).length || 0);
+        const uploadedCount = error ? 0 : (data?.filter(f => {
+          const n = f.name.toLowerCase();
+          return n.endsWith('.jpg') || n.endsWith('.jpeg');
+        }).length || 0);
         
         statuses.push({
           character,
@@ -67,7 +70,10 @@ const UploadAssets = () => {
           .from("book-assets")
           .list(`${character}/${theme}`);
 
-        const uploadedCount = error ? 0 : (data?.filter(f => f.name.endsWith('.jpg')).length || 0);
+        const uploadedCount = error ? 0 : (data?.filter(f => {
+          const n = f.name.toLowerCase();
+          return n.endsWith('.jpg') || n.endsWith('.jpeg');
+        }).length || 0);
         
         statuses.push({
           character,

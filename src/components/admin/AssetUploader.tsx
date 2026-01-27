@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useId, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ interface FileUploadStatus {
 
 const AssetUploader = ({ character, folder, folderType, expectedFileCount, onComplete }: AssetUploaderProps) => {
   const { toast } = useToast();
+  const inputId = useId();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadStatuses, setUploadStatuses] = useState<FileUploadStatus[]>([]);
@@ -29,31 +30,33 @@ const AssetUploader = ({ character, folder, folderType, expectedFileCount, onCom
 
   const validateFileName = (name: string): boolean => {
     const lowerName = name.toLowerCase();
+    const isJpeg = /\.(jpe?g)$/.test(lowerName);
+    if (!isJpeg) return false;
     
     // For Cover folder, expect "cover.jpg"
     if (folder === "Cover") {
-      return lowerName === "cover.jpg";
+      return lowerName === "cover.jpg" || lowerName === "cover.jpeg";
     }
     
     // For Intro and Ending folders, expect "1.jpg" or "2.jpg"
     if (folder === "Intro" || folder === "Ending") {
-      const match = lowerName.match(/^(\d+)\.jpg$/);
+      const match = lowerName.match(/^(\d+)\.(jpe?g)$/);
       if (!match) return false;
       const num = parseInt(match[1], 10);
       return num >= 1 && num <= 2;
     }
     
     // For theme folders, expect "1.jpg" to "26.jpg"
-    const match = lowerName.match(/^(\d+)\.jpg$/);
+    const match = lowerName.match(/^(\d+)\.(jpe?g)$/);
     if (!match) return false;
     const num = parseInt(match[1], 10);
     return num >= 1 && num <= 26;
   };
 
   const getExpectedFileNames = (): string => {
-    if (folder === "Cover") return "cover.jpg";
-    if (folder === "Intro" || folder === "Ending") return "1.jpg, 2.jpg";
-    return "1.jpg to 26.jpg";
+    if (folder === "Cover") return "cover.jpg (or cover.jpeg)";
+    if (folder === "Intro" || folder === "Ending") return "1.jpg/1.jpeg, 2.jpg/2.jpeg";
+    return "1.jpg to 26.jpg (or .jpeg)";
   };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -119,6 +122,8 @@ const AssetUploader = ({ character, folder, folderType, expectedFileCount, onCom
 
     const totalFiles = files.length;
     let completedFiles = 0;
+    let successCountLocal = 0;
+    let errorCountLocal = 0;
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
@@ -137,12 +142,15 @@ const AssetUploader = ({ character, folder, folderType, expectedFileCount, onCom
 
         if (error) throw error;
 
+        successCountLocal++;
+
         setUploadStatuses((prev) =>
           prev.map((s) =>
             s.name === file.name ? { ...s, status: "success" } : s
           )
         );
       } catch (error: any) {
+        errorCountLocal++;
         setUploadStatuses((prev) =>
           prev.map((s) =>
             s.name === file.name
@@ -157,11 +165,10 @@ const AssetUploader = ({ character, folder, folderType, expectedFileCount, onCom
     }
 
     setIsUploading(false);
-    
-    const successCount = uploadStatuses.filter(s => s.status === "success").length + 1;
+
     toast({
       title: "Upload complete",
-      description: `${successCount} files uploaded to ${character}/${folder}`,
+      description: `${successCountLocal} uploaded${errorCountLocal ? `, ${errorCountLocal} failed` : ""} → ${character}/${folder}`,
     });
 
     setTimeout(() => {
@@ -198,10 +205,10 @@ const AssetUploader = ({ character, folder, folderType, expectedFileCount, onCom
           multiple
           onChange={handleFileSelect}
           className="hidden"
-          id="file-input"
+          id={inputId}
         />
         <Button asChild variant="outline" size="sm">
-          <label htmlFor="file-input" className="cursor-pointer">
+          <label htmlFor={inputId} className="cursor-pointer">
             Select Files
           </label>
         </Button>
