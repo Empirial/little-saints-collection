@@ -86,7 +86,7 @@ const PersonalizeBook = () => {
 
               <div className="space-y-3">
                 <Label className="font-inter text-foreground">Choose Your Character</Label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   {gender === "boy" ? (
                     <>
                       <Card
@@ -95,11 +95,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("light")}
                       >
-                        <CardContent className="p-4 flex items-center justify-center">
+                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
                           <img
                             src={charBoyLight}
                             alt="Lighter skin tone boy"
-                            className="w-full h-32 object-contain rounded-lg"
+                            className="w-full max-h-28 sm:max-h-32 object-contain"
                           />
                         </CardContent>
                       </Card>
@@ -109,11 +109,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("dark")}
                       >
-                        <CardContent className="p-4 flex items-center justify-center">
+                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
                           <img
                             src={charBoyDark}
                             alt="Darker skin tone boy"
-                            className="w-full h-32 object-contain rounded-lg"
+                            className="w-full max-h-28 sm:max-h-32 object-contain"
                           />
                         </CardContent>
                       </Card>
@@ -126,11 +126,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("light")}
                       >
-                        <CardContent className="p-4 flex items-center justify-center">
+                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
                           <img
                             src={charGirlLight}
                             alt="Lighter skin tone girl"
-                            className="w-full h-32 object-contain rounded-lg"
+                            className="w-full max-h-28 sm:max-h-32 object-contain"
                           />
                         </CardContent>
                       </Card>
@@ -140,11 +140,11 @@ const PersonalizeBook = () => {
                         }`}
                         onClick={() => setSkinTone("dark")}
                       >
-                        <CardContent className="p-4 flex items-center justify-center">
+                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
                           <img
                             src={charGirlDark}
                             alt="Darker skin tone girl"
-                            className="w-full h-32 object-contain rounded-lg"
+                            className="w-full max-h-28 sm:max-h-32 object-contain"
                           />
                         </CardContent>
                       </Card>

@@ -142,12 +142,8 @@ const PersonalizePreview = () => {
     return pages;
   };
 
-  // Render dedication slide with text overlay
+  // Render dedication slide with text overlay (ALWAYS shown - compulsory page)
   const renderDedicationSlide = () => {
-    if (!fromField.trim() && !personalMessage.trim()) {
-      return null;
-    }
-
     return (
       <div
         className="relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border"

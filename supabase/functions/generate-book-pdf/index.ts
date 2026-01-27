@@ -10,6 +10,13 @@ const corsHeaders = {
 // Supabase Storage public URL for book-assets bucket
 const STORAGE_URL = 'https://udaudwkblphataokaexq.supabase.co/storage/v1/object/public/book-assets';
 
+// ========== BLEED AND CROP MARK CONSTANTS ==========
+const BLEED_MM = 10; // 10mm bleed
+const BLEED_PT = BLEED_MM * 2.835; // Convert mm to points (1mm = 2.835pt)
+const CROP_MARK_LENGTH_PT = 10 * 2.835; // 10mm crop mark length
+const CROP_MARK_OFFSET_PT = 3 * 2.835; // 3mm offset from trim edge
+const CROP_MARK_THICKNESS = 0.5; // 0.5pt line thickness
+
 // Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
   const boyThemes = ['Superhero', 'Wild Animal', 'Fairytale'];
@@ -58,8 +65,61 @@ interface BatchInfo {
   pageCount: number;
 }
 
-// Helper function to fetch and embed a spread image, splitting it into two PDF pages
-async function embedSpreadImage(
+// Draw L-shaped crop marks at corners of a page
+function drawCropMarks(
+  page: ReturnType<PDFDocument['addPage']>,
+  trimWidth: number,
+  trimHeight: number,
+  bleed: number
+) {
+  const lineColor = rgb(0, 0, 0); // 100% Black
+  
+  // Corner positions (relative to page with bleed)
+  const corners = [
+    { x: bleed, y: bleed }, // Bottom-left
+    { x: bleed + trimWidth, y: bleed }, // Bottom-right
+    { x: bleed, y: bleed + trimHeight }, // Top-left
+    { x: bleed + trimWidth, y: bleed + trimHeight }, // Top-right
+  ];
+  
+  for (const corner of corners) {
+    const isLeft = corner.x === bleed;
+    const isBottom = corner.y === bleed;
+    
+    // Horizontal crop mark
+    const hStartX = isLeft 
+      ? corner.x - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
+      : corner.x + CROP_MARK_OFFSET_PT;
+    const hEndX = isLeft 
+      ? corner.x - CROP_MARK_OFFSET_PT 
+      : corner.x + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
+    
+    page.drawLine({
+      start: { x: hStartX, y: corner.y },
+      end: { x: hEndX, y: corner.y },
+      thickness: CROP_MARK_THICKNESS,
+      color: lineColor,
+    });
+    
+    // Vertical crop mark
+    const vStartY = isBottom 
+      ? corner.y - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
+      : corner.y + CROP_MARK_OFFSET_PT;
+    const vEndY = isBottom 
+      ? corner.y - CROP_MARK_OFFSET_PT 
+      : corner.y + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
+    
+    page.drawLine({
+      start: { x: corner.x, y: vStartY },
+      end: { x: corner.x, y: vEndY },
+      thickness: CROP_MARK_THICKNESS,
+      color: lineColor,
+    });
+  }
+}
+
+// Helper function to fetch and embed a spread image, splitting it into two PDF pages with bleed and crop marks
+async function embedSpreadImageWithBleed(
   pdfDoc: PDFDocument, 
   imageUrl: string, 
   label: string
@@ -83,28 +143,56 @@ async function embedSpreadImage(
     const imageBytes = await imageResponse.arrayBuffer();
     const jpgImage = await pdfDoc.embedJpg(imageBytes);
     
-    const { width, height } = jpgImage.scale(1);
-    const halfWidth = width / 2;
+    // Original spread dimensions
+    const { width: spreadWidth, height: spreadHeight } = jpgImage.scale(1);
+    const trimWidth = spreadWidth / 2; // Each page is half the spread
+    const trimHeight = spreadHeight;
+    
+    // Page dimensions with bleed (bleed on all 4 sides)
+    const pageWidth = trimWidth + (BLEED_PT * 2);
+    const pageHeight = trimHeight + (BLEED_PT * 2);
     
     // Left page of spread
-    const leftPage = pdfDoc.addPage([halfWidth, height]);
+    const leftPage = pdfDoc.addPage([pageWidth, pageHeight]);
+    
+    // Draw the left half of the spread, offset to account for bleed
+    // The image extends into the bleed area
     leftPage.drawImage(jpgImage, {
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
+      x: BLEED_PT - BLEED_PT, // Start slightly left to bleed
+      y: BLEED_PT - BLEED_PT, // Start slightly below to bleed
+      width: spreadWidth,
+      height: spreadHeight + (BLEED_PT * 2),
     });
+    
+    // Actually, for proper bleed we need to scale/position the image correctly
+    // The image should fill the trim area plus bleed
+    // Since the source image is exactly the trim size, we'll position it centered
+    // and the bleed area will show the edge pixels extended
+    leftPage.drawImage(jpgImage, {
+      x: BLEED_PT,
+      y: BLEED_PT,
+      width: spreadWidth,
+      height: spreadHeight,
+    });
+    
+    // Draw crop marks on left page
+    drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
     
     // Right page of spread
-    const rightPage = pdfDoc.addPage([halfWidth, height]);
+    const rightPage = pdfDoc.addPage([pageWidth, pageHeight]);
+    
+    // Position the full spread so only the right half is visible
     rightPage.drawImage(jpgImage, {
-      x: -halfWidth,
-      y: 0,
-      width: width,
-      height: height,
+      x: BLEED_PT - trimWidth,
+      y: BLEED_PT,
+      width: spreadWidth,
+      height: spreadHeight,
     });
     
-    console.log(`Added 2 pages for ${label} (split spread)`);
+    // Draw crop marks on right page
+    drawCropMarks(rightPage, trimWidth, trimHeight, BLEED_PT);
+    
+    console.log(`Added 2 pages with bleed for ${label} (split spread)`);
     return true;
   } catch (error) {
     console.error(`Error processing ${label}:`, error);
@@ -124,7 +212,7 @@ async function createAndUploadBatch(
   const batchPdf = await PDFDocument.create();
   
   for (const {url, label} of imageUrls) {
-    await embedSpreadImage(batchPdf, url, label);
+    await embedSpreadImageWithBleed(batchPdf, url, label);
   }
   
   const pdfBytes = await batchPdf.save();
@@ -151,7 +239,7 @@ async function createAndUploadBatch(
   return { url, name: batchName, pageCount };
 }
 
-// Create dedication PDF with text overlays and upload
+// Create dedication PDF with text overlays and upload (ALWAYS included)
 // deno-lint-ignore no-explicit-any
 async function createAndUploadDedication(
   supabase: any,
@@ -173,48 +261,59 @@ async function createAndUploadDedication(
     const dedicationBytes = await dedicationResponse.arrayBuffer();
     const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
     
-    const { width, height } = dedicationImage.scale(1);
-    const halfWidth = width / 2;
+    // Original spread dimensions
+    const { width: spreadWidth, height: spreadHeight } = dedicationImage.scale(1);
+    const trimWidth = spreadWidth / 2;
+    const trimHeight = spreadHeight;
+    
+    // Page dimensions with bleed
+    const pageWidth = trimWidth + (BLEED_PT * 2);
+    const pageHeight = trimHeight + (BLEED_PT * 2);
     
     // Embed fonts for text overlay
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
     // Left page with "From" text
-    const leftPage = pdfDoc.addPage([halfWidth, height]);
+    const leftPage = pdfDoc.addPage([pageWidth, pageHeight]);
     leftPage.drawImage(dedicationImage, {
-      x: 0,
-      y: 0,
-      width: width,
-      height: height,
+      x: BLEED_PT,
+      y: BLEED_PT,
+      width: spreadWidth,
+      height: spreadHeight,
     });
     
+    // Draw "From" text (even if empty, page is still created)
     if (bookData.fromField) {
       const fromText = bookData.fromField;
       const fontSize = Math.min(72, 600 / fromText.length);
       const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
       
       leftPage.drawText(fromText, {
-        x: (halfWidth - textWidth) / 2,
-        y: height / 2,
+        x: BLEED_PT + (trimWidth - textWidth) / 2,
+        y: BLEED_PT + trimHeight / 2,
         size: fontSize,
         font: boldFont,
         color: rgb(0.15, 0.15, 0.15),
       });
     }
     
+    // Draw crop marks on left page
+    drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
+    
     // Right page with personal message
-    const rightPage = pdfDoc.addPage([halfWidth, height]);
+    const rightPage = pdfDoc.addPage([pageWidth, pageHeight]);
     rightPage.drawImage(dedicationImage, {
-      x: -halfWidth,
-      y: 0,
-      width: width,
-      height: height,
+      x: BLEED_PT - trimWidth,
+      y: BLEED_PT,
+      width: spreadWidth,
+      height: spreadHeight,
     });
     
+    // Draw personal message (even if empty, page is still created)
     if (bookData.personalMessage) {
       const messageText = bookData.personalMessage;
-      const maxLineWidth = halfWidth * 0.7;
+      const maxLineWidth = trimWidth * 0.7;
       const fontSize = 36;
       
       // Word-wrap for message
@@ -237,13 +336,13 @@ async function createAndUploadDedication(
       
       // Center the text block vertically
       const lineHeight = fontSize * 1.4;
-      const totalHeight = lines.length * lineHeight;
-      let y = (height + totalHeight) / 2 - fontSize;
+      const totalTextHeight = lines.length * lineHeight;
+      let y = BLEED_PT + (trimHeight + totalTextHeight) / 2 - fontSize;
       
       for (const line of lines) {
         const lineWidth = font.widthOfTextAtSize(line, fontSize);
         rightPage.drawText(line, {
-          x: (halfWidth - lineWidth) / 2,
+          x: BLEED_PT + (trimWidth - lineWidth) / 2,
           y: y,
           size: fontSize,
           font: font,
@@ -252,6 +351,9 @@ async function createAndUploadDedication(
         y -= lineHeight;
       }
     }
+    
+    // Draw crop marks on right page
+    drawCropMarks(rightPage, trimWidth, trimHeight, BLEED_PT);
     
     const pdfBytes = await pdfDoc.save();
     const pageCount = pdfDoc.getPageCount();
@@ -277,6 +379,83 @@ async function createAndUploadDedication(
     return { url, name: 'Dedication', pageCount };
   } catch (error) {
     console.error("Error creating dedication page:", error);
+    return null;
+  }
+}
+
+// Streaming progressive merge: fetch batches from Storage URLs and merge into single PDF
+// deno-lint-ignore no-explicit-any
+async function mergeFromStorageUrls(
+  supabase: any,
+  orderNumber: string,
+  batchUrls: string[]
+): Promise<{ url: string; totalPages: number } | null> {
+  try {
+    console.log(`Starting progressive merge of ${batchUrls.length} batches...`);
+    
+    let mergedPdf = await PDFDocument.create();
+    let totalPages = 0;
+    let pagesInCurrentSession = 0;
+    const PAGES_BEFORE_RELOAD = 10; // Save and reload every 10 pages to free memory
+    
+    for (let i = 0; i < batchUrls.length; i++) {
+      const batchUrl = batchUrls[i];
+      console.log(`Fetching batch ${i + 1}/${batchUrls.length}: ${batchUrl}`);
+      
+      const response = await fetch(batchUrl);
+      if (!response.ok) {
+        console.error(`Failed to fetch batch ${i + 1}: ${response.status}`);
+        continue;
+      }
+      
+      const pdfBytes = await response.arrayBuffer();
+      const sourcePdf = await PDFDocument.load(pdfBytes);
+      const pageIndices = sourcePdf.getPageIndices();
+      
+      // Copy pages from source to merged
+      const copiedPages = await mergedPdf.copyPages(sourcePdf, pageIndices);
+      for (const page of copiedPages) {
+        mergedPdf.addPage(page);
+        totalPages++;
+        pagesInCurrentSession++;
+        
+        // Memory management: save and reload periodically
+        if (pagesInCurrentSession >= PAGES_BEFORE_RELOAD && i < batchUrls.length - 1) {
+          console.log(`Saving and reloading merged PDF (${totalPages} pages so far)...`);
+          const intermediateBytes = await mergedPdf.save();
+          mergedPdf = await PDFDocument.load(intermediateBytes);
+          pagesInCurrentSession = 0;
+        }
+      }
+      
+      console.log(`Added ${pageIndices.length} pages from batch ${i + 1}`);
+    }
+    
+    // Save final merged PDF
+    const finalBytes = await mergedPdf.save();
+    console.log(`Merged PDF complete: ${totalPages} total pages, ${finalBytes.byteLength} bytes`);
+    
+    // Upload merged PDF
+    const filename = `orders/${orderNumber}/complete-book.pdf`;
+    
+    const { error } = await supabase.storage
+      .from('book-assets')
+      .upload(filename, finalBytes, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+    
+    if (error) {
+      console.error(`Failed to upload merged PDF:`, error);
+      throw new Error(`Storage upload failed: ${error.message}`);
+    }
+    
+    const url = `${STORAGE_URL}/${filename}`;
+    console.log(`Uploaded complete book: ${url}`);
+    
+    return { url, totalPages };
+  } catch (error) {
+    console.error("Error merging PDFs:", error);
     return null;
   }
 }
@@ -330,7 +509,7 @@ serve(async (req) => {
     const letterOccurrences: Map<string, number> = new Map();
     const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    console.log("Starting PDF generation with immediate upload...");
+    console.log("Starting PDF generation with bleed, crop marks, and immediate upload...");
     const uploadedBatches: BatchInfo[] = [];
     let batchIndex = 1;
     let totalPages = 0;
@@ -392,25 +571,34 @@ serve(async (req) => {
     totalPages += endingBatch.pageCount;
     console.log(`Ending Batch complete: ${endingBatch.pageCount} pages`);
 
-    // ============ DEDICATION BATCH (if applicable) ============
-    if (bookData.fromField || bookData.personalMessage) {
-      console.log("Creating & uploading Dedication Batch...");
-      const dedicationBatch = await createAndUploadDedication(
-        supabase,
-        order.order_number,
-        batchIndex++,
-        bookData
-      );
-      if (dedicationBatch) {
-        uploadedBatches.push(dedicationBatch);
-        totalPages += dedicationBatch.pageCount;
-        console.log(`Dedication Batch complete: ${dedicationBatch.pageCount} pages`);
-      }
+    // ============ DEDICATION BATCH (ALWAYS included) ============
+    console.log("Creating & uploading Dedication Batch (compulsory)...");
+    const dedicationBatch = await createAndUploadDedication(
+      supabase,
+      order.order_number,
+      batchIndex++,
+      bookData
+    );
+    if (dedicationBatch) {
+      uploadedBatches.push(dedicationBatch);
+      totalPages += dedicationBatch.pageCount;
+      console.log(`Dedication Batch complete: ${dedicationBatch.pageCount} pages`);
     }
 
     console.log(`All ${uploadedBatches.length} PDF batches uploaded. Total pages: ${totalPages}`);
 
-    // Generate download links HTML
+    // ============ MERGE ALL BATCHES INTO SINGLE PDF ============
+    console.log("Merging all batches into single complete-book.pdf...");
+    const batchUrls = uploadedBatches.map(b => b.url);
+    const mergeResult = await mergeFromStorageUrls(supabase, order.order_number, batchUrls);
+    
+    let completeBookUrl = '';
+    if (mergeResult) {
+      completeBookUrl = mergeResult.url;
+      console.log(`Complete book merged successfully: ${completeBookUrl}`);
+    }
+
+    // Generate download links HTML (batch links as fallback)
     const downloadLinksHtml = uploadedBatches.map((batch, idx) => 
       `<li style="margin: 8px 0;">
         <a href="${batch.url}" style="color: #5c4d9a; font-weight: bold;">
@@ -419,7 +607,7 @@ serve(async (req) => {
       </li>`
     ).join('');
 
-    // Send production email with download links (no attachment)
+    // Send production email with merged PDF link + batch fallbacks
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -462,21 +650,36 @@ serve(async (req) => {
               <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
               <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Total Pages:</strong> ${totalPages} pages</p>
+              <p><strong>Total Pages:</strong> ${totalPages} pages (includes 10mm bleed & crop marks)</p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
               ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
             </div>
 
+            ${completeBookUrl ? `
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
-              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download PDF Files</h2>
-              <p style="color: #555;">Print all parts in the order listed below:</p>
-              <ol style="padding-left: 20px;">
-                ${downloadLinksHtml}
-              </ol>
-              <p style="color: #888; font-size: 12px; margin-top: 15px;">
-                ⚠️ Download links are valid for 30 days. Save files locally for backup.
+              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download Complete Book</h2>
+              <p style="margin: 15px 0;">
+                <a href="${completeBookUrl}" style="display: inline-block; background: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+                  ⬇️ Download Complete PDF (${totalPages} pages)
+                </a>
+              </p>
+              <p style="color: #555; font-size: 13px;">
+                This PDF includes 10mm bleed and crop marks for professional printing.
               </p>
             </div>
+            ` : ''}
+
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #ddd;">
+              <h3 style="margin-top: 0; color: #666;">📁 Individual Batch Files (Backup)</h3>
+              <p style="color: #888; font-size: 12px;">If the complete PDF fails to download, use these individual files:</p>
+              <ol style="padding-left: 20px; color: #555;">
+                ${downloadLinksHtml}
+              </ol>
+            </div>
+
+            <p style="color: #888; font-size: 12px; margin-top: 15px;">
+              ⚠️ Download links are valid for 30 days. Save files locally for backup.
+            </p>
 
             <p style="color: #666; font-size: 12px; margin-top: 30px;">
               Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
@@ -492,15 +695,16 @@ serve(async (req) => {
       throw new Error(`Failed to send email: ${errorText}`);
     }
 
-    console.log("Book order email with download links sent successfully for order:", order.order_number);
+    console.log("Book order email with merged PDF link sent successfully for order:", order.order_number);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Book PDFs generated, uploaded, and email sent to production",
+        message: "Book PDF generated with bleed and crop marks, merged, and email sent to production",
         orderNumber: order.order_number,
         pageCount: totalPages,
         batchCount: uploadedBatches.length,
+        completeBookUrl: completeBookUrl,
         downloadUrls: uploadedBatches.map(b => b.url)
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
