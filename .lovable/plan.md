@@ -1,92 +1,173 @@
 
 
-## Switch Preview to Use WebP Images from personalization Folder
+# Implementation Plan: Fix Missing Assets & Complete System
 
-### Summary
+## Summary
 
-Update the preview to use WebP images from `src/assets/personalization/` instead of JPG images from `src/assets/personalizationjpg/`. This will improve performance as WebP files are 25-35% smaller than JPGs.
+The Cover, Intro, and Ending images are not showing because they haven't been uploaded to Supabase Storage yet. This plan addresses the missing assets and provides options for the preview system.
 
 ---
 
-### What Needs to Change
+## Problem Analysis
 
-Only one file needs modification:
+### Current State
+| Asset Type | Local Directory | Supabase Storage |
+|------------|-----------------|------------------|
+| Letter Pages (themed) | ✅ WebP files in `personalization/` | ❌ Not uploaded |
+| Cover | ❌ Not in local | ❌ Not in storage |
+| Intro (1.jpg, 2.jpg) | ❌ Not in local | ❌ Not in storage |
+| Ending (1.jpg, 2.jpg) | ❌ Not in local | ❌ Not in storage |
+| Dedication | ✅ Local JPG | ✅ `Shared/dedication.jpg` |
 
+### Why Images Don't Show
+The preview code references Supabase Storage URLs:
+```typescript
+image: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`
+```
+
+But these paths don't exist in the bucket yet.
+
+---
+
+## Solution: Two Options
+
+### Option A: Upload Missing Assets to Storage (Recommended)
+Upload the required assets to these exact paths in `book-assets` bucket:
+
+```text
+book-assets/
+├── Blackboy/
+│   ├── Cover/cover.jpg
+│   ├── Intro/1.jpg
+│   ├── Intro/2.jpg
+│   ├── Ending/1.jpg
+│   └── Ending/2.jpg
+├── Blackgirl/
+│   ├── Cover/cover.jpg
+│   ├── Intro/1.jpg
+│   ├── Intro/2.jpg
+│   ├── Ending/1.jpg
+│   └── Ending/2.jpg
+├── Whiteboy/
+│   ├── Cover/cover.jpg
+│   ├── Intro/1.jpg
+│   ├── Intro/2.jpg
+│   ├── Ending/1.jpg
+│   └── Ending/2.jpg
+├── Whitegirl/
+│   ├── Cover/cover.jpg
+│   ├── Intro/1.jpg
+│   ├── Intro/2.jpg
+│   ├── Ending/1.jpg
+│   └── Ending/2.jpg
+└── Shared/
+    └── dedication.jpg ✅ (already uploaded)
+```
+
+**Upload URL:** https://supabase.com/dashboard/project/udaudwkblphataokaexq/storage/buckets/book-assets
+
+---
+
+### Option B: Add Placeholder/Fallback UI
+Add loading states and fallback UI when images fail to load, showing a placeholder instead of broken images.
+
+---
+
+## Code Changes
+
+### 1. Add Image Loading States & Error Handling
+
+**File: `src/pages/PersonalizePreview.tsx`**
+
+Add state to track image loading errors and show appropriate fallback:
+
+```typescript
+// Add error handling for images that fail to load
+const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+const handleImageError = (index: number) => {
+  setImageErrors(prev => new Set([...prev, index]));
+};
+
+// In renderPage function, update img tags:
+<img
+  src={page.image}
+  alt={`${page.type} page`}
+  className="absolute inset-0 w-full h-full object-cover"
+  loading={index < 3 ? "eager" : "lazy"}
+  onError={() => handleImageError(index)}
+/>
+
+// Show fallback when image fails:
+{imageErrors.has(index) && (
+  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-accent/10">
+    <div className="text-center">
+      <Skeleton className="w-full h-full absolute inset-0" />
+      <p className="relative z-10 text-muted-foreground font-inter text-sm">
+        {page.type === 'cover' ? 'Cover Page' : 
+         page.type === 'intro' ? 'Intro Page' : 'Ending Page'}
+      </p>
+    </div>
+  </div>
+)}
+```
+
+### 2. Add Loading Skeleton for Better UX
+
+Wrap images with loading state using the existing Skeleton component:
+
+```typescript
+// Add image loading state
+const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set(
+  book.map((_, i) => i) // Start with all images "loading"
+));
+
+const handleImageLoad = (index: number) => {
+  setLoadingImages(prev => {
+    const next = new Set(prev);
+    next.delete(index);
+    return next;
+  });
+};
+```
+
+---
+
+## Required Asset Uploads
+
+You need to upload **20 images** total (5 per character × 4 characters):
+
+| Character | Files Needed |
+|-----------|-------------|
+| Blackboy | cover.jpg, Intro/1.jpg, Intro/2.jpg, Ending/1.jpg, Ending/2.jpg |
+| Blackgirl | cover.jpg, Intro/1.jpg, Intro/2.jpg, Ending/1.jpg, Ending/2.jpg |
+| Whiteboy | cover.jpg, Intro/1.jpg, Intro/2.jpg, Ending/1.jpg, Ending/2.jpg |
+| Whitegirl | cover.jpg, Intro/1.jpg, Intro/2.jpg, Ending/1.jpg, Ending/2.jpg |
+
+**Image specs:** 63.4cm × 23cm (7488 × 2717 px at 300 DPI) for print quality
+
+---
+
+## Technical Summary
+
+### Files to Modify
 | File | Change |
 |------|--------|
-| `src/utils/getLetterImage.ts` | Update the glob path and image path lookup |
+| `src/pages/PersonalizePreview.tsx` | Add image error handling and loading states |
+
+### No Edge Function Changes Needed
+The Edge Function already has the correct paths - it just needs the assets to be uploaded.
 
 ---
 
-### Current vs New Structure
-
-**Current (personalizationjpg - JPG files):**
-```
-src/assets/personalizationjpg/
-├── Blackboy/Superherotheme/1.jpg, 2.jpg, ... 26.jpg
-├── Blackboy/Fairytaletheme/1.jpg, ... 26.jpg
-├── Blackboy/Wildanimaltheme/1.jpg, ... 26.jpg
-├── Blackgirl/...
-├── whiteboy/...
-└── whitegirl/...
-```
-
-**New (personalization - WebP files):**
-```
-src/assets/personalization/
-├── Blackboy/Superherotheme/1.webp, 2.webp, ... 26.webp
-├── Blackboy/Fairytaletheme/1.webp, ... 26.webp
-├── Blackboy/Wildanimaltheme/1.webp, ... 26.webp
-├── Blackgirl/...
-├── whiteboy/...
-└── whitegirl/...
-```
-
----
-
-### Code Changes
-
-**File: `src/utils/getLetterImage.ts`**
-
-```typescript
-// BEFORE (line 2-4):
-const images = import.meta.glob<{ default: string }>(
-  '/src/assets/personalizationjpg/**/*.{webp,jpg}',
-  { eager: true }
-);
-
-// AFTER:
-const images = import.meta.glob<{ default: string }>(
-  '/src/assets/personalization/**/*.{webp,jpg}',
-  { eager: true }
-);
-```
-
-```typescript
-// BEFORE (line 53):
-const path = `/src/assets/personalizationjpg/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
-
-// AFTER:
-const path = `/src/assets/personalization/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
-```
-
----
-
-### Benefits
+## Advantages of Supabase Storage (Reference)
 
 | Benefit | Description |
 |---------|-------------|
-| Smaller file size | WebP is 25-35% smaller than JPG |
-| Faster loading | Less data to download = faster preview |
-| Better quality | WebP maintains quality at lower file sizes |
-| Consistent format | Aligns with other WebP assets in the project |
-
----
-
-### No Other Changes Required
-
-The rest of the preview system (`PersonalizePreview.tsx`) doesn't need changes because:
-- It already imports the `getLetterImage` function
-- The function returns the image URL which works the same regardless of format
-- Cover, Intro, and Ending pages still load from Supabase Storage (JPG) - this change only affects letter pages
+| **Edge Function Access** | Server-side PDF generation can fetch images via HTTP |
+| **Independent Updates** | Update images without redeploying code |
+| **CDN Delivery** | Global edge caching for fast loading |
+| **Signed URLs** | Secure private access when needed |
+| **Scalability** | No bundle size impact, on-demand loading |
+| **Print-Ready Assets** | Store high-resolution JPGs separate from WebP previews |
 
