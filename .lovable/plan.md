@@ -1,160 +1,92 @@
 
-# Implementation Plan: 10mm Bleed, Crop Marks + PDF Merge
 
-## Overview
+## Switch Preview to Use WebP Images from personalization Folder
 
-This plan implements professional print-ready PDF generation with:
-1. **10mm bleed** on all page edges for print tolerance
-2. **Crop marks** at corners showing where to trim
-3. **Streaming progressive merge** to create a single complete PDF
-4. **Updated email** with single download link + batch fallback
+### Summary
+
+Update the preview to use WebP images from `src/assets/personalization/` instead of JPG images from `src/assets/personalizationjpg/`. This will improve performance as WebP files are 25-35% smaller than JPGs.
 
 ---
 
-## What Will Change
+### What Needs to Change
 
-### Edge Function: `generate-book-pdf/index.ts`
+Only one file needs modification:
 
-| Addition | Purpose |
-|----------|---------|
-| Bleed constants | Define 10mm bleed in points (28.35pt) |
-| `addBleedAndCropMarks()` | Add bleed area and draw trim marks on each page |
-| `drawCropMark()` | Draw L-shaped marks at each corner |
-| `mergeFromStorageUrls()` | Fetch batches from Storage and merge progressively |
-| Updated `embedSpreadImage()` | Include bleed area when creating pages |
-| Updated email template | Single merged PDF link with batch links as fallback |
+| File | Change |
+|------|--------|
+| `src/utils/getLetterImage.ts` | Update the glob path and image path lookup |
 
 ---
 
-## Technical Details
+### Current vs New Structure
 
-### 1. Bleed and Crop Mark Specifications
-
-| Specification | Value | Points |
-|---------------|-------|--------|
-| Bleed width | 10mm | 28.35pt |
-| Crop mark length | 10mm | 28.35pt |
-| Crop mark offset from trim | 3mm | 8.5pt |
-| Crop mark line thickness | 0.5pt | 0.5pt |
-| Crop mark color | 100% Black | rgb(0,0,0) |
-
-Visual representation:
-
-```text
-      |                         |
-      |                         |
-------+-------------------------+------  <- Crop marks
-      |   +-----------------+   |
-      |   |                 |   |
-      |   |   TRIM AREA     |   |        <- Final page size
-      |   |   (content)     |   |
-      |   |                 |   |
-      |   +-----------------+   |
-------+-------------------------+------
-      |                         |
-      |         BLEED           |        <- Extra 10mm
+**Current (personalizationjpg - JPG files):**
+```
+src/assets/personalizationjpg/
+├── Blackboy/Superherotheme/1.jpg, 2.jpg, ... 26.jpg
+├── Blackboy/Fairytaletheme/1.jpg, ... 26.jpg
+├── Blackboy/Wildanimaltheme/1.jpg, ... 26.jpg
+├── Blackgirl/...
+├── whiteboy/...
+└── whitegirl/...
 ```
 
-### 2. PDF Box Definitions
-
-Each page will have proper PDF metadata for professional printing:
-
-- **MediaBox**: Total page size including bleed (content + 20mm width, content + 20mm height)
-- **TrimBox**: Final printed size (where to cut)
-- **BleedBox**: Area including bleed allowance
-
-### 3. Streaming Progressive Merge Strategy
-
-To avoid memory issues:
-
-1. Generate each batch PDF with bleed/crop marks
-2. Upload immediately to Storage (already working)
-3. After all batches uploaded, fetch each from Storage URL one at a time
-4. Copy pages to merged document, then release source
-5. Save/reload the merged PDF every 10 pages to free internal buffers
-6. Upload final merged PDF to `orders/{order}/complete-book.pdf`
-
-### 4. New Function Flow
-
-```text
-Request with orderId
-        |
-        v
-+---------------------------+
-| Generate Batch PDFs       |
-| - Add 10mm bleed          |
-| - Draw crop marks         |
-| - Set TrimBox/BleedBox    |
-| - Upload to Storage       |
-+---------------------------+
-        |
-        v
-+---------------------------+
-| Merge from Storage URLs   |
-| - Fetch batch 1           |
-| - Copy pages to merged    |
-| - Fetch batch 2           |
-| - Copy pages to merged    |
-| - Save/reload every 10 pg |
-| - Continue until done     |
-+---------------------------+
-        |
-        v
-+---------------------------+
-| Upload complete-book.pdf  |
-| Send email with:          |
-| - Main: merged PDF link   |
-| - Backup: batch links     |
-+---------------------------+
+**New (personalization - WebP files):**
+```
+src/assets/personalization/
+├── Blackboy/Superherotheme/1.webp, 2.webp, ... 26.webp
+├── Blackboy/Fairytaletheme/1.webp, ... 26.webp
+├── Blackboy/Wildanimaltheme/1.webp, ... 26.webp
+├── Blackgirl/...
+├── whiteboy/...
+└── whitegirl/...
 ```
 
-### 5. Updated Email Template
+---
 
-The production team will receive:
-- **Primary download**: Single complete PDF with all pages
-- **Fallback section**: Individual batch links (collapsible)
-- Clear labeling that PDFs include bleed and crop marks
+### Code Changes
+
+**File: `src/utils/getLetterImage.ts`**
+
+```typescript
+// BEFORE (line 2-4):
+const images = import.meta.glob<{ default: string }>(
+  '/src/assets/personalizationjpg/**/*.{webp,jpg}',
+  { eager: true }
+);
+
+// AFTER:
+const images = import.meta.glob<{ default: string }>(
+  '/src/assets/personalization/**/*.{webp,jpg}',
+  { eager: true }
+);
+```
+
+```typescript
+// BEFORE (line 53):
+const path = `/src/assets/personalizationjpg/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
+
+// AFTER:
+const path = `/src/assets/personalization/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
+```
 
 ---
 
-## Files to Modify
+### Benefits
 
-| File | Changes |
-|------|---------|
-| `supabase/functions/generate-book-pdf/index.ts` | Add bleed/crop constants, new functions, update page creation, add merge logic, update email template |
-
----
-
-## Memory Management
-
-The approach manages Edge Function memory limits by:
-
-1. **Immediate upload**: Each batch uploaded right after creation, freeing memory
-2. **URL-based merge**: Fetches from Storage URLs instead of holding all data
-3. **Periodic save/reload**: Every 10 pages, save PDF bytes and reload to release internal pdf-lib buffers
-4. **Sequential processing**: Never more than 2 PDFs in memory simultaneously
+| Benefit | Description |
+|---------|-------------|
+| Smaller file size | WebP is 25-35% smaller than JPG |
+| Faster loading | Less data to download = faster preview |
+| Better quality | WebP maintains quality at lower file sizes |
+| Consistent format | Aligns with other WebP assets in the project |
 
 ---
 
-## Cost
+### No Other Changes Required
 
-**Free** - Uses only pdf-lib which is already installed. No external services required.
+The rest of the preview system (`PersonalizePreview.tsx`) doesn't need changes because:
+- It already imports the `getLetterImage` function
+- The function returns the image URL which works the same regardless of format
+- Cover, Intro, and Ending pages still load from Supabase Storage (JPG) - this change only affects letter pages
 
----
-
-## Expected Output
-
-After implementation, each order will generate:
-
-1. Individual batch PDFs (for fallback):
-   - `orders/LS-000XXX/batch-1-cover-intro.pdf`
-   - `orders/LS-000XXX/batch-2-letter-j.pdf`
-   - etc.
-
-2. Single merged PDF:
-   - `orders/LS-000XXX/complete-book.pdf`
-
-All PDFs will include:
-- 10mm bleed on all edges
-- L-shaped crop marks at corners
-- Proper TrimBox/BleedBox metadata for professional printing
