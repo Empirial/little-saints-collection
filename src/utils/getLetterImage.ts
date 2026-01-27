@@ -1,6 +1,6 @@
 // Dynamically import all personalization images
 const images = import.meta.glob<{ default: string }>(
-  '/src/assets/personalizationjpg/**/*.{webp,jpg}',
+  '/src/assets/personalization/**/*.{webp,jpg}',
   { eager: true }
 );
 
@@ -50,7 +50,7 @@ export const getLetterImage = (
   const extensions = ['webp', 'jpg'];
   
   for (const ext of extensions) {
-    const path = `/src/assets/personalizationjpg/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
+    const path = `/src/assets/personalization/${characterFolder}/${themeFolder}/${letterNum}.${ext}`;
     if (images[path]) {
       return images[path].default;
     }
