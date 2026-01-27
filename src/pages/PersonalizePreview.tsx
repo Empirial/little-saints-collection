@@ -79,14 +79,7 @@ const PersonalizePreview = () => {
     setImageErrors(prev => new Set([...prev, index]));
   }, []);
 
-  // Get child character based on gender and skin tone
-  const getChildCharacter = (gender: string, skinTone?: string) => {
-    if (gender === "boy") {
-      return skinTone === "dark" ? charBoyDark : charBoyLight;
-    }
-    return skinTone === "dark" ? charGirlDark : charGirlLight;
-  };
-
+  // Load personalization from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("personalization");
     if (saved) {
@@ -96,11 +89,31 @@ const PersonalizePreview = () => {
     }
   }, [navigate]);
 
+  // Initialize loading state when personalization changes - must be at top level
+  useEffect(() => {
+    if (personalization) {
+      const letters = personalization.childName.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
+      // Total pages: cover(1) + intro(2) + letters + ending(2)
+      const totalPages = 1 + 2 + letters.length + 2;
+      setLoadingImages(new Set(Array.from({ length: totalPages }, (_, i) => i)));
+      setImageErrors(new Set());
+    }
+  }, [personalization]);
+
+  // Get child character based on gender and skin tone
+  const getChildCharacter = (gender: string, skinTone?: string) => {
+    if (gender === "boy") {
+      return skinTone === "dark" ? charBoyDark : charBoyLight;
+    }
+    return skinTone === "dark" ? charGirlDark : charGirlLight;
+  };
+
   const handleCheckout = () => {
     localStorage.setItem("customization", JSON.stringify({ fromField, personalMessage }));
     navigate("/book-checkout");
   };
 
+  // Early return AFTER all hooks
   if (!personalization) {
     return null;
   }
@@ -209,12 +222,6 @@ const PersonalizePreview = () => {
     personalization.skinTone || 'light'
   );
 
-  // Initialize loading state for all images
-  useEffect(() => {
-    setLoadingImages(new Set(book.map((_, i) => i)));
-    setImageErrors(new Set());
-  }, [personalization]);
-
   // Background colors for variety
   const bgColors = [
     "from-primary/20 to-accent/10",
@@ -223,8 +230,6 @@ const PersonalizePreview = () => {
     "from-green-100 to-yellow-100",
     "from-pink-100 to-orange-100"
   ];
-
-
   // Render a single book page - aspect ratio 37:21 (book dimensions 37cm x 21cm)
   const renderPage = (page: typeof book[0], index: number) => {
     // Check if this is a page with a full-bleed image (cover, intro, ending, letter with image)
