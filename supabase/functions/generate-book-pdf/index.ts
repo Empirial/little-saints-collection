@@ -10,12 +10,33 @@ const corsHeaders = {
 // Supabase Storage public URL for book-assets bucket
 const STORAGE_URL = 'https://udaudwkblphataokaexq.supabase.co/storage/v1/object/public/book-assets';
 
-// ========== BLEED AND CROP MARK CONSTANTS ==========
-const BLEED_MM = 10; // 10mm bleed
-const BLEED_PT = BLEED_MM * 2.835; // Convert mm to points (1mm = 2.835pt)
-const CROP_MARK_LENGTH_PT = 10 * 2.835; // 10mm crop mark length
-const CROP_MARK_OFFSET_PT = 3 * 2.835; // 3mm offset from trim edge
+// ========== PRINT SPECIFICATIONS ==========
+// Canvas dimensions: 63.4cm x 23cm spread (full open book)
+const SPREAD_WIDTH_CM = 63.4;
+const SPREAD_HEIGHT_CM = 23;
+const CM_TO_PT = 28.35; // 1cm = 28.35 points
+
+// Derived spread dimensions in points
+const SPREAD_WIDTH_PT = SPREAD_WIDTH_CM * CM_TO_PT; // 1797.39pt
+const SPREAD_HEIGHT_PT = SPREAD_HEIGHT_CM * CM_TO_PT; // 652.05pt
+
+// Each page is half the spread
+const PAGE_WIDTH_CM = 31.7; // 63.4 / 2
+const PAGE_WIDTH_PT = PAGE_WIDTH_CM * CM_TO_PT; // 898.695pt
+const PAGE_HEIGHT_PT = SPREAD_HEIGHT_PT; // 652.05pt
+
+// Bleed: 10mm on all sides
+const BLEED_MM = 10;
+const BLEED_PT = BLEED_MM * 2.835; // 28.35pt
+
+// Crop marks: offset by 10mm from trim edge, 10mm length
+const CROP_MARK_OFFSET_PT = 10 * 2.835; // 28.35pt offset from trim
+const CROP_MARK_LENGTH_PT = 10 * 2.835; // 28.35pt length
 const CROP_MARK_THICKNESS = 0.5; // 0.5pt line thickness
+
+// Dedication text positioning (in cm from left edge of respective page)
+const LEFT_PAGE_TEXT_CENTER_CM = 15.85; // Center of left page (31.7 / 2)
+const RIGHT_PAGE_TEXT_CENTER_CM = 15.85; // Center of right page (relative to right page origin)
 
 // Theme assignment based on gender and occurrence
 const getThemeForLetter = (occurrenceIndex: number, gender: string): string => {
@@ -66,31 +87,36 @@ interface BatchInfo {
 }
 
 // Draw L-shaped crop marks at corners of a page
+// Crop marks are positioned 10mm OUTSIDE the trim edge (in the bleed area)
 function drawCropMarks(
   page: ReturnType<PDFDocument['addPage']>,
   trimWidth: number,
   trimHeight: number,
   bleed: number
 ) {
-  const lineColor = rgb(0, 0, 0); // 100% Black
+  const lineColor = rgb(0, 0, 0); // 100% Black (registration color)
   
-  // Corner positions (relative to page with bleed)
+  // Trim box corners (where the paper will be cut)
+  // These are relative to the full page including bleed
+  const trimLeft = bleed;
+  const trimRight = bleed + trimWidth;
+  const trimBottom = bleed;
+  const trimTop = bleed + trimHeight;
+  
+  // Corner positions for crop marks
   const corners = [
-    { x: bleed, y: bleed }, // Bottom-left
-    { x: bleed + trimWidth, y: bleed }, // Bottom-right
-    { x: bleed, y: bleed + trimHeight }, // Top-left
-    { x: bleed + trimWidth, y: bleed + trimHeight }, // Top-right
+    { x: trimLeft, y: trimBottom, isLeft: true, isBottom: true },   // Bottom-left
+    { x: trimRight, y: trimBottom, isLeft: false, isBottom: true }, // Bottom-right
+    { x: trimLeft, y: trimTop, isLeft: true, isBottom: false },     // Top-left
+    { x: trimRight, y: trimTop, isLeft: false, isBottom: false },   // Top-right
   ];
   
   for (const corner of corners) {
-    const isLeft = corner.x === bleed;
-    const isBottom = corner.y === bleed;
-    
-    // Horizontal crop mark
-    const hStartX = isLeft 
+    // Horizontal crop mark - drawn 10mm offset from trim edge, extending outward
+    const hStartX = corner.isLeft 
       ? corner.x - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
       : corner.x + CROP_MARK_OFFSET_PT;
-    const hEndX = isLeft 
+    const hEndX = corner.isLeft 
       ? corner.x - CROP_MARK_OFFSET_PT 
       : corner.x + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
     
@@ -101,11 +127,11 @@ function drawCropMarks(
       color: lineColor,
     });
     
-    // Vertical crop mark
-    const vStartY = isBottom 
+    // Vertical crop mark - drawn 10mm offset from trim edge, extending outward
+    const vStartY = corner.isBottom 
       ? corner.y - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
       : corner.y + CROP_MARK_OFFSET_PT;
-    const vEndY = isBottom 
+    const vEndY = corner.isBottom 
       ? corner.y - CROP_MARK_OFFSET_PT 
       : corner.y + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
     
@@ -119,6 +145,7 @@ function drawCropMarks(
 }
 
 // Helper function to fetch and embed a spread image, splitting it into two PDF pages with bleed and crop marks
+// Uses fixed canvas dimensions: 63.4cm x 23cm spread, each page 31.7cm x 23cm
 async function embedSpreadImageWithBleed(
   pdfDoc: PDFDocument, 
   imageUrl: string, 
@@ -143,56 +170,54 @@ async function embedSpreadImageWithBleed(
     const imageBytes = await imageResponse.arrayBuffer();
     const jpgImage = await pdfDoc.embedJpg(imageBytes);
     
-    // Original spread dimensions
-    const { width: spreadWidth, height: spreadHeight } = jpgImage.scale(1);
-    const trimWidth = spreadWidth / 2; // Each page is half the spread
-    const trimHeight = spreadHeight;
+    // Use fixed canvas dimensions (31.7cm x 23cm per page)
+    const trimWidth = PAGE_WIDTH_PT;
+    const trimHeight = PAGE_HEIGHT_PT;
     
-    // Page dimensions with bleed (bleed on all 4 sides)
-    const pageWidth = trimWidth + (BLEED_PT * 2);
-    const pageHeight = trimHeight + (BLEED_PT * 2);
+    // Full page dimensions including 10mm bleed on all 4 sides
+    const pageWidthWithBleed = trimWidth + (BLEED_PT * 2);
+    const pageHeightWithBleed = trimHeight + (BLEED_PT * 2);
     
-    // Left page of spread
-    const leftPage = pdfDoc.addPage([pageWidth, pageHeight]);
+    // Calculate image scaling to fill the entire area including bleed
+    // The image should extend into the bleed area
+    const imageScaleWidth = (trimWidth + BLEED_PT * 2) / (SPREAD_WIDTH_PT / 2);
+    const imageScaleHeight = (trimHeight + BLEED_PT * 2) / SPREAD_HEIGHT_PT;
+    const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
     
-    // Draw the left half of the spread, offset to account for bleed
-    // The image extends into the bleed area
+    const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
+    const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
+    
+    // ========== LEFT PAGE ==========
+    const leftPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
+    
+    // Position image so left half fills the page including bleed
+    // Image origin is at (0, 0), we offset to center and extend into bleed
     leftPage.drawImage(jpgImage, {
-      x: BLEED_PT - BLEED_PT, // Start slightly left to bleed
-      y: BLEED_PT - BLEED_PT, // Start slightly below to bleed
-      width: spreadWidth,
-      height: spreadHeight + (BLEED_PT * 2),
+      x: 0, // Start at left edge (bleed area)
+      y: 0, // Start at bottom edge (bleed area)
+      width: scaledSpreadWidth,
+      height: scaledSpreadHeight,
     });
     
-    // Actually, for proper bleed we need to scale/position the image correctly
-    // The image should fill the trim area plus bleed
-    // Since the source image is exactly the trim size, we'll position it centered
-    // and the bleed area will show the edge pixels extended
-    leftPage.drawImage(jpgImage, {
-      x: BLEED_PT,
-      y: BLEED_PT,
-      width: spreadWidth,
-      height: spreadHeight,
-    });
-    
-    // Draw crop marks on left page
+    // Draw crop marks indicating trim lines
     drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
     
-    // Right page of spread
-    const rightPage = pdfDoc.addPage([pageWidth, pageHeight]);
+    // ========== RIGHT PAGE ==========
+    const rightPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
     
     // Position the full spread so only the right half is visible
+    // Offset by negative half-spread width plus bleed
     rightPage.drawImage(jpgImage, {
-      x: BLEED_PT - trimWidth,
-      y: BLEED_PT,
-      width: spreadWidth,
-      height: spreadHeight,
+      x: -(scaledSpreadWidth / 2) + BLEED_PT,
+      y: 0,
+      width: scaledSpreadWidth,
+      height: scaledSpreadHeight,
     });
     
     // Draw crop marks on right page
     drawCropMarks(rightPage, trimWidth, trimHeight, BLEED_PT);
     
-    console.log(`Added 2 pages with bleed for ${label} (split spread)`);
+    console.log(`Added 2 pages (${trimWidth.toFixed(1)}pt x ${trimHeight.toFixed(1)}pt + ${BLEED_PT.toFixed(1)}pt bleed) for ${label}`);
     return true;
   } catch (error) {
     console.error(`Error processing ${label}:`, error);
@@ -240,6 +265,11 @@ async function createAndUploadBatch(
 }
 
 // Create dedication PDF with text overlays and upload (ALWAYS included)
+// Text placement:
+//   - Left page: "From" name centered at 15.85cm (horizontal center of left page)
+//   - Right page: Message centered at 15.85cm from right page origin (47.55cm from spread left)
+//   - Both texts vertically centered
+//   - No text crosses the spine at 31.7cm
 // deno-lint-ignore no-explicit-any
 async function createAndUploadDedication(
   supabase: any,
@@ -253,71 +283,123 @@ async function createAndUploadDedication(
     
     const dedicationResponse = await fetch(dedicationUrl);
     if (!dedicationResponse.ok) {
-      console.warn("Dedication background not found, skipping dedication page");
-      return null;
+      console.warn("Dedication background not found, creating blank dedication pages");
     }
     
     const pdfDoc = await PDFDocument.create();
-    const dedicationBytes = await dedicationResponse.arrayBuffer();
-    const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
     
-    // Original spread dimensions
-    const { width: spreadWidth, height: spreadHeight } = dedicationImage.scale(1);
-    const trimWidth = spreadWidth / 2;
-    const trimHeight = spreadHeight;
+    // Use fixed canvas dimensions
+    const trimWidth = PAGE_WIDTH_PT; // 31.7cm = 898.695pt
+    const trimHeight = PAGE_HEIGHT_PT; // 23cm = 652.05pt
     
-    // Page dimensions with bleed
-    const pageWidth = trimWidth + (BLEED_PT * 2);
-    const pageHeight = trimHeight + (BLEED_PT * 2);
+    // Full page dimensions including 10mm bleed on all 4 sides
+    const pageWidthWithBleed = trimWidth + (BLEED_PT * 2);
+    const pageHeightWithBleed = trimHeight + (BLEED_PT * 2);
+    
+    // Text center position: 15.85cm from left of each page (in points)
+    const textCenterX = LEFT_PAGE_TEXT_CENTER_CM * CM_TO_PT; // ~449.3pt from page origin
     
     // Embed fonts for text overlay
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     
-    // Left page with "From" text
-    const leftPage = pdfDoc.addPage([pageWidth, pageHeight]);
-    leftPage.drawImage(dedicationImage, {
-      x: BLEED_PT,
-      y: BLEED_PT,
-      width: spreadWidth,
-      height: spreadHeight,
-    });
+    // ========== LEFT PAGE (From Name) ==========
+    const leftPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
     
-    // Draw "From" text (even if empty, page is still created)
-    if (bookData.fromField) {
-      const fromText = bookData.fromField;
-      const fontSize = Math.min(72, 600 / fromText.length);
-      const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+    // Draw background image if available
+    if (dedicationResponse.ok) {
+      const dedicationBytes = await dedicationResponse.arrayBuffer();
+      const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
+      
+      // Scale image to fill page including bleed
+      const imageScaleWidth = pageWidthWithBleed / (SPREAD_WIDTH_PT / 2);
+      const imageScaleHeight = pageHeightWithBleed / SPREAD_HEIGHT_PT;
+      const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
+      
+      const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
+      const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
+      
+      // Left half of spread
+      leftPage.drawImage(dedicationImage, {
+        x: 0,
+        y: 0,
+        width: scaledSpreadWidth,
+        height: scaledSpreadHeight,
+      });
+    }
+    
+    // Draw "From" text - centered at 15.85cm horizontally, vertically centered
+    if (bookData.fromField && bookData.fromField.trim()) {
+      const fromText = bookData.fromField.trim();
+      
+      // Auto-scale font size based on text length (max 72pt, min 24pt)
+      const maxWidth = trimWidth * 0.8; // 80% of page width as max text width
+      let fontSize = 72;
+      let textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+      
+      while (textWidth > maxWidth && fontSize > 24) {
+        fontSize -= 2;
+        textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+      }
+      
+      // Position: center X at 15.85cm from page origin (add bleed offset)
+      // text-anchor: middle equivalent - subtract half text width
+      const xPosition = BLEED_PT + textCenterX - (textWidth / 2);
+      
+      // Vertical center of the page
+      const yPosition = BLEED_PT + (trimHeight / 2) - (fontSize / 3); // Adjust for baseline
       
       leftPage.drawText(fromText, {
-        x: BLEED_PT + (trimWidth - textWidth) / 2,
-        y: BLEED_PT + trimHeight / 2,
+        x: xPosition,
+        y: yPosition,
         size: fontSize,
         font: boldFont,
         color: rgb(0.15, 0.15, 0.15),
       });
+      
+      console.log(`Dedication "From" text placed at X=${(xPosition / CM_TO_PT).toFixed(2)}cm, fontSize=${fontSize}`);
     }
     
     // Draw crop marks on left page
     drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
     
-    // Right page with personal message
-    const rightPage = pdfDoc.addPage([pageWidth, pageHeight]);
-    rightPage.drawImage(dedicationImage, {
-      x: BLEED_PT - trimWidth,
-      y: BLEED_PT,
-      width: spreadWidth,
-      height: spreadHeight,
-    });
+    // ========== RIGHT PAGE (Personal Message) ==========
+    const rightPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
     
-    // Draw personal message (even if empty, page is still created)
-    if (bookData.personalMessage) {
-      const messageText = bookData.personalMessage;
-      const maxLineWidth = trimWidth * 0.7;
-      const fontSize = 36;
+    // Draw background image if available (right half of spread)
+    if (dedicationResponse.ok) {
+      // Need to re-fetch since we consumed the response
+      const dedicationResponse2 = await fetch(dedicationUrl);
+      if (dedicationResponse2.ok) {
+        const dedicationBytes2 = await dedicationResponse2.arrayBuffer();
+        const dedicationImage2 = await pdfDoc.embedJpg(dedicationBytes2);
+        
+        const imageScaleWidth = pageWidthWithBleed / (SPREAD_WIDTH_PT / 2);
+        const imageScaleHeight = pageHeightWithBleed / SPREAD_HEIGHT_PT;
+        const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
+        
+        const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
+        const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
+        
+        // Right half of spread - offset by half
+        rightPage.drawImage(dedicationImage2, {
+          x: -(scaledSpreadWidth / 2) + BLEED_PT,
+          y: 0,
+          width: scaledSpreadWidth,
+          height: scaledSpreadHeight,
+        });
+      }
+    }
+    
+    // Draw personal message - centered at 15.85cm from right page origin, vertically centered
+    if (bookData.personalMessage && bookData.personalMessage.trim()) {
+      const messageText = bookData.personalMessage.trim();
+      const maxLineWidth = trimWidth * 0.75; // 75% of page width
+      const fontSize = 32;
+      const lineHeight = fontSize * 1.5;
       
-      // Word-wrap for message
-      const words = messageText.split(' ');
+      // Word-wrap the message
+      const words = messageText.split(/\s+/);
       const lines: string[] = [];
       let currentLine = '';
       
@@ -334,15 +416,19 @@ async function createAndUploadDedication(
       }
       if (currentLine) lines.push(currentLine);
       
-      // Center the text block vertically
-      const lineHeight = fontSize * 1.4;
+      // Calculate total text block height for vertical centering
       const totalTextHeight = lines.length * lineHeight;
-      let y = BLEED_PT + (trimHeight + totalTextHeight) / 2 - fontSize;
       
+      // Start Y position: vertically centered
+      let y = BLEED_PT + (trimHeight / 2) + (totalTextHeight / 2) - lineHeight;
+      
+      // Draw each line centered at 15.85cm (textCenterX)
       for (const line of lines) {
         const lineWidth = font.widthOfTextAtSize(line, fontSize);
+        const xPosition = BLEED_PT + textCenterX - (lineWidth / 2);
+        
         rightPage.drawText(line, {
-          x: BLEED_PT + (trimWidth - lineWidth) / 2,
+          x: xPosition,
           y: y,
           size: fontSize,
           font: font,
@@ -350,6 +436,8 @@ async function createAndUploadDedication(
         });
         y -= lineHeight;
       }
+      
+      console.log(`Dedication message: ${lines.length} lines, centered at X=${(textCenterX / CM_TO_PT).toFixed(2)}cm`);
     }
     
     // Draw crop marks on right page
@@ -374,7 +462,7 @@ async function createAndUploadDedication(
     }
     
     const url = `${STORAGE_URL}/${filename}`;
-    console.log(`Uploaded Dedication (${pageCount} pages): ${url}`);
+    console.log(`Uploaded Dedication (${pageCount} pages, ${trimWidth.toFixed(1)}pt x ${trimHeight.toFixed(1)}pt + bleed): ${url}`);
     
     return { url, name: 'Dedication', pageCount };
   } catch (error) {
