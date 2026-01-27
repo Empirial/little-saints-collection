@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ArrowRight, MessageSquare, Info, User, Sparkles, Palette } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ArrowLeft, ArrowRight, MessageSquare, Info, User, Sparkles, Palette, ImageOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,25 @@ const PersonalizePreview = () => {
   const [personalMessage, setPersonalMessage] = useState("");
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  const handleImageLoad = useCallback((index: number) => {
+    setLoadingImages(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+  }, []);
+
+  const handleImageError = useCallback((index: number) => {
+    setLoadingImages(prev => {
+      const next = new Set(prev);
+      next.delete(index);
+      return next;
+    });
+    setImageErrors(prev => new Set([...prev, index]));
+  }, []);
 
   // Get child character based on gender and skin tone
   const getChildCharacter = (gender: string, skinTone?: string) => {
@@ -189,6 +209,12 @@ const PersonalizePreview = () => {
     personalization.skinTone || 'light'
   );
 
+  // Initialize loading state for all images
+  useEffect(() => {
+    setLoadingImages(new Set(book.map((_, i) => i)));
+    setImageErrors(new Set());
+  }, [personalization]);
+
   // Background colors for variety
   const bgColors = [
     "from-primary/20 to-accent/10",
@@ -204,31 +230,59 @@ const PersonalizePreview = () => {
     // Check if this is a page with a full-bleed image (cover, intro, ending, letter with image)
     const hasFullBleedImage = ['cover', 'intro', 'ending'].includes(page.type) || 
                               (page.type === 'letter' && page.image);
+    const isLoading = loadingImages.has(index);
+    const hasError = imageErrors.has(index);
+    
+    const getFallbackLabel = () => {
+      if (page.type === 'cover') return 'Cover Page';
+      if (page.type === 'intro') return 'Intro Page';
+      if (page.type === 'ending') return 'Ending Page';
+      if (page.type === 'letter') return `Letter ${page.letter}`;
+      return 'Page';
+    };
     
     return (
       <div
         key={index}
         className={`relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border ${
-          hasFullBleedImage ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
+          hasFullBleedImage && !hasError ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
         }`}
       >
+        {/* Loading skeleton */}
+        {isLoading && (
+          <Skeleton className="absolute inset-0 w-full h-full" />
+        )}
+
+        {/* Error fallback */}
+        {hasError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50">
+            <ImageOff className="w-8 h-8 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground font-inter text-sm">{getFallbackLabel()}</p>
+            <p className="text-muted-foreground/60 font-inter text-xs mt-1">Upload to Storage</p>
+          </div>
+        )}
+
         {/* Cover, Intro, Ending pages - full bleed images from storage */}
-        {['cover', 'intro', 'ending'].includes(page.type) && page.image && (
+        {['cover', 'intro', 'ending'].includes(page.type) && page.image && !hasError && (
           <img
             src={page.image}
             alt={`${page.type} page`}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             loading={index < 3 ? "eager" : "lazy"}
+            onLoad={() => handleImageLoad(index)}
+            onError={() => handleImageError(index)}
           />
         )}
 
         {/* Letter Page with Themed Illustration - Clean, no overlays */}
-        {page.type === "letter" && page.image && (
+        {page.type === "letter" && page.image && !hasError && (
           <img
             src={page.image}
             alt={`Letter ${page.letter} illustration`}
-            className="absolute inset-0 w-full h-full object-cover"
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
             loading="lazy"
+            onLoad={() => handleImageLoad(index)}
+            onError={() => handleImageError(index)}
           />
         )}
 
