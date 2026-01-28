@@ -17,7 +17,7 @@ serve(async (req) => {
     const yocoSecretKey = Deno.env.get('YOCO_SECRET_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    
+
     if (!yocoSecretKey) {
       console.error('YOCO_SECRET_KEY not configured');
       throw new Error('Payment gateway not configured');
@@ -26,9 +26,9 @@ serve(async (req) => {
     // Create Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { amount, currency, successUrl, cancelUrl, metadata } = await req.json();
+    const { amount, currency, successUrl, cancelUrl, metadata, bookData } = await req.json();
 
-    console.log('Creating Yoco checkout:', { amount, currency, successUrl, cancelUrl, metadata });
+    console.log('Creating Yoco checkout:', { amount, currency, successUrl, cancelUrl, metadata, hasBookData: !!bookData });
 
     // Validate required fields
     if (!amount || !successUrl || !cancelUrl) {
@@ -49,6 +49,8 @@ serve(async (req) => {
         delivery_cost: metadata?.deliveryCost ? metadata.deliveryCost * 100 : 0,
         total: amount,
         status: 'pending',
+        order_type: bookData ? 'book' : 'product',
+        book_data: bookData || null,
       })
       .select()
       .single();
@@ -110,8 +112,8 @@ serve(async (req) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     console.error('Error in create-yoco-checkout:', errorMessage);
-    return new Response(JSON.stringify({ 
-      error: errorMessage 
+    return new Response(JSON.stringify({
+      error: errorMessage
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

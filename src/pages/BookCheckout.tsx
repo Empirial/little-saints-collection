@@ -101,38 +101,61 @@ const BookCheckout = () => {
         pageCount: personalization?.childName ? (personalization.childName.replace(/[^a-zA-Z]/g, '').length + 6) * 2 : 0
       };
 
-      const { data, error } = await supabase.functions.invoke('submit-book-order', {
+      console.log("Submitting order via Yoco:", { bookData, customization });
+
+      // Calculate total amount in cents
+      const deliveryCost = getDeliveryCost();
+      const totalAmount = BOOK_PRICE + deliveryCost;
+
+      // Call Yoco checkout function
+      const { data, error } = await supabase.functions.invoke('create-yoco-checkout', {
         body: {
-          customerName: formData.name,
-          customerEmail: formData.email,
-          customerPhone: formData.phone,
-          deliveryAddress: deliveryMethod === "pickup" ? "Pickup" : formData.address,
-          deliveryMethod: deliveryMethod,
-          deliveryCost: getDeliveryCost(),
-          subtotal: BOOK_PRICE,
-          orderNotes: formData.notes,
-          bookData: bookData
+          amount: totalAmount,
+          currency: 'ZAR',
+          successUrl: `${window.location.origin}/book-success`,
+          cancelUrl: `${window.location.origin}/book-checkout`,
+          bookData: bookData,
+          metadata: {
+            customerName: formData.name,
+            customerEmail: formData.email,
+            customerPhone: formData.phone,
+            deliveryAddress: deliveryMethod === "pickup" ? "Pickup" : formData.address,
+            deliveryMethod: deliveryMethod,
+            deliveryCost: deliveryCost / 100,
+            subtotal: BOOK_PRICE / 100,
+            orderNotes: formData.notes
+          }
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        throw new Error(error.message || "Failed to initiate payment");
+      }
 
-      if (data?.success) {
+      if (data?.redirectUrl) {
         // Store order details for success page
         sessionStorage.setItem('lastOrder', JSON.stringify({
           orderId: data.orderId,
           orderNumber: data.orderNumber,
           customerName: formData.name,
           customerEmail: formData.email,
-          total: total,
+          total: totalAmount,
           bookData: bookData
         }));
 
-        navigate('/book-success');
+        // Redirect to Yoco payment page
+        window.location.href = data.redirectUrl;
+      } else {
+        throw new Error("No redirect URL received from payment gateway");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Checkout error:", error);
-      toast.error("Failed to submit order. Please try again.");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to process order. Please try again.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
