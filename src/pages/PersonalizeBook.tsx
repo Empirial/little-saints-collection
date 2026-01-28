@@ -12,6 +12,7 @@ import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
 import charBoyDark from "@/assets/personalization/Blackboy/BB.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
+import Cover from "@/assets/Cover.jpg";
 
 const bookStructuredData = {
   "@context": "https://schema.org",
@@ -40,154 +41,165 @@ const PersonalizeBook = () => {
     if (!childName.trim() || !skinTone) {
       return;
     }
-    
+
     localStorage.setItem("personalization", JSON.stringify({ childName, gender, skinTone }));
     navigate("/personalize-preview");
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      <SEOHead
-        title="The Magic in My Name - Personalized Adventure Book | Little Saints"
-        description="Create a personalized adventure book where your child discovers each letter of their name. A magical journey that sparks reading, confidence, and self-love. Order online in South Africa."
-        canonicalUrl="https://littlesaintart.co.za/personalize-book"
-        keywords="The Magic in My Name, personalized children's book, name adventure book, custom kids book, personalized story book, letter discovery book, kids confidence book South Africa"
-        structuredData={bookStructuredData}
-      />
-      <Navbar />
-      
-      <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/")}
-          className="mb-4 sm:mb-6 font-inter"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Home
-        </Button>
+    <div className="min-h-screen relative overflow-x-hidden">
+      {/* Background Image with Overlay */}
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: `url(${Cover})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
+        <div className="absolute inset-0 bg-background/80 backdrop-blur-[2px]" />
+      </div>
 
-        <div className="max-w-2xl mx-auto">
-          <Card className="border-border shadow-lg">
-            <CardHeader className="space-y-2">
-              <CardTitle className="font-fredoka text-3xl md:text-4xl text-primary">
-                Personalize Your Book
-              </CardTitle>
-              <CardDescription className="font-inter text-base text-muted-foreground">
-                Create "The Magic in My Name" - a unique adventure book where your child discovers each letter of their name
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="childName" className="font-inter text-foreground">
-                  Child's Name
-                </Label>
-                <Input
-                  id="childName"
-                  placeholder="Enter your child's name"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  className="font-inter"
-                />
-              </div>
+      <div className="relative z-10">
+        <SEOHead
+          title="The Magic in My Name - Personalized Adventure Book | Little Saints"
+          description="Create a personalized adventure book where your child discovers each letter of their name. A magical journey that sparks reading, confidence, and self-love. Order online in South Africa."
+          canonicalUrl="https://littlesaintart.co.za/personalize-book"
+          keywords="The Magic in My Name, personalized children's book, name adventure book, custom kids book, personalized story book, letter discovery book, kids confidence book South Africa"
+          structuredData={bookStructuredData}
+        />
+        <Navbar />
 
-              <div className="space-y-3">
-                <Label className="font-inter text-foreground">Gender</Label>
-                <RadioGroup value={gender} onValueChange={setGender} className="flex flex-col space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="boy" id="boy" />
-                    <Label htmlFor="boy" className="font-inter font-normal cursor-pointer">
-                      Boy
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="girl" id="girl" />
-                    <Label htmlFor="girl" className="font-inter font-normal cursor-pointer">
-                      Girl
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
+        <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="mb-4 sm:mb-6 font-inter"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Home
+          </Button>
 
-              <div className="space-y-3">
-                <Label className="font-inter text-foreground">Choose Your Character</Label>
-                <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                  {gender === "boy" ? (
-                    <>
-                      <Card
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          skinTone === "light" ? "border-primary border-4" : "border-border"
-                        }`}
-                        onClick={() => setSkinTone("light")}
-                      >
-                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
-                          <img
-                            src={charBoyLight}
-                            alt="Lighter skin tone boy"
-                            className="w-full max-h-28 sm:max-h-32 object-contain"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          skinTone === "dark" ? "border-primary border-4" : "border-border"
-                        }`}
-                        onClick={() => setSkinTone("dark")}
-                      >
-                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
-                          <img
-                            src={charBoyDark}
-                            alt="Darker skin tone boy"
-                            className="w-full max-h-28 sm:max-h-32 object-contain"
-                          />
-                        </CardContent>
-                      </Card>
-                    </>
-                  ) : (
-                    <>
-                      <Card
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          skinTone === "light" ? "border-primary border-4" : "border-border"
-                        }`}
-                        onClick={() => setSkinTone("light")}
-                      >
-                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
-                          <img
-                            src={charGirlLight}
-                            alt="Lighter skin tone girl"
-                            className="w-full max-h-28 sm:max-h-32 object-contain"
-                          />
-                        </CardContent>
-                      </Card>
-                      <Card
-                        className={`cursor-pointer transition-all hover:shadow-md ${
-                          skinTone === "dark" ? "border-primary border-4" : "border-border"
-                        }`}
-                        onClick={() => setSkinTone("dark")}
-                      >
-                        <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
-                          <img
-                            src={charGirlDark}
-                            alt="Darker skin tone girl"
-                            className="w-full max-h-28 sm:max-h-32 object-contain"
-                          />
-                        </CardContent>
-                      </Card>
-                    </>
-                  )}
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-border shadow-lg">
+              <CardHeader className="space-y-2">
+                <CardTitle className="font-fredoka text-3xl md:text-4xl text-primary">
+                  Personalize Your Book
+                </CardTitle>
+                <CardDescription className="font-inter text-base text-muted-foreground">
+                  Create "The Magic in My Name" - a unique adventure book where your child discovers each letter of their name
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="childName" className="font-inter text-foreground">
+                    Child's Name
+                  </Label>
+                  <Input
+                    id="childName"
+                    placeholder="Enter your child's name"
+                    value={childName}
+                    onChange={(e) => setChildName(e.target.value)}
+                    className="font-inter"
+                  />
                 </div>
-              </div>
 
-              <Button
-                onClick={handleCreateBook}
-                disabled={!childName.trim() || !skinTone}
-                className="w-full font-inter text-base py-6"
-                size="lg"
-              >
-                Create My Book
-              </Button>
-            </CardContent>
-          </Card>
+                <div className="space-y-3">
+                  <Label className="font-inter text-foreground">Gender</Label>
+                  <RadioGroup value={gender} onValueChange={setGender} className="flex flex-col space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="boy" id="boy" />
+                      <Label htmlFor="boy" className="font-inter font-normal cursor-pointer">
+                        Boy
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="girl" id="girl" />
+                      <Label htmlFor="girl" className="font-inter font-normal cursor-pointer">
+                        Girl
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="font-inter text-foreground">Choose Your Character</Label>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    {gender === "boy" ? (
+                      <>
+                        <Card
+                          className={`cursor-pointer transition-all hover:shadow-md ${skinTone === "light" ? "border-primary border-4" : "border-border"
+                            }`}
+                          onClick={() => setSkinTone("light")}
+                        >
+                          <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
+                            <img
+                              src={charBoyLight}
+                              alt="Lighter skin tone boy"
+                              className="w-full max-h-28 sm:max-h-32 object-contain"
+                            />
+                          </CardContent>
+                        </Card>
+                        <Card
+                          className={`cursor-pointer transition-all hover:shadow-md ${skinTone === "dark" ? "border-primary border-4" : "border-border"
+                            }`}
+                          onClick={() => setSkinTone("dark")}
+                        >
+                          <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
+                            <img
+                              src={charBoyDark}
+                              alt="Darker skin tone boy"
+                              className="w-full max-h-28 sm:max-h-32 object-contain"
+                            />
+                          </CardContent>
+                        </Card>
+                      </>
+                    ) : (
+                      <>
+                        <Card
+                          className={`cursor-pointer transition-all hover:shadow-md ${skinTone === "light" ? "border-primary border-4" : "border-border"
+                            }`}
+                          onClick={() => setSkinTone("light")}
+                        >
+                          <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
+                            <img
+                              src={charGirlLight}
+                              alt="Lighter skin tone girl"
+                              className="w-full max-h-28 sm:max-h-32 object-contain"
+                            />
+                          </CardContent>
+                        </Card>
+                        <Card
+                          className={`cursor-pointer transition-all hover:shadow-md ${skinTone === "dark" ? "border-primary border-4" : "border-border"
+                            }`}
+                          onClick={() => setSkinTone("dark")}
+                        >
+                          <CardContent className="p-3 sm:p-4 flex items-center justify-center aspect-square">
+                            <img
+                              src={charGirlDark}
+                              alt="Darker skin tone girl"
+                              className="w-full max-h-28 sm:max-h-32 object-contain"
+                            />
+                          </CardContent>
+                        </Card>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleCreateBook}
+                  disabled={!childName.trim() || !skinTone}
+                  className="w-full font-inter text-base py-6"
+                  size="lg"
+                >
+                  Create My Book
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
