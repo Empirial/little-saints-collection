@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import useEmblaCarousel from "embla-carousel-react";
 import heroImage from "@/assets/poster/hero-image.webp";
 import posterCollection from "@/assets/poster/poster-collection.webp";
-import classroom from "@/assets/poster/CLassroom.webp";
+import Cover from "@/assets/Cover.jpg";
 
 // Preload critical first image
 const preloadImage = (src: string) => {
@@ -48,7 +48,7 @@ const slides: CarouselSlide[] = [
     buttonPath: "/product",
   },
   {
-    image: classroom,
+    image: Cover,
     subtitle: "The Magic in My Name",
     title: "Your Child as the Hero",
     description: "A magical adventure where your child discovers each letter of their name. Sparks reading, confidence, and self-love.",
@@ -85,10 +85,10 @@ const HeroCarousel = () => {
     emblaApi.on("select", onSelect);
     emblaApi.on("reInit", onSelect);
 
-    // Auto-scroll every 5 seconds
+    // Auto-scroll every 10 seconds
     const autoScroll = setInterval(() => {
       if (emblaApi) emblaApi.scrollNext();
-    }, 5000);
+    }, 10000);
 
     return () => {
       clearInterval(autoScroll);
@@ -164,11 +164,10 @@ const HeroCarousel = () => {
           <button
             key={index}
             onClick={() => emblaApi?.scrollTo(index)}
-            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${
-              index === selectedIndex
-                ? "bg-primary w-6 sm:w-8"
-                : "bg-foreground/30 hover:bg-foreground/50"
-            }`}
+            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-200 ${index === selectedIndex
+              ? "bg-primary w-6 sm:w-8"
+              : "bg-foreground/30 hover:bg-foreground/50"
+              }`}
             aria-label={`Go to slide ${index + 1}`}
           />
         ))}
