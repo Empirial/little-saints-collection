@@ -21,7 +21,6 @@ const PersonalizeBook = lazy(() => import("./pages/PersonalizeBook"));
 const PersonalizePreview = lazy(() => import("./pages/PersonalizePreview"));
 const BookCheckout = lazy(() => import("./pages/BookCheckout"));
 const BookSuccess = lazy(() => import("./pages/BookSuccess"));
-const UploadAssets = lazy(() => import("./pages/admin/UploadAssets"));
 
 // Minimal loading fallback
 const PageLoader = () => (
@@ -59,7 +58,6 @@ const App = () => (
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-cancelled" element={<PaymentCancelled />} />
               <Route path="/book-success" element={<BookSuccess />} />
-              <Route path="/admin/upload-assets" element={<UploadAssets />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
