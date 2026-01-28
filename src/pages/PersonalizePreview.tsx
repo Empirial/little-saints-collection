@@ -57,10 +57,13 @@ const PersonalizePreview = () => {
   const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
-  // 'dedication' = Left Page (From), 'message' = Right Page (Message)
+  const [dedicationMessage, setDedicationMessage] = useState(""); // Left Page Message
+  // 'dedication' = Left Page (Dedication Body), 'message' = Right Page (Personal Msg + From)
   const [activeModal, setActiveModal] = useState<'dedication' | 'message' | null>(null);
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
+
+  const MAX_CHARS = 400;
 
   const handleImageLoad = useCallback((index: number) => {
     setLoadingImages(prev => {
@@ -79,13 +82,22 @@ const PersonalizePreview = () => {
     setImageErrors(prev => new Set([...prev, index]));
   }, []);
 
-  // Load personalization from localStorage
+  // Load personalization AND customization from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem("personalization");
-    if (saved) {
-      setPersonalization(JSON.parse(saved));
+    const savedPersonalization = localStorage.getItem("personalization");
+    const savedCustomization = localStorage.getItem("customization");
+
+    if (savedPersonalization) {
+      setPersonalization(JSON.parse(savedPersonalization));
     } else {
       navigate("/personalize-book");
+    }
+
+    if (savedCustomization) {
+      const cust = JSON.parse(savedCustomization);
+      setFromField(cust.fromField || "");
+      setPersonalMessage(cust.personalMessage || "");
+      setDedicationMessage(cust.dedicationMessage || "");
     }
   }, [navigate]);
 
@@ -101,7 +113,11 @@ const PersonalizePreview = () => {
   }, [personalization]);
 
   const handleCheckout = () => {
-    localStorage.setItem("customization", JSON.stringify({ fromField, personalMessage }));
+    localStorage.setItem("customization", JSON.stringify({
+      fromField,
+      personalMessage,
+      dedicationMessage
+    }));
     navigate("/book-checkout");
   };
 
@@ -183,37 +199,44 @@ const PersonalizePreview = () => {
         {/* Text overlay container - Split into Left and Right pages */}
         <div className="absolute inset-0 grid grid-cols-2">
 
-          {/* LEFT PAGE: Dedication (From Field) */}
+          {/* LEFT PAGE: Dedication Message (Body) */}
           <div className="relative flex flex-col items-center justify-center p-8 md:p-12 text-center pointer-events-none">
-            {fromField.trim() ? (
-              <div className="max-w-[80%]">
-                <p className="font-serif text-xs md:text-base lg:text-lg text-foreground/80 font-medium tracking-wider uppercase">
-                  From:
-                </p>
-                <p className="font-serif text-sm md:text-xl lg:text-2xl text-foreground font-bold mt-2">
-                  {fromField}
+            {dedicationMessage.trim() ? (
+              <div className="max-w-[75%]">
+                <p className="font-serif text-sm md:text-lg lg:text-xl text-foreground/90 leading-relaxed whitespace-pre-wrap tracking-wide">
+                  {dedicationMessage}
                 </p>
               </div>
             ) : (
               <p className="font-serif text-sm md:text-lg text-muted-foreground/50 italic px-4">
-                Dedication (From)
+                Write a dedication message...
               </p>
             )}
           </div>
 
-          {/* RIGHT PAGE: Message (Personal Message) */}
+          {/* RIGHT PAGE: Personal Message + From */}
           <div className="relative flex flex-col items-center justify-center p-8 md:p-12 text-center pointer-events-none">
-            {personalMessage.trim() ? (
-              <div className="max-w-[75%]">
+            <div className="max-w-[80%] space-y-6">
+              {/* Personal Message (Top) */}
+              {personalMessage.trim() ? (
                 <p className="font-serif text-sm md:text-lg lg:text-xl text-foreground/90 leading-relaxed whitespace-pre-wrap tracking-wide">
                   {personalMessage}
                 </p>
-              </div>
-            ) : (
-              <p className="font-serif text-sm md:text-lg text-muted-foreground/50 italic px-4">
-                Your special message...
-              </p>
-            )}
+              ) : (
+                <p className="font-serif text-sm md:text-lg text-muted-foreground/50 italic px-4">
+                  Add a personal note...
+                </p>
+              )}
+
+              {/* From Field (Bottom) */}
+              {fromField.trim() && (
+                <div className="pt-2">
+                  <p className="font-serif text-xs md:text-base lg:text-lg text-foreground/80 font-medium tracking-wider uppercase">
+                    — {fromField}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
         </div>
@@ -375,42 +398,66 @@ const PersonalizePreview = () => {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-fredoka text-xl text-primary">
-              {activeModal === 'dedication' ? 'Dedication (Left Page)' : 'Personal Message (Right Page)'}
+              {activeModal === 'dedication' ? 'Dedication Message (Left Page)' : 'Personal Note (Right Page)'}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* LEFT PAGE: Dedication Message */}
             {activeModal === 'dedication' && (
               <div className="space-y-2">
-                <Label htmlFor="from" className="font-inter text-foreground">
-                  Who is this book from?
-                </Label>
-                <Input
-                  id="from"
-                  placeholder="e.g. Love, Mom & Dad"
-                  value={fromField}
-                  onChange={(e) => setFromField(e.target.value)}
-                  className="font-inter"
-                  autoFocus
-                />
-              </div>
-            )}
-
-            {activeModal === 'message' && (
-              <div className="space-y-2">
-                <Label htmlFor="message" className="font-inter text-foreground">
-                  Message to {personalization.childName}
+                <Label htmlFor="dedicationMsg" className="font-inter text-foreground">
+                  Dedication Message
                 </Label>
                 <Textarea
-                  id="message"
-                  placeholder="Write a special message..."
-                  value={personalMessage}
-                  onChange={(e) => setPersonalMessage(e.target.value)}
-                  rows={5}
+                  id="dedicationMsg"
+                  placeholder="Write a heartfelt dedication..."
+                  value={dedicationMessage}
+                  onChange={(e) => setDedicationMessage(e.target.value.slice(0, MAX_CHARS))}
+                  rows={6}
                   className="font-inter resize-none"
                   autoFocus
                 />
+                <div className="text-xs text-right text-muted-foreground">
+                  {dedicationMessage.length}/{MAX_CHARS} characters
+                </div>
               </div>
+            )}
+
+            {/* RIGHT PAGE: Personal Message + From */}
+            {activeModal === 'message' && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="personalMsg" className="font-inter text-foreground">
+                    Personal Note
+                  </Label>
+                  <Textarea
+                    id="personalMsg"
+                    placeholder="Add a personal note..."
+                    value={personalMessage}
+                    onChange={(e) => setPersonalMessage(e.target.value.slice(0, MAX_CHARS))}
+                    rows={4}
+                    className="font-inter resize-none"
+                    autoFocus
+                  />
+                  <div className="text-xs text-right text-muted-foreground">
+                    {personalMessage.length}/{MAX_CHARS} characters
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="from" className="font-inter text-foreground">
+                    From
+                  </Label>
+                  <Input
+                    id="from"
+                    placeholder="e.g. Love, Mom & Dad"
+                    value={fromField}
+                    onChange={(e) => setFromField(e.target.value)}
+                    className="font-inter"
+                  />
+                </div>
+              </>
             )}
           </div>
 
