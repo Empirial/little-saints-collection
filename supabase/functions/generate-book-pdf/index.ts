@@ -77,6 +77,7 @@ interface BookData {
   skinTone: string;
   fromField?: string;
   personalMessage?: string;
+  dedicationMessage?: string;
   pageCount?: number;
 }
 
@@ -95,14 +96,14 @@ function drawCropMarks(
   bleed: number
 ) {
   const lineColor = rgb(0, 0, 0); // 100% Black (registration color)
-  
+
   // Trim box corners (where the paper will be cut)
   // These are relative to the full page including bleed
   const trimLeft = bleed;
   const trimRight = bleed + trimWidth;
   const trimBottom = bleed;
   const trimTop = bleed + trimHeight;
-  
+
   // Corner positions for crop marks
   const corners = [
     { x: trimLeft, y: trimBottom, isLeft: true, isBottom: true },   // Bottom-left
@@ -110,31 +111,31 @@ function drawCropMarks(
     { x: trimLeft, y: trimTop, isLeft: true, isBottom: false },     // Top-left
     { x: trimRight, y: trimTop, isLeft: false, isBottom: false },   // Top-right
   ];
-  
+
   for (const corner of corners) {
     // Horizontal crop mark - drawn 10mm offset from trim edge, extending outward
-    const hStartX = corner.isLeft 
-      ? corner.x - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
+    const hStartX = corner.isLeft
+      ? corner.x - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT
       : corner.x + CROP_MARK_OFFSET_PT;
-    const hEndX = corner.isLeft 
-      ? corner.x - CROP_MARK_OFFSET_PT 
+    const hEndX = corner.isLeft
+      ? corner.x - CROP_MARK_OFFSET_PT
       : corner.x + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
-    
+
     page.drawLine({
       start: { x: hStartX, y: corner.y },
       end: { x: hEndX, y: corner.y },
       thickness: CROP_MARK_THICKNESS,
       color: lineColor,
     });
-    
+
     // Vertical crop mark - drawn 10mm offset from trim edge, extending outward
-    const vStartY = corner.isBottom 
-      ? corner.y - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT 
+    const vStartY = corner.isBottom
+      ? corner.y - CROP_MARK_OFFSET_PT - CROP_MARK_LENGTH_PT
       : corner.y + CROP_MARK_OFFSET_PT;
-    const vEndY = corner.isBottom 
-      ? corner.y - CROP_MARK_OFFSET_PT 
+    const vEndY = corner.isBottom
+      ? corner.y - CROP_MARK_OFFSET_PT
       : corner.y + CROP_MARK_OFFSET_PT + CROP_MARK_LENGTH_PT;
-    
+
     page.drawLine({
       start: { x: corner.x, y: vStartY },
       end: { x: corner.x, y: vEndY },
@@ -147,49 +148,49 @@ function drawCropMarks(
 // Helper function to fetch and embed a spread image, splitting it into two PDF pages with bleed and crop marks
 // Uses fixed canvas dimensions: 63.4cm x 23cm spread, each page 31.7cm x 23cm
 async function embedSpreadImageWithBleed(
-  pdfDoc: PDFDocument, 
-  imageUrl: string, 
+  pdfDoc: PDFDocument,
+  imageUrl: string,
   label: string
 ): Promise<boolean> {
   try {
     console.log(`Fetching ${label}: ${imageUrl}`);
     const imageResponse = await fetch(imageUrl);
     const contentType = imageResponse.headers.get('content-type');
-    
+
     if (!imageResponse.ok) {
       console.error(`Failed to fetch ${label}: ${imageResponse.status}`);
       return false;
     }
-    
+
     if (!contentType || !contentType.includes('image')) {
       const textPreview = await imageResponse.text();
       console.error(`Got non-image response for ${label}: ${textPreview.substring(0, 200)}`);
       return false;
     }
-    
+
     const imageBytes = await imageResponse.arrayBuffer();
     const jpgImage = await pdfDoc.embedJpg(imageBytes);
-    
+
     // Use fixed canvas dimensions (31.7cm x 23cm per page)
     const trimWidth = PAGE_WIDTH_PT;
     const trimHeight = PAGE_HEIGHT_PT;
-    
+
     // Full page dimensions including 10mm bleed on all 4 sides
     const pageWidthWithBleed = trimWidth + (BLEED_PT * 2);
     const pageHeightWithBleed = trimHeight + (BLEED_PT * 2);
-    
+
     // Calculate image scaling to fill the entire area including bleed
     // The image should extend into the bleed area
     const imageScaleWidth = (trimWidth + BLEED_PT * 2) / (SPREAD_WIDTH_PT / 2);
     const imageScaleHeight = (trimHeight + BLEED_PT * 2) / SPREAD_HEIGHT_PT;
     const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
-    
+
     const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
     const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
-    
+
     // ========== LEFT PAGE ==========
     const leftPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
-    
+
     // Position image so left half fills the page including bleed
     // Image origin is at (0, 0), we offset to center and extend into bleed
     leftPage.drawImage(jpgImage, {
@@ -198,13 +199,13 @@ async function embedSpreadImageWithBleed(
       width: scaledSpreadWidth,
       height: scaledSpreadHeight,
     });
-    
+
     // Draw crop marks indicating trim lines
     drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
-    
+
     // ========== RIGHT PAGE ==========
     const rightPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
-    
+
     // Position the full spread so only the right half is visible
     // Offset by negative half-spread width plus bleed
     rightPage.drawImage(jpgImage, {
@@ -213,10 +214,10 @@ async function embedSpreadImageWithBleed(
       width: scaledSpreadWidth,
       height: scaledSpreadHeight,
     });
-    
+
     // Draw crop marks on right page
     drawCropMarks(rightPage, trimWidth, trimHeight, BLEED_PT);
-    
+
     console.log(`Added 2 pages (${trimWidth.toFixed(1)}pt x ${trimHeight.toFixed(1)}pt + ${BLEED_PT.toFixed(1)}pt bleed) for ${label}`);
     return true;
   } catch (error) {
@@ -232,35 +233,35 @@ async function createAndUploadBatch(
   orderNumber: string,
   batchIndex: number,
   batchName: string,
-  imageUrls: Array<{url: string, label: string}>
+  imageUrls: Array<{ url: string, label: string }>
 ): Promise<BatchInfo> {
   const batchPdf = await PDFDocument.create();
-  
-  for (const {url, label} of imageUrls) {
+
+  for (const { url, label } of imageUrls) {
     await embedSpreadImageWithBleed(batchPdf, url, label);
   }
-  
+
   const pdfBytes = await batchPdf.save();
   const pageCount = batchPdf.getPageCount();
-  
+
   // Upload immediately to free memory
   const filename = `orders/${orderNumber}/batch-${batchIndex}-${batchName.toLowerCase().replace(/\s+/g, '-')}.pdf`;
-  
+
   const { error } = await supabase.storage
     .from('book-assets')
     .upload(filename, pdfBytes, {
       contentType: 'application/pdf',
       upsert: true
     });
-  
+
   if (error) {
     console.error(`Failed to upload ${batchName}:`, error);
     throw new Error(`Storage upload failed: ${error.message}`);
   }
-  
+
   const url = `${STORAGE_URL}/${filename}`;
   console.log(`Uploaded ${batchName} (${pageCount} pages): ${url}`);
-  
+
   return { url, name: batchName, pageCount };
 }
 
@@ -280,45 +281,45 @@ async function createAndUploadDedication(
   try {
     const dedicationUrl = `${STORAGE_URL}/Shared/dedication.jpg`;
     console.log(`Fetching Dedication: ${dedicationUrl}`);
-    
+
     const dedicationResponse = await fetch(dedicationUrl);
     if (!dedicationResponse.ok) {
       console.warn("Dedication background not found, creating blank dedication pages");
     }
-    
+
     const pdfDoc = await PDFDocument.create();
-    
+
     // Use fixed canvas dimensions
     const trimWidth = PAGE_WIDTH_PT; // 31.7cm = 898.695pt
     const trimHeight = PAGE_HEIGHT_PT; // 23cm = 652.05pt
-    
+
     // Full page dimensions including 10mm bleed on all 4 sides
     const pageWidthWithBleed = trimWidth + (BLEED_PT * 2);
     const pageHeightWithBleed = trimHeight + (BLEED_PT * 2);
-    
+
     // Text center position: 15.85cm from left of each page (in points)
     const textCenterX = LEFT_PAGE_TEXT_CENTER_CM * CM_TO_PT; // ~449.3pt from page origin
-    
+
     // Embed fonts for text overlay
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-    
-    // ========== LEFT PAGE (From Name) ==========
+
+    // ========== LEFT PAGE (Dedication Message) ==========
     const leftPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
-    
+
     // Draw background image if available
     if (dedicationResponse.ok) {
       const dedicationBytes = await dedicationResponse.arrayBuffer();
       const dedicationImage = await pdfDoc.embedJpg(dedicationBytes);
-      
+
       // Scale image to fill page including bleed
       const imageScaleWidth = pageWidthWithBleed / (SPREAD_WIDTH_PT / 2);
       const imageScaleHeight = pageHeightWithBleed / SPREAD_HEIGHT_PT;
       const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
-      
+
       const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
       const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
-      
+
       // Left half of spread
       leftPage.drawImage(dedicationImage, {
         x: 0,
@@ -327,60 +328,91 @@ async function createAndUploadDedication(
         height: scaledSpreadHeight,
       });
     }
-    
-    // Draw "From" text - centered at 15.85cm horizontally, vertically centered
-    if (bookData.fromField && bookData.fromField.trim()) {
-      const fromText = bookData.fromField.trim();
-      
-      // Auto-scale font size based on text length (max 72pt, min 24pt)
-      const maxWidth = trimWidth * 0.8; // 80% of page width as max text width
-      let fontSize = 72;
-      let textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
-      
-      while (textWidth > maxWidth && fontSize > 24) {
-        fontSize -= 2;
-        textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+
+    // Draw Dedication Message - Left Page
+    if (bookData.dedicationMessage && bookData.dedicationMessage.trim()) {
+      const dedicationText = bookData.dedicationMessage.trim();
+      const maxLineWidth = trimWidth * 0.75; // 75% of page width
+      // Available height for text: 70% of page height (centered)
+      const maxTextHeight = trimHeight * 0.7;
+
+      let fontSize = 32;
+      let lineHeight = fontSize * 1.5;
+      let lines: string[] = [];
+      let totalTextHeight = 0;
+
+      // Auto-shrink loop
+      // Minimum font size 18pt
+      while (fontSize >= 18) {
+        lineHeight = fontSize * 1.5;
+        lines = [];
+        let currentLine = '';
+        const words = dedicationText.split(/\s+/);
+
+        for (const word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+          if (testWidth <= maxLineWidth) {
+            currentLine = testLine;
+          } else {
+            lines.push(currentLine);
+            currentLine = word;
+          }
+        }
+        if (currentLine) lines.push(currentLine);
+
+        totalTextHeight = lines.length * lineHeight;
+
+        if (totalTextHeight <= maxTextHeight) {
+          break; // Fits!
+        }
+
+        fontSize -= 2; // Try smaller font
       }
-      
-      // Position: center X at 15.85cm from page origin (add bleed offset)
-      // text-anchor: middle equivalent - subtract half text width
-      const xPosition = BLEED_PT + textCenterX - (textWidth / 2);
-      
-      // Vertical center of the page
-      const yPosition = BLEED_PT + (trimHeight / 2) - (fontSize / 3); // Adjust for baseline
-      
-      leftPage.drawText(fromText, {
-        x: xPosition,
-        y: yPosition,
-        size: fontSize,
-        font: boldFont,
-        color: rgb(0.15, 0.15, 0.15),
-      });
-      
-      console.log(`Dedication "From" text placed at X=${(xPosition / CM_TO_PT).toFixed(2)}cm, fontSize=${fontSize}`);
+
+      // Start Y position: vertically centered
+      let y = BLEED_PT + (trimHeight / 2) + (totalTextHeight / 2) - lineHeight;
+
+      // Draw lines
+      for (const line of lines) {
+        const lineWidth = font.widthOfTextAtSize(line, fontSize);
+        const xPosition = BLEED_PT + textCenterX - (lineWidth / 2);
+
+        leftPage.drawText(line, {
+          x: xPosition,
+          y: y,
+          size: fontSize,
+          font: font,
+          color: rgb(0.15, 0.15, 0.15),
+        });
+        y -= lineHeight;
+      }
+
+      console.log(`Dedication (Left): ${lines.length} lines, fontSize=${fontSize}pt`);
     }
-    
+
     // Draw crop marks on left page
     drawCropMarks(leftPage, trimWidth, trimHeight, BLEED_PT);
-    
-    // ========== RIGHT PAGE (Personal Message) ==========
+
+    // ========== RIGHT PAGE (Personal Message + From) ==========
     const rightPage = pdfDoc.addPage([pageWidthWithBleed, pageHeightWithBleed]);
-    
+
     // Draw background image if available (right half of spread)
     if (dedicationResponse.ok) {
-      // Need to re-fetch since we consumed the response
+      // Need to re-fetch since we consumed the response (streams are one-time use)
       const dedicationResponse2 = await fetch(dedicationUrl);
       if (dedicationResponse2.ok) {
         const dedicationBytes2 = await dedicationResponse2.arrayBuffer();
         const dedicationImage2 = await pdfDoc.embedJpg(dedicationBytes2);
-        
+
         const imageScaleWidth = pageWidthWithBleed / (SPREAD_WIDTH_PT / 2);
         const imageScaleHeight = pageHeightWithBleed / SPREAD_HEIGHT_PT;
         const imageScale = Math.max(imageScaleWidth, imageScaleHeight);
-        
+
         const scaledSpreadWidth = SPREAD_WIDTH_PT * imageScale;
         const scaledSpreadHeight = SPREAD_HEIGHT_PT * imageScale;
-        
+
         // Right half of spread - offset by half
         rightPage.drawImage(dedicationImage2, {
           x: -(scaledSpreadWidth / 2) + BLEED_PT,
@@ -390,43 +422,54 @@ async function createAndUploadDedication(
         });
       }
     }
-    
-    // Draw personal message - centered at 15.85cm from right page origin, vertically centered
+
+    // Draw Personal Message (Right Page)
     if (bookData.personalMessage && bookData.personalMessage.trim()) {
-      const messageText = bookData.personalMessage.trim();
-      const maxLineWidth = trimWidth * 0.75; // 75% of page width
-      const fontSize = 32;
-      const lineHeight = fontSize * 1.5;
-      
-      // Word-wrap the message
-      const words = messageText.split(/\s+/);
-      const lines: string[] = [];
-      let currentLine = '';
-      
-      for (const word of words) {
-        const testLine = currentLine ? `${currentLine} ${word}` : word;
-        const testWidth = font.widthOfTextAtSize(testLine, fontSize);
-        
-        if (testWidth <= maxLineWidth) {
-          currentLine = testLine;
-        } else {
-          if (currentLine) lines.push(currentLine);
-          currentLine = word;
+      const msgText = bookData.personalMessage.trim();
+      const maxLineWidth = trimWidth * 0.75;
+      const maxTextHeight = trimHeight * 0.6; // Use 60% height to leave room for 'From'
+
+      let fontSize = 32;
+      let lineHeight = fontSize * 1.5;
+      let lines: string[] = [];
+      let totalTextHeight = 0;
+
+      while (fontSize >= 18) {
+        lineHeight = fontSize * 1.5;
+        lines = [];
+        let currentLine = '';
+        const words = msgText.split(/\s+/);
+
+        for (const word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const testWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+          if (testWidth <= maxLineWidth) {
+            currentLine = testLine;
+          } else {
+            lines.push(currentLine);
+            currentLine = word;
+          }
         }
+        if (currentLine) lines.push(currentLine);
+
+        totalTextHeight = lines.length * lineHeight;
+
+        if (totalTextHeight <= maxTextHeight) {
+          break;
+        }
+        fontSize -= 2;
       }
-      if (currentLine) lines.push(currentLine);
-      
-      // Calculate total text block height for vertical centering
-      const totalTextHeight = lines.length * lineHeight;
-      
-      // Start Y position: vertically centered
-      let y = BLEED_PT + (trimHeight / 2) + (totalTextHeight / 2) - lineHeight;
-      
-      // Draw each line centered at 15.85cm (textCenterX)
+
+      // Position: Center vertically within top 70% of page (approx)
+      // Visual center shifted up slightly to make room for name below
+      const visualCenterY = BLEED_PT + (trimHeight * 0.55);
+      let y = visualCenterY + (totalTextHeight / 2) - lineHeight;
+
       for (const line of lines) {
         const lineWidth = font.widthOfTextAtSize(line, fontSize);
         const xPosition = BLEED_PT + textCenterX - (lineWidth / 2);
-        
+
         rightPage.drawText(line, {
           x: xPosition,
           y: y,
@@ -436,34 +479,55 @@ async function createAndUploadDedication(
         });
         y -= lineHeight;
       }
-      
-      console.log(`Dedication message: ${lines.length} lines, centered at X=${(textCenterX / CM_TO_PT).toFixed(2)}cm`);
+
+      console.log(`Personal Note (Right): ${lines.length} lines, fontSize=${fontSize}pt`);
     }
-    
+
+    // Draw "From" Text (Right Page - Bottom)
+    if (bookData.fromField && bookData.fromField.trim()) {
+      const fromText = bookData.fromField.trim();
+      const fontSize = 24; // Smaller/Fixed for 'From'
+      const textWidth = boldFont.widthOfTextAtSize(fromText, fontSize);
+
+      const xPosition = BLEED_PT + textCenterX - (textWidth / 2);
+      // Position at bottom 20% area
+      const yPosition = BLEED_PT + (trimHeight * 0.2);
+
+      rightPage.drawText(fromText, {
+        x: xPosition,
+        y: yPosition,
+        size: fontSize,
+        font: boldFont,
+        color: rgb(0.15, 0.15, 0.15),
+      });
+
+      console.log(`From (Right): ${fromText}`);
+    }
+
     // Draw crop marks on right page
     drawCropMarks(rightPage, trimWidth, trimHeight, BLEED_PT);
-    
+
     const pdfBytes = await pdfDoc.save();
     const pageCount = pdfDoc.getPageCount();
-    
+
     // Upload immediately
     const filename = `orders/${orderNumber}/batch-${batchIndex}-dedication.pdf`;
-    
+
     const { error } = await supabase.storage
       .from('book-assets')
       .upload(filename, pdfBytes, {
         contentType: 'application/pdf',
         upsert: true
       });
-    
+
     if (error) {
       console.error(`Failed to upload Dedication:`, error);
       throw new Error(`Storage upload failed: ${error.message}`);
     }
-    
+
     const url = `${STORAGE_URL}/${filename}`;
     console.log(`Uploaded Dedication (${pageCount} pages, ${trimWidth.toFixed(1)}pt x ${trimHeight.toFixed(1)}pt + bleed): ${url}`);
-    
+
     return { url, name: 'Dedication', pageCount };
   } catch (error) {
     console.error("Error creating dedication page:", error);
@@ -528,33 +592,61 @@ serve(async (req) => {
     let batchIndex = 1;
     let totalPages = 0;
 
-    // ============ BATCH 1: Cover + Intro ============
-    console.log("Creating & uploading Batch 1: Cover + Intro...");
-    const batch1 = await createAndUploadBatch(
+    // ============ BATCH 1: Cover ============
+    console.log("Creating & uploading Batch 1: Cover...");
+    const coverBatch = await createAndUploadBatch(
       supabase,
       order.order_number,
       batchIndex++,
-      "Cover-Intro",
+      "Cover",
       [
-        { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" },
+        { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" }
+      ]
+    );
+    uploadedBatches.push(coverBatch);
+    totalPages += coverBatch.pageCount;
+    console.log(`Batch 1 (Cover) complete: ${coverBatch.pageCount} pages`);
+
+    // ============ BATCH 2: Intro ============
+    console.log("Creating & uploading Batch 2: Intro...");
+    const introBatch = await createAndUploadBatch(
+      supabase,
+      order.order_number,
+      batchIndex++,
+      "Intro",
+      [
         { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
         { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
       ]
     );
-    uploadedBatches.push(batch1);
-    totalPages += batch1.pageCount;
-    console.log(`Batch 1 complete: ${batch1.pageCount} pages, memory freed`);
+    uploadedBatches.push(introBatch);
+    totalPages += introBatch.pageCount;
+    console.log(`Batch 2 (Intro) complete: ${introBatch.pageCount} pages`);
+
+    // ============ BATCH 3: DEDICATION (Moved to before letters) ============
+    console.log("Creating & uploading Batch 3: Dedication...");
+    const dedicationBatch = await createAndUploadDedication(
+      supabase,
+      order.order_number,
+      batchIndex++,
+      bookData
+    );
+    if (dedicationBatch) {
+      uploadedBatches.push(dedicationBatch);
+      totalPages += dedicationBatch.pageCount;
+      console.log(`Batch 3 (Dedication) complete: ${dedicationBatch.pageCount} pages`);
+    }
 
     // ============ BATCH 2+: Letter Pages (one letter at a time to minimize memory) ============
     for (let i = 0; i < letters.length; i++) {
       const letter = letters[i];
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       letterOccurrences.set(letter, occurrenceIndex + 1);
-      
+
       const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
       const themeFolder = getThemeFolder(theme);
       const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
-      
+
       console.log(`Creating & uploading Letter ${letter}...`);
       const letterBatch = await createAndUploadBatch(
         supabase,
@@ -585,24 +677,12 @@ serve(async (req) => {
     totalPages += endingBatch.pageCount;
     console.log(`Ending Batch complete: ${endingBatch.pageCount} pages`);
 
-    // ============ DEDICATION BATCH (ALWAYS included) ============
-    console.log("Creating & uploading Dedication Batch (compulsory)...");
-    const dedicationBatch = await createAndUploadDedication(
-      supabase,
-      order.order_number,
-      batchIndex++,
-      bookData
-    );
-    if (dedicationBatch) {
-      uploadedBatches.push(dedicationBatch);
-      totalPages += dedicationBatch.pageCount;
-      console.log(`Dedication Batch complete: ${dedicationBatch.pageCount} pages`);
-    }
+
 
     console.log(`All ${uploadedBatches.length} PDF batches uploaded. Total pages: ${totalPages}`);
 
     // Generate download links HTML for all batches
-    const downloadLinksHtml = uploadedBatches.map((batch, idx) => 
+    const downloadLinksHtml = uploadedBatches.map((batch, idx) =>
       `<li style="margin: 8px 0;">
         <a href="${batch.url}" style="color: #5c4d9a; font-weight: bold;">
           Part ${idx + 1}: ${batch.name} (${batch.pageCount} pages)
@@ -656,7 +736,8 @@ serve(async (req) => {
               <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
               <p><strong>Total Pages:</strong> ${totalPages} pages (includes 10mm bleed & crop marks)</p>
               <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
-              ${bookData.personalMessage ? `<p><strong>Personal Message:</strong> ${bookData.personalMessage}</p>` : ''}
+              ${bookData.personalMessage ? `<p><strong>Personal Note (Right Page):</strong> ${bookData.personalMessage}</p>` : ''}
+              ${bookData.dedicationMessage ? `<p><strong>Dedication (Left Page):</strong> ${bookData.dedicationMessage}</p>` : ''}
             </div>
 
             <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
@@ -691,8 +772,8 @@ serve(async (req) => {
     console.log("Book order email sent successfully for order:", order.order_number);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: "Book PDF generated and email sent to production",
         orderNumber: order.order_number,
         pageCount: totalPages,

@@ -12,6 +12,7 @@ interface BookData {
   skinTone: string;
   fromField: string;
   personalMessage: string;
+  dedicationMessage: string;
   pageCount: number;
 }
 
@@ -98,9 +99,9 @@ serve(async (req: Request) => {
 
     // Call generate-book-pdf to send the email
     const functionsUrl = supabaseUrl.replace(".supabase.co", ".supabase.co/functions/v1");
-    
+
     console.log("Calling generate-book-pdf for order:", order.id);
-    
+
     const pdfResponse = await fetch(`${functionsUrl}/generate-book-pdf`, {
       method: "POST",
       headers: {

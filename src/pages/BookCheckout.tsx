@@ -20,6 +20,7 @@ interface Personalization {
 interface Customization {
   fromField: string;
   personalMessage: string;
+  dedicationMessage: string;
 }
 
 const BOOK_PRICE = 35000; // R350 in cents
@@ -29,7 +30,7 @@ const BookCheckout = () => {
   const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [customization, setCustomization] = useState<Customization | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -37,7 +38,7 @@ const BookCheckout = () => {
     address: "",
     notes: ""
   });
-  
+
   const [deliveryMethod, setDeliveryMethod] = useState("pickup");
 
   const deliveryOptions = [
@@ -56,14 +57,14 @@ const BookCheckout = () => {
   useEffect(() => {
     const savedPersonalization = localStorage.getItem("personalization");
     const savedCustomization = localStorage.getItem("customization");
-    
+
     if (savedPersonalization) {
       setPersonalization(JSON.parse(savedPersonalization));
     } else {
       navigate("/personalize-book");
       return;
     }
-    
+
     if (savedCustomization) {
       setCustomization(JSON.parse(savedCustomization));
     }
@@ -76,12 +77,12 @@ const BookCheckout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email || !formData.phone) {
       toast.error("Please fill in all required fields");
       return;
     }
-    
+
     if (deliveryMethod !== "pickup" && !formData.address) {
       toast.error("Please provide a delivery address");
       return;
@@ -96,7 +97,8 @@ const BookCheckout = () => {
         skinTone: personalization?.skinTone,
         fromField: customization?.fromField || "",
         personalMessage: customization?.personalMessage || "",
-        pageCount: personalization?.childName ? personalization.childName.replace(/[^a-zA-Z]/g, '').length + 3 : 0
+        dedicationMessage: customization?.dedicationMessage || "",
+        pageCount: personalization?.childName ? (personalization.childName.replace(/[^a-zA-Z]/g, '').length + 6) * 2 : 0
       };
 
       const { data, error } = await supabase.functions.invoke('submit-book-order', {
@@ -125,8 +127,8 @@ const BookCheckout = () => {
           total: total,
           bookData: bookData
         }));
-        
-        navigate('/payment-success');
+
+        navigate('/book-success');
       }
     } catch (error) {
       console.error("Checkout error:", error);
@@ -141,12 +143,15 @@ const BookCheckout = () => {
   }
 
   const letterCount = personalization.childName.replace(/[^a-zA-Z]/g, '').length;
-  const totalPages = letterCount + 3; // Title + letters + climax + dedication
+  // Breakdown: Cover(1 spread) + Intro(2 spreads) + Letters(L spreads) + Ending(2 spreads) + Dedication(1 spread)
+  // Total Spreads = L + 6
+  // Physical Pages = (L + 6) * 2
+  const totalPages = (letterCount + 6) * 2;
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
         <Button
           variant="ghost"
@@ -216,7 +221,7 @@ const BookCheckout = () => {
                 {/* Contact Details */}
                 <div className="space-y-4">
                   <h3 className="font-fredoka text-lg text-foreground">Contact Details</h3>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="name" className="font-inter">Full Name *</Label>
                     <Input
@@ -228,7 +233,7 @@ const BookCheckout = () => {
                       className="font-inter"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="email" className="font-inter">Email *</Label>
                     <Input
@@ -241,7 +246,7 @@ const BookCheckout = () => {
                       className="font-inter"
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="phone" className="font-inter">Phone *</Label>
                     <Input
@@ -259,14 +264,13 @@ const BookCheckout = () => {
                 {/* Delivery Method */}
                 <div className="space-y-4">
                   <h3 className="font-fredoka text-lg text-foreground">Delivery Method</h3>
-                  
+
                   <RadioGroup value={deliveryMethod} onValueChange={setDeliveryMethod}>
                     {deliveryOptions.map((option) => (
                       <div
                         key={option.id}
-                        className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${
-                          deliveryMethod === option.id ? "border-primary bg-primary/5" : "border-border"
-                        }`}
+                        className={`flex items-center space-x-3 p-4 rounded-lg border cursor-pointer transition-all ${deliveryMethod === option.id ? "border-primary bg-primary/5" : "border-border"
+                          }`}
                         onClick={() => setDeliveryMethod(option.id)}
                       >
                         <RadioGroupItem value={option.id} id={option.id} />
@@ -291,7 +295,7 @@ const BookCheckout = () => {
                       <MapPin className="w-5 h-5" />
                       Delivery Address
                     </h3>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="address" className="font-inter">Full Address *</Label>
                       <Textarea

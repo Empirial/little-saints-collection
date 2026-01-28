@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, MessageSquare, Info, User, Sparkles, Palette, ImageOff } from "lucide-react";
+import { ArrowLeft, ArrowRight, PenSquare, ImageOff, MessageSquare } from "lucide-react"; // Removed Info, Sparkles, Palette, User
 import {
   Dialog,
   DialogContent,
@@ -47,7 +47,7 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): Theme => {
   // Must match the edge function order exactly
   const boyThemes: Theme[] = ['superhero', 'animal', 'fairytale'];
   const girlThemes: Theme[] = ['fairytale', 'superhero', 'animal'];
-  
+
   const themes = gender === 'boy' ? boyThemes : girlThemes;
   return themes[occurrenceIndex % 3];
 };
@@ -57,8 +57,8 @@ const PersonalizePreview = () => {
   const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
-  const [showSpecsModal, setShowSpecsModal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
+  // 'dedication' = Left Page (From), 'message' = Right Page (Message)
+  const [activeModal, setActiveModal] = useState<'dedication' | 'message' | null>(null);
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
   const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
 
@@ -100,14 +100,6 @@ const PersonalizePreview = () => {
     }
   }, [personalization]);
 
-  // Get child character based on gender and skin tone
-  const getChildCharacter = (gender: string, skinTone?: string) => {
-    if (gender === "boy") {
-      return skinTone === "dark" ? charBoyDark : charBoyLight;
-    }
-    return skinTone === "dark" ? charGirlDark : charGirlLight;
-  };
-
   const handleCheckout = () => {
     localStorage.setItem("customization", JSON.stringify({ fromField, personalMessage }));
     navigate("/book-checkout");
@@ -123,7 +115,7 @@ const PersonalizePreview = () => {
     const letters = name.toUpperCase().split('').filter(l => /[A-Z]/.test(l));
     const characterFolder = getCharacterFolder(gender, skinTone);
     const pages: Array<{ type: string; content?: string; letter?: string; image?: string }> = [];
-    
+
     // Track letter occurrences for theme cycling
     const letterOccurrences: Map<string, number> = new Map();
 
@@ -148,7 +140,7 @@ const PersonalizePreview = () => {
       const occurrenceIndex = letterOccurrences.get(letter) || 0;
       const theme = getThemeForLetter(occurrenceIndex, gender);
       letterOccurrences.set(letter, occurrenceIndex + 1);
-      
+
       const letterImage = getLetterImage(
         gender as 'boy' | 'girl',
         skinTone as 'light' | 'dark',
@@ -187,30 +179,43 @@ const PersonalizePreview = () => {
           alt="Dedication page"
           className="absolute inset-0 w-full h-full object-cover"
         />
-        
-        {/* Text overlay container - split into left and right halves */}
-        <div className="absolute inset-0 flex">
-          {/* Left half - From field */}
-          <div className="w-1/2 flex flex-col items-center justify-center p-4 md:p-8">
-            {fromField.trim() && (
-              <div className="text-center max-w-[80%]">
-                <p className="font-fredoka text-lg md:text-2xl lg:text-3xl text-foreground drop-shadow-sm">
+
+        {/* Text overlay container - Split into Left and Right pages */}
+        <div className="absolute inset-0 grid grid-cols-2">
+
+          {/* LEFT PAGE: Dedication (From Field) */}
+          <div className="relative flex flex-col items-center justify-center p-8 md:p-12 text-center pointer-events-none">
+            {fromField.trim() ? (
+              <div className="max-w-[80%]">
+                <p className="font-serif text-xs md:text-base lg:text-lg text-foreground/80 font-medium tracking-wider uppercase">
+                  From:
+                </p>
+                <p className="font-serif text-sm md:text-xl lg:text-2xl text-foreground font-bold mt-2">
                   {fromField}
                 </p>
               </div>
+            ) : (
+              <p className="font-serif text-sm md:text-lg text-muted-foreground/50 italic px-4">
+                Dedication (From)
+              </p>
             )}
           </div>
-          
-          {/* Right half - Personal message */}
-          <div className="w-1/2 flex flex-col items-center justify-center p-4 md:p-8">
-            {personalMessage.trim() && (
-              <div className="text-center max-w-[80%]">
-                <p className="font-fredoka text-sm md:text-lg lg:text-xl text-foreground leading-relaxed drop-shadow-sm whitespace-pre-wrap">
+
+          {/* RIGHT PAGE: Message (Personal Message) */}
+          <div className="relative flex flex-col items-center justify-center p-8 md:p-12 text-center pointer-events-none">
+            {personalMessage.trim() ? (
+              <div className="max-w-[75%]">
+                <p className="font-serif text-sm md:text-lg lg:text-xl text-foreground/90 leading-relaxed whitespace-pre-wrap tracking-wide">
                   {personalMessage}
                 </p>
               </div>
+            ) : (
+              <p className="font-serif text-sm md:text-lg text-muted-foreground/50 italic px-4">
+                Your special message...
+              </p>
             )}
           </div>
+
         </div>
       </div>
     );
@@ -233,11 +238,11 @@ const PersonalizePreview = () => {
   // Render a single book page - aspect ratio 37:21 (book dimensions 37cm x 21cm)
   const renderPage = (page: typeof book[0], index: number) => {
     // Check if this is a page with a full-bleed image (cover, intro, ending, letter with image)
-    const hasFullBleedImage = ['cover', 'intro', 'ending'].includes(page.type) || 
-                              (page.type === 'letter' && page.image);
+    const hasFullBleedImage = ['cover', 'intro', 'ending'].includes(page.type) ||
+      (page.type === 'letter' && page.image);
     const isLoading = loadingImages.has(index);
     const hasError = imageErrors.has(index);
-    
+
     const getFallbackLabel = () => {
       if (page.type === 'cover') return 'Cover Page';
       if (page.type === 'intro') return 'Intro Page';
@@ -245,13 +250,12 @@ const PersonalizePreview = () => {
       if (page.type === 'letter') return `Letter ${page.letter}`;
       return 'Page';
     };
-    
+
     return (
       <div
         key={index}
-        className={`relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border ${
-          hasFullBleedImage && !hasError ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
-        }`}
+        className={`relative aspect-[634/230] shadow-xl rounded-lg overflow-hidden border border-border ${hasFullBleedImage && !hasError ? '' : `bg-gradient-to-br ${bgColors[index % bgColors.length]}`
+          }`}
       >
         {/* Loading skeleton */}
         {isLoading && (
@@ -306,7 +310,7 @@ const PersonalizePreview = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-6 pb-28">
         {/* Back Button */}
         <Button
@@ -334,22 +338,28 @@ const PersonalizePreview = () => {
       {/* Fixed Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-lg border-t border-border px-4 py-3 z-50">
         <div className="container mx-auto flex items-center justify-center gap-3 md:gap-4">
+
+          {/* Dedication Button (Left Page) */}
           <Button
             variant="outline"
-            onClick={() => setShowSpecsModal(true)}
+            onClick={() => setActiveModal('dedication')}
             className="font-inter flex-1 md:flex-none md:min-w-[120px]"
           >
-            <Info className="w-4 h-4 mr-2" />
-            Specs
+            <PenSquare className="w-4 h-4 mr-2" />
+            Dedication
           </Button>
+
+          {/* Message Button (Right Page) */}
           <Button
             variant="outline"
-            onClick={() => setShowMessageModal(true)}
+            onClick={() => setActiveModal('message')}
             className="font-inter flex-1 md:flex-none md:min-w-[120px]"
           >
             <MessageSquare className="w-4 h-4 mr-2" />
             Message
           </Button>
+
+          {/* Proceed Button */}
           <Button
             onClick={handleCheckout}
             className="font-inter flex-1 md:flex-none md:min-w-[140px]"
@@ -360,102 +370,53 @@ const PersonalizePreview = () => {
         </div>
       </div>
 
-      {/* Specs Modal */}
-      <Dialog open={showSpecsModal} onOpenChange={setShowSpecsModal}>
+      {/* Unified Input Modal for Dedication or Message */}
+      <Dialog open={!!activeModal} onOpenChange={(open) => !open && setActiveModal(null)}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-fredoka text-xl text-primary">Book Specifications</DialogTitle>
+            <DialogTitle className="font-fredoka text-xl text-primary">
+              {activeModal === 'dedication' ? 'Dedication (Left Page)' : 'Personal Message (Right Page)'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            {/* Child Character Preview */}
-            <div className="flex justify-center">
-              <img
-                src={getChildCharacter(personalization.gender, personalization.skinTone)}
-                alt="Child character"
-                className="w-24 h-24 object-contain drop-shadow-lg"
-              />
-            </div>
-            
-            {/* Info Items */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <User className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground font-inter">Child's Name</p>
-                  <p className="font-fredoka text-foreground">{personalization.childName}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground font-inter">Gender</p>
-                  <p className="font-fredoka text-foreground">{personalization.gender === "boy" ? "Boy" : "Girl"}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <Palette className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground font-inter">Theme</p>
-                  <p className="font-fredoka text-foreground">Auto-assigned based on name</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                <Info className="w-5 h-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground font-inter">Total Pages</p>
-                  <p className="font-fredoka text-foreground">{book.length} pages</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={() => setShowSpecsModal(false)} className="w-full font-inter">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Message Modal */}
-      <Dialog open={showMessageModal} onOpenChange={setShowMessageModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-fredoka text-xl text-primary">Add Your Message</DialogTitle>
-          </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="from" className="font-inter text-foreground">
-                From
-              </Label>
-              <Input
-                id="from"
-                placeholder="Who is this gift from?"
-                value={fromField}
-                onChange={(e) => setFromField(e.target.value)}
-                className="font-inter"
-              />
-            </div>
+            {activeModal === 'dedication' && (
+              <div className="space-y-2">
+                <Label htmlFor="from" className="font-inter text-foreground">
+                  Who is this book from?
+                </Label>
+                <Input
+                  id="from"
+                  placeholder="e.g. Love, Mom & Dad"
+                  value={fromField}
+                  onChange={(e) => setFromField(e.target.value)}
+                  className="font-inter"
+                  autoFocus
+                />
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="message" className="font-inter text-foreground">
-                Personal Message (Dedication)
-              </Label>
-              <Textarea
-                id="message"
-                placeholder="Write a special message for your child..."
-                value={personalMessage}
-                onChange={(e) => setPersonalMessage(e.target.value)}
-                rows={5}
-                className="font-inter resize-none"
-              />
-            </div>
+            {activeModal === 'message' && (
+              <div className="space-y-2">
+                <Label htmlFor="message" className="font-inter text-foreground">
+                  Message to {personalization.childName}
+                </Label>
+                <Textarea
+                  id="message"
+                  placeholder="Write a special message..."
+                  value={personalMessage}
+                  onChange={(e) => setPersonalMessage(e.target.value)}
+                  rows={5}
+                  className="font-inter resize-none"
+                  autoFocus
+                />
+              </div>
+            )}
           </div>
+
           <DialogFooter>
-            <Button onClick={() => setShowMessageModal(false)} className="w-full font-inter">
-              Save & Close
+            <Button onClick={() => setActiveModal(null)} className="w-full font-inter">
+              Save & Preview
             </Button>
           </DialogFooter>
         </DialogContent>
