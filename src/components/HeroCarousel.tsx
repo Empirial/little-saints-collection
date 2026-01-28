@@ -34,8 +34,8 @@ const slides: CarouselSlide[] = [
   {
     image: heroImage,
     subtitle: "Little Saint Art Creations",
-    title: "Inspire Faith in Every Child's Room",
-    description: "Beautiful Christian posters and personalized books that teach values, joy and God's love",
+    title: "Inspire & Delight Every Child",
+    description: "Beautiful Christian posters and personalized adventure books for children",
     buttonText: "SHOP NOW",
     buttonPath: "/product",
   },

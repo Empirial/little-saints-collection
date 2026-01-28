@@ -14,7 +14,7 @@ const Index = () => {
     "@type": "LocalBusiness",
     "name": "Little Saint Art Creations",
     "image": "https://littlesaintart.co.za/og-image.png",
-    "description": "Beautiful Christian posters and personalized adventure books for children. Featuring 'The Magic in My Name' - where kids discover each letter of their name.",
+    "description": "Christian posters for children featuring 9 Bible story designs, and 'The Magic in My Name' personalized adventure books where kids discover each letter of their name.",
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "ZA"
@@ -27,10 +27,10 @@ const Index = () => {
   return (
     <main className="min-h-screen bg-background">
       <SEOHead
-        title="Little Saints - Christian Posters & The Magic in My Name Personalized Books | South Africa"
-        description="Shop beautiful Christian posters and 'The Magic in My Name' personalized adventure books. Kids discover each letter of their name on a magical journey. 9 faith-filled A3 posters."
+        title="Little Saints - Christian Posters & Personalized Adventure Books | South Africa"
+        description="Shop Christian posters for children and 'The Magic in My Name' personalized adventure books. 9 beautiful Bible story A3 posters. Personalized books where kids discover each letter of their name."
         canonicalUrl="https://littlesaintart.co.za/"
-        keywords="The Magic in My Name book, personalized children's book, name adventure book, Christian posters for kids, Bible posters, personalized kids books South Africa"
+        keywords="Christian posters for kids, Bible posters for children, The Magic in My Name book, personalized children's book, name adventure book, personalized kids books South Africa, religious wall art"
         structuredData={homeStructuredData}
       />
       <Navbar />
@@ -45,10 +45,10 @@ const Index = () => {
             About Us
           </h2>
           <p className="font-inter text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            At Little Saint Art Creations, we believe that faith should be woven into every aspect of a child's life. 
-            Our mission is to create beautiful, inspiring Christian art and personalized books that help parents nurture 
-            their children's spiritual growth. Each piece is thoughtfully designed to bring God's word and love into your 
-            child's daily environment, making faith a natural part of their journey.
+            At Little Saint Art Creations, we create beautiful products that inspire and delight children. 
+            Our Christian posters bring God's word and faith into your child's daily environment, while 
+            'The Magic in My Name' personalized books take your child on a magical adventure of self-discovery. 
+            Each piece is thoughtfully designed with love and care.
           </p>
         </div>
       </section>
@@ -120,10 +120,10 @@ const Index = () => {
       <section className="py-20 px-4 bg-gradient-to-b from-background to-primary/10" aria-labelledby="cta-heading">
         <div className="max-w-4xl mx-auto text-center">
           <h2 id="cta-heading" className="font-fredoka text-3xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6">
-            Start Your Child's Faith Journey Today
+            Create Something Special for Your Child Today
           </h2>
           <p className="font-inter text-base sm:text-xl text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto">
-            Create a space filled with God's love and inspiring Bible stories that will nurture your child's faith
+            Choose faith-filled posters or personalized adventure books - both designed to bring joy to your child's world
           </p>
           <nav className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center" aria-label="Product navigation">
             <Button 

@@ -7,10 +7,28 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowLeft } from "lucide-react";
 import Navbar from "@/components/Navbar";
+import SEOHead from "@/components/SEOHead";
 import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
 import charBoyDark from "@/assets/personalization/Blackboy/BB.png";
 import charGirlLight from "@/assets/personalization/whitegirl/whitegirl.png";
 import charGirlDark from "@/assets/personalization/Blackgirl/Blackgirl.png";
+
+const bookStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "The Magic in My Name - Personalized Adventure Book",
+  "description": "A personalized adventure book where your child becomes the hero, discovering each letter of their name on a magical journey. Sparks reading, confidence, and self-love.",
+  "brand": {
+    "@type": "Brand",
+    "name": "Little Saint Art Creations"
+  },
+  "offers": {
+    "@type": "Offer",
+    "priceCurrency": "ZAR",
+    "price": "150",
+    "availability": "https://schema.org/InStock"
+  }
+};
 
 const PersonalizeBook = () => {
   const navigate = useNavigate();
@@ -29,6 +47,13 @@ const PersonalizeBook = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
+      <SEOHead
+        title="The Magic in My Name - Personalized Adventure Book | Little Saints"
+        description="Create a personalized adventure book where your child discovers each letter of their name. A magical journey that sparks reading, confidence, and self-love. Order online in South Africa."
+        canonicalUrl="https://littlesaintart.co.za/personalize-book"
+        keywords="The Magic in My Name, personalized children's book, name adventure book, custom kids book, personalized story book, letter discovery book, kids confidence book South Africa"
+        structuredData={bookStructuredData}
+      />
       <Navbar />
       
       <div className="container mx-auto px-4 pt-20 pb-8 md:pt-24 md:pb-16">
