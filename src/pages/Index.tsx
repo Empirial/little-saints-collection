@@ -14,7 +14,7 @@ const Index = () => {
     "@type": "LocalBusiness",
     "name": "Little Saint Art Creations",
     "image": "https://littlesaintart.co.za/og-image.png",
-    "description": "Beautiful Christian posters and personalized Bible storybooks for children",
+    "description": "Beautiful Christian posters and personalized adventure books for children. Featuring 'The Magic in My Name' - where kids discover each letter of their name.",
     "address": {
       "@type": "PostalAddress",
       "addressCountry": "ZA"
@@ -27,10 +27,10 @@ const Index = () => {
   return (
     <main className="min-h-screen bg-background">
       <SEOHead
-        title="Little Saints - Christian Posters & Personalized Books for Children | South Africa"
-        description="Shop beautiful Christian posters and personalized Bible storybooks for children. 9 faith-filled A3 posters featuring Bible stories, perfect for kids' rooms."
+        title="Little Saints - Christian Posters & The Magic in My Name Personalized Books | South Africa"
+        description="Shop beautiful Christian posters and 'The Magic in My Name' personalized adventure books. Kids discover each letter of their name on a magical journey. 9 faith-filled A3 posters."
         canonicalUrl="https://littlesaintart.co.za/"
-        keywords="Christian posters for kids, Bible posters for children, personalized Christian books, religious wall art, South Africa"
+        keywords="The Magic in My Name book, personalized children's book, name adventure book, Christian posters for kids, Bible posters, personalized kids books South Africa"
         structuredData={homeStructuredData}
       />
       <Navbar />
@@ -97,16 +97,16 @@ const Index = () => {
                 <div className="relative z-10">
                   <div className="text-7xl mb-6 transform group-hover:scale-110 transition-transform duration-300" aria-hidden="true">📖</div>
                   <h3 className="font-fredoka text-3xl font-bold mb-4 text-foreground group-hover:text-primary transition-colors">
-                    Personalized Books
+                    The Magic in My Name
                   </h3>
                   <p className="font-inter text-lg text-muted-foreground leading-relaxed mb-4">
-                    Custom-made storybooks where your child becomes the hero of their own faith journey. 
-                    Choose their character and watch them come alive in inspiring Biblical adventures.
+                    A personalized adventure book where your child becomes the hero, discovering each letter of their name 
+                    on a magical journey. Sparks reading, confidence, and self-love.
                   </p>
                   <ul className="font-inter text-muted-foreground space-y-2">
                     <li>✓ Your child as the main character</li>
                     <li>✓ Choose gender and appearance</li>
-                    <li>✓ Engaging Biblical stories</li>
+                    <li>✓ Adventure to find each letter</li>
                     <li>✓ Unique keepsake for years to come</li>
                   </ul>
                 </div>

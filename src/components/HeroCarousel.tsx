@@ -49,9 +49,9 @@ const slides: CarouselSlide[] = [
   },
   {
     image: classroom,
-    subtitle: "Personalized Just For Them",
+    subtitle: "The Magic in My Name",
     title: "Your Child as the Hero",
-    description: "Personalised stories that spark reading, confidence, and self-love.",
+    description: "A magical adventure where your child discovers each letter of their name. Sparks reading, confidence, and self-love.",
     buttonText: "CREATE BOOK",
     buttonPath: "/personalize-book",
   },

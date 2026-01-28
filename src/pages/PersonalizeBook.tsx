@@ -48,7 +48,7 @@ const PersonalizeBook = () => {
                 Personalize Your Book
               </CardTitle>
               <CardDescription className="font-inter text-base text-muted-foreground">
-                Create a unique Bible story book tailored just for your child
+                Create "The Magic in My Name" - a unique adventure book where your child discovers each letter of their name
               </CardDescription>
             </CardHeader>
             
