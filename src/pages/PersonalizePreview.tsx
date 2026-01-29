@@ -426,20 +426,10 @@ const PersonalizePreview = () => {
           {/* Add to Cart Button */}
           <Button
             onClick={handleAddToCart}
-            variant="secondary"
             className="font-inter flex-1 md:flex-none md:min-w-[140px]"
           >
             Add to Cart
             <ShoppingCart className="w-4 h-4 ml-2" />
-          </Button>
-
-          {/* Proceed Button */}
-          <Button
-            onClick={handleProceedToCheckout}
-            className="font-inter flex-1 md:flex-none md:min-w-[140px]"
-          >
-            Checkout
-            <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>
       </div>
