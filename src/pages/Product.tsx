@@ -15,7 +15,7 @@ import poster9 from "@/assets/poster/poster-9.webp";
 import bedroomImage from "@/assets/poster/BEDROOM (2).webp";
 import classroomImage from "@/assets/poster/CLassroom.webp";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, ArrowRight, MessageCircle, Star, Package, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import SEOHead from "@/components/SEOHead";
 import { toast } from "sonner";
