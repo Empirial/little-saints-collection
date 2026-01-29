@@ -150,11 +150,7 @@ const BookCheckout = () => {
       }
     } catch (error: any) {
       console.error("Checkout error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to process order. Please try again.",
-        variant: "destructive",
-      });
+      toast.error(error.message || "Failed to process order. Please try again.");
       setIsLoading(false);
     } finally {
       setIsLoading(false);
