@@ -60,9 +60,9 @@ const Cart = () => {
               <p className="font-inter text-muted-foreground mb-6">
                 Looks like you haven't added any items yet.
               </p>
-              <Button onClick={() => navigate("/product")} className="font-fredoka">
+              <Button onClick={() => navigate("/")} className="font-fredoka">
                 <ShoppingCart className="w-4 h-4 mr-2" />
-                Browse Posters
+                Return Home
               </Button>
             </Card>
           ) : (
