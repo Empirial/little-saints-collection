@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import SEOHead from "@/components/SEOHead";
 import HeroCarousel from "@/components/HeroCarousel";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -145,34 +146,8 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-foreground text-background py-6 sm:py-8 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 mb-4">
-            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
-            <p className="font-inter text-sm sm:text-lg">
-              Contact us on WhatsApp:{" "}
-              <a
-                href="https://wa.me/27791175714"
-                className="font-fredoka font-bold hover:text-primary transition-colors"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                +27 79 117 5714
-              </a>
-            </p>
-          </div>
-          <p className="font-fredoka text-xl sm:text-2xl font-bold mb-2">Little Saints</p>
-          <p className="font-inter text-xs sm:text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Little Saints. Inspiring faith in young hearts.
-          </p>
-          <p className="font-inter text-xs opacity-60 mt-3">
-            Made by{" "}
-            <a href="https://www.empirialdesigns.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline">
-              www.empirialdesigns.com
-            </a>
-          </p>
-        </div>
-      </footer>
+      {/* Footer */}
+      <Footer />
     </main>
   );
 };
