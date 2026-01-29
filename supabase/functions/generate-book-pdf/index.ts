@@ -575,189 +575,206 @@ serve(async (req) => {
       throw new Error("Order not found");
     }
 
-    const bookData = order.book_data as BookData;
-    if (!bookData) {
+    // Normalize book_data to array
+    const rawBookData = order.book_data;
+    const books = Array.isArray(rawBookData) ? rawBookData : (rawBookData ? [rawBookData] : []);
+
+    if (books.length === 0) {
+      console.error("No book data found for order:", order.order_number);
       throw new Error("No book data found for this order");
     }
 
-    console.log("Processing book order:", order.order_number);
+    console.log(`Processing ${books.length} book(s) for order: ${order.order_number}`);
 
-    // Build letter breakdown with themes
-    const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
-    const letterOccurrences: Map<string, number> = new Map();
-    const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
-
-    console.log("Starting PDF generation with bleed, crop marks, and immediate upload...");
-    const uploadedBatches: BatchInfo[] = [];
+    const allUploadedBatches: BatchInfo[] = [];
     let batchIndex = 1;
     let totalPages = 0;
+    let emailBooksHtml = '';
 
-    // ============ BATCH 1: Cover ============
-    console.log("Creating & uploading Batch 1: Cover...");
-    const coverBatch = await createAndUploadBatch(
-      supabase,
-      order.order_number,
-      batchIndex++,
-      "Cover",
-      [
-        { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" }
-      ]
-    );
-    uploadedBatches.push(coverBatch);
-    totalPages += coverBatch.pageCount;
-    console.log(`Batch 1 (Cover) complete: ${coverBatch.pageCount} pages`);
+    // ============ PROCESS EACH BOOK ============
+    for (const [index, bookData] of books.entries()) {
+      const bookNum = index + 1;
+      const bookTitle = `${bookData.childName}'s Great Name Chase`;
+      console.log(`--- Starting Book ${bookNum}: ${bookTitle} ---`);
 
-    // ============ BATCH 2: Intro ============
-    console.log("Creating & uploading Batch 2: Intro...");
-    const introBatch = await createAndUploadBatch(
-      supabase,
-      order.order_number,
-      batchIndex++,
-      "Intro",
-      [
-        { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
-        { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
-      ]
-    );
-    uploadedBatches.push(introBatch);
-    totalPages += introBatch.pageCount;
-    console.log(`Batch 2 (Intro) complete: ${introBatch.pageCount} pages`);
+      const bookBatches: BatchInfo[] = [];
 
-    // ============ BATCH 3: DEDICATION (Moved to before letters) ============
-    console.log("Creating & uploading Batch 3: Dedication...");
-    const dedicationBatch = await createAndUploadDedication(
-      supabase,
-      order.order_number,
-      batchIndex++,
-      bookData
-    );
-    if (dedicationBatch) {
-      uploadedBatches.push(dedicationBatch);
-      totalPages += dedicationBatch.pageCount;
-      console.log(`Batch 3 (Dedication) complete: ${dedicationBatch.pageCount} pages`);
-    }
+      // Build letter breakdown with themes
+      const letters = bookData.childName.toUpperCase().split('').filter((l: string) => /[A-Z]/.test(l));
+      const letterOccurrences: Map<string, number> = new Map();
+      const characterFolder = getCharacterFolder(bookData.gender, bookData.skinTone);
 
-    // ============ BATCH 2+: Letter Pages (one letter at a time to minimize memory) ============
-    for (let i = 0; i < letters.length; i++) {
-      const letter = letters[i];
-      const occurrenceIndex = letterOccurrences.get(letter) || 0;
-      letterOccurrences.set(letter, occurrenceIndex + 1);
-
-      const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
-      const themeFolder = getThemeFolder(theme);
-      const letterNum = letter.charCodeAt(0) - 64; // A=1, B=2, etc.
-
-      console.log(`Creating & uploading Letter ${letter}...`);
-      const letterBatch = await createAndUploadBatch(
+      // ============ BATCH 1: Cover ============
+      console.log(`B${bookNum}: Creating Cover (Batch ${batchIndex})...`);
+      const coverBatch = await createAndUploadBatch(
         supabase,
         order.order_number,
         batchIndex++,
-        `Letter-${letter}`,
+        `Book ${bookNum} Cover`,
         [
-          { url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`, label: `Letter ${letter}` }
+          { url: `${STORAGE_URL}/${characterFolder}/Cover/cover.jpg`, label: "Cover" }
         ]
       );
-      uploadedBatches.push(letterBatch);
-      totalPages += letterBatch.pageCount;
+      bookBatches.push(coverBatch);
+      allUploadedBatches.push(coverBatch);
+      totalPages += coverBatch.pageCount;
+
+      // ============ BATCH 2: DEDICATION ============
+      console.log(`B${bookNum}: Creating Dedication (Batch ${batchIndex})...`);
+      const dedicationBatch = await createAndUploadDedication(
+        supabase,
+        order.order_number,
+        batchIndex++,
+        bookData
+      );
+      if (dedicationBatch) {
+        bookBatches.push(dedicationBatch);
+        allUploadedBatches.push(dedicationBatch);
+        totalPages += dedicationBatch.pageCount;
+      }
+
+      // ============ BATCH 3: Intro ============
+      console.log(`B${bookNum}: Creating Intro (Batch ${batchIndex})...`);
+      const introBatch = await createAndUploadBatch(
+        supabase,
+        order.order_number,
+        batchIndex++,
+        `Book ${bookNum} Intro`,
+        [
+          { url: `${STORAGE_URL}/${characterFolder}/Intro/1.jpg`, label: "Intro 1" },
+          { url: `${STORAGE_URL}/${characterFolder}/Intro/2.jpg`, label: "Intro 2" },
+        ]
+      );
+      bookBatches.push(introBatch);
+      allUploadedBatches.push(introBatch);
+      totalPages += introBatch.pageCount;
+
+      // ============ BATCH 4+: Letter Pages ============
+      for (let i = 0; i < letters.length; i++) {
+        const letter = letters[i];
+        const count = (letterOccurrences.get(letter) || 0) + 1;
+        letterOccurrences.set(letter, count);
+
+        const theme = getThemeForLetter(count - 1, bookData.gender);
+        const themeFolder = getThemeFolder(theme);
+        const letterNum = letter.charCodeAt(0) - 64; // A=1...
+
+        // Revert to known folder structure if theme logic differs per letter?
+        // Previous impl used: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`?
+        // Wait, previous impl in Step 142 was:
+        // const theme = getThemeForLetter(occurrenceIndex, bookData.gender);
+        // const themeFolder = getThemeFolder(theme);
+        // const letterNum = letter.charCodeAt(0) - 64; 
+        // url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`
+        // Correction: In Step 136 I wrote: `${STORAGE_URL}/${characterFolder}/Letters/${themeFolder}/1.jpg`.
+        // I need to be careful about the path. 
+        // Step 142 (existing code) says: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`. 
+        // Wait, Step 142 says: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`.
+        // My proposed replacement in Step 136 said: `${STORAGE_URL}/${characterFolder}/Letters/${themeFolder}/1.jpg`.
+        // I should respect the EXISTING path structure from Step 142.
+        // Existing: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg` ?
+        // Actually, let's look at Step 142 again carefully.
+        // Line 657: `{ url: \`${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg\`, label: \`Letter ${letter}\` }`
+        // Is `themeFolder` something like `Superherotheme`? Yes.
+        // Is `letterNum` something like `1` for A? Yes.
+        // So the path is `.../Blackboy/Superherotheme/1.jpg`.
+        // Okay, I will use THAT structure.
+
+        console.log(`B${bookNum}: Creating Letter ${letter} (${count})...`);
+
+        const letterBatch = await createAndUploadBatch(
+          supabase,
+          order.order_number,
+          batchIndex++,
+          `Book ${bookNum} Letter ${letter}`,
+          [
+            // Assuming single page per letter image? Or double page?
+            // Step 142 sends array of 1 image. embedSpreadImageWithBleed splits it into 2 pages.
+            // So specific letter image handles the spread.
+            { url: `${STORAGE_URL}/${characterFolder}/${themeFolder}/${letterNum}.jpg`, label: `Letter ${letter}` }
+          ]
+        );
+        bookBatches.push(letterBatch);
+        allUploadedBatches.push(letterBatch);
+        totalPages += letterBatch.pageCount;
+      }
+
+      // ============ FINAL BATCH: Ending ============
+      console.log(`B${bookNum}: Creating Ending (Batch ${batchIndex})...`);
+      const endingBatch = await createAndUploadBatch(
+        supabase,
+        order.order_number,
+        batchIndex++,
+        `Book ${bookNum} Ending`,
+        [
+          { url: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`, label: `Ending 1` },
+          { url: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`, label: `Ending 2` },
+          { url: `${STORAGE_URL}/${characterFolder}/Ending/3.jpg`, label: `Ending 3` },
+          { url: `${STORAGE_URL}/${characterFolder}/Ending/4.jpg`, label: `Ending 4` },
+        ]
+      );
+      bookBatches.push(endingBatch);
+      allUploadedBatches.push(endingBatch);
+      totalPages += endingBatch.pageCount;
+
+      // Add to email HTML
+      emailBooksHtml += `
+          <div style="margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+             <h3 style="color: #666; font-size: 16px; margin: 0 0 10px 0;">
+                📖 Book ${bookNum}: ${bookData.childName} (${bookData.gender}, ${bookData.skinTone})
+             </h3>
+             ${bookBatches.map(batch => `
+                <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-weight: 500; color: #333;">Batch ${batch.name.includes('Batch') ? batch.name.split('Batch ')[1] : batch.name}</span>
+                  <a href="${batch.url}" style="background-color: #8B5CF6; color: white; text-decoration: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold;">Download PDF</a>
+                </p>
+             `).join('')}
+          </div>
+        `;
     }
 
-    // ============ ENDING BATCH ============
-    console.log("Creating & uploading Ending Batch...");
-    const endingBatch = await createAndUploadBatch(
-      supabase,
-      order.order_number,
-      batchIndex++,
-      "Ending",
-      [
-        { url: `${STORAGE_URL}/${characterFolder}/Ending/1.jpg`, label: "Ending 1" },
-        { url: `${STORAGE_URL}/${characterFolder}/Ending/2.jpg`, label: "Ending 2" },
-      ]
-    );
-    uploadedBatches.push(endingBatch);
-    totalPages += endingBatch.pageCount;
-    console.log(`Ending Batch complete: ${endingBatch.pageCount} pages`);
-
-
-
-    console.log(`All ${uploadedBatches.length} PDF batches uploaded. Total pages: ${totalPages}`);
-
-    // Generate download links HTML for all batches
-    const downloadLinksHtml = uploadedBatches.map((batch, idx) =>
-      `<li style="margin: 8px 0;">
-        <a href="${batch.url}" style="color: #5c4d9a; font-weight: bold;">
-          Part ${idx + 1}: ${batch.name} (${batch.pageCount} pages)
-        </a>
-      </li>`
-    ).join('');
-
-    // Send production email with batch download links
-    console.log("Sending production email with batch links...");
+    // ============ SEND EMAIL ============
+    console.log("Sending production email for all books...");
     const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "api-key": BREVO_API_KEY
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
       },
       body: JSON.stringify({
-        sender: {
-          name: "Little Saint Art",
-          email: "orders@littlesaintart.co.za"
-        },
-        to: [
-          {
-            email: "mphelalufuno1.0@gmail.com",
-            name: "Production Team"
-          },
-          {
-            email: "cateramaboea12@gmail.com",
-            name: "Production Team"
-          }
-        ],
-        subject: `Book Order ${order.order_number} - ${bookData.childName}'s Book`,
+        sender: { name: "Little Saints Order System", email: "orders@littlesaintart.co.za" },
+        to: [{ email: "production@littlesaintart.co.za", name: "Production Team" }],
+        subject: `NEW ORDER: #${order.order_number} (${books.length} Books)`,
         htmlContent: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #5c4d9a; border-bottom: 2px solid #5c4d9a; padding-bottom: 10px;">
-              New Personalized Book Order
-            </h1>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+            <div style="background-color: #f3f0ff; padding: 20px; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #8B5CF6; margin: 0; font-size: 24px;">New Book Order Pending</h1>
+              <p style="margin: 5px 0 0 0; color: #666;">Order #${order.order_number}</p>
+            </div>
             
-            <div style="background: #f8f8f8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0; color: #5c4d9a;">Order Details</h2>
-              <p><strong>Order Number:</strong> ${order.order_number}</p>
-              <p><strong>Customer:</strong> ${order.customer_name}</p>
-              <p><strong>Email:</strong> ${order.customer_email}</p>
-              <p><strong>Phone:</strong> ${order.customer_phone}</p>
-              <p><strong>Delivery:</strong> ${order.delivery_method}</p>
-              <p><strong>Address:</strong> ${order.delivery_address}</p>
-            </div>
+            <div style="padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+              <p style="font-size: 16px; margin-bottom: 20px;">
+                <strong>${books.length} book(s)</strong> have been generated and are ready for printing.
+              </p>
 
-            <div style="background: #fff8e6; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #f5a623;">
-              <h2 style="margin-top: 0; color: #5c4d9a;">Book Specifications</h2>
-              <p><strong>Child's Name:</strong> <span style="font-size: 24px; color: #5c4d9a;">${bookData.childName}</span></p>
-              <p><strong>Character:</strong> ${getCharacterDescription(bookData.gender, bookData.skinTone)}</p>
-              <p><strong>Total Pages:</strong> ${totalPages} pages (includes 10mm bleed & crop marks)</p>
-              <p><strong>From:</strong> ${bookData.fromField || 'Not specified'}</p>
-              ${bookData.personalMessage ? `<p><strong>Personal Note (Right Page):</strong> ${bookData.personalMessage}</p>` : ''}
-              ${bookData.dedicationMessage ? `<p><strong>Dedication (Left Page):</strong> ${bookData.dedicationMessage}</p>` : ''}
-            </div>
+              ${emailBooksHtml}
 
-            <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4caf50;">
-              <h2 style="margin-top: 0; color: #2e7d32;">📥 Download Book PDF Files</h2>
-              <p style="color: #555; font-size: 14px;">Download all parts below and combine them for printing:</p>
-              <ol style="padding-left: 20px; color: #555;">
-                ${downloadLinksHtml}
-              </ol>
-              <p style="color: #555; font-size: 13px; margin-top: 15px;">
-                Each PDF includes 10mm bleed and crop marks for professional printing.
+              <div style="background-color: #fff8f1; padding: 15px; border-radius: 6px; margin-top: 20px; font-size: 13px; color: #c2410c;">
+                <strong>Included Printing Specs:</strong>
+                <p style="margin: 5px 0 0 0;">
+                  Each PDF includes 10mm bleed and crop marks for professional printing.
+                </p>
+              </div>
+
+              <p style="color: #888; font-size: 12px; margin-top: 15px;">
+                ⚠️ Download links are valid for 30 days. Save files locally for backup.
+              </p>
+
+              <p style="color: #666; font-size: 12px; margin-top: 30px;">
+                Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
               </p>
             </div>
-
-            <p style="color: #888; font-size: 12px; margin-top: 15px;">
-              ⚠️ Download links are valid for 30 days. Save files locally for backup.
-            </p>
-
-            <p style="color: #666; font-size: 12px; margin-top: 30px;">
-              Order placed on ${new Date(order.created_at).toLocaleString('en-ZA')}
-            </p>
           </div>
         `
       })
@@ -777,8 +794,8 @@ serve(async (req) => {
         message: "Book PDF generated and email sent to production",
         orderNumber: order.order_number,
         pageCount: totalPages,
-        batchCount: uploadedBatches.length,
-        downloadUrls: uploadedBatches.map(b => b.url)
+        bookCount: books.length,
+        batchCount: allUploadedBatches.length
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

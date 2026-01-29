@@ -12,13 +12,15 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (items.length === 0) return;
-    
+
     // Store cart data for checkout page
     const cartData = {
       items: items.map(item => ({
         name: item.name,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        productType: item.productType,
+        bookMetadata: item.bookMetadata
       })),
       subtotal: totalPrice
     };
@@ -28,12 +30,12 @@ const Cart = () => {
 
   return (
     <main className="min-h-screen bg-background">
-      <SEOHead 
-        title="Your Cart | Little Saints Art Creations" 
+      <SEOHead
+        title="Your Cart | Little Saints Art Creations"
         description="Review your cart items and proceed to checkout."
         canonicalUrl="https://littlesaintart.co.za/cart"
       />
-      
+
       <Navbar />
 
       <div className="pt-20 pb-12 px-4">
@@ -70,9 +72,9 @@ const Cart = () => {
                   <Card key={item.id} className="p-4 flex gap-4">
                     {item.image && (
                       <div className="w-20 h-28 rounded-lg overflow-hidden border border-border flex-shrink-0">
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
+                        <img
+                          src={item.image}
+                          alt={item.name}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -80,7 +82,7 @@ const Cart = () => {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-fredoka text-lg font-bold truncate">{item.name}</h3>
                       <p className="font-inter text-primary font-semibold">R{item.price}</p>
-                      
+
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-3 mt-3">
                         <button
@@ -100,7 +102,7 @@ const Cart = () => {
                         </button>
                       </div>
                     </div>
-                    
+
                     {/* Item Total & Remove */}
                     <div className="flex flex-col items-end justify-between">
                       <button
@@ -118,8 +120,8 @@ const Cart = () => {
                 ))}
 
                 {/* Clear Cart Button */}
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={clearCart}
                   className="w-full font-inter text-muted-foreground"
                 >
@@ -132,7 +134,7 @@ const Cart = () => {
               <div className="lg:col-span-1">
                 <Card className="p-6 sticky top-24">
                   <h2 className="font-fredoka text-xl font-bold mb-4">Order Summary</h2>
-                  
+
                   <div className="space-y-3 pb-4 border-b border-border">
                     <div className="flex justify-between font-inter">
                       <span className="text-muted-foreground">Items ({totalItems})</span>
@@ -149,7 +151,7 @@ const Cart = () => {
                     <span className="text-primary">R{totalPrice}</span>
                   </div>
 
-                  <Button 
+                  <Button
                     onClick={handleCheckout}
                     className="w-full font-fredoka text-lg py-6 rounded-full"
                     size="lg"

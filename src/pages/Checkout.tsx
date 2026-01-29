@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingBag, Loader2 } from "lucide-react";
+import { ArrowLeft, ShoppingBag, Loader2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,11 +15,13 @@ interface CartItem {
   name: string;
   quantity: number;
   price: number;
+  productType?: "product" | "book";
+  bookMetadata?: any;
 }
 
 interface CartData {
-  purchaseOption: "complete" | "individual";
-  selectedPosters: number[];
+  purchaseOption?: "complete" | "individual";
+  selectedPosters?: number[];
   subtotal: number;
   items: CartItem[];
 }
@@ -29,7 +31,7 @@ const Checkout = () => {
   const [deliveryMethod, setDeliveryMethod] = useState("fastway");
   const [isProcessing, setIsProcessing] = useState(false);
   const [cart, setCart] = useState<CartData | null>(null);
-  
+
   // Form state
   const [formData, setFormData] = useState({
     name: "",
@@ -45,7 +47,8 @@ const Checkout = () => {
     if (cartData) {
       setCart(JSON.parse(cartData));
     } else {
-      // Default to complete set if no cart data
+      // Default to nothing/redirect if accessed directly without cart not handled here to avoid flicker, just show empty or distinct state
+      // But keeping legacy fallback for now to avoid breaking existing flows if any
       setCart({
         purchaseOption: "complete",
         selectedPosters: [],
@@ -54,16 +57,19 @@ const Checkout = () => {
       });
     }
   }, []);
-  
+
   const deliveryOptions = {
     pickup: { name: "Pickup", price: 0, days: "Arrange via WhatsApp" },
     fastway: { name: "Fastway Courier", price: 95, days: "5-7 days" },
     paxi: { name: "Paxi", price: 110, days: "7-9 days" }
   };
-  
+
   const subtotal = cart?.subtotal || 270;
   const deliveryCost = deliveryOptions[deliveryMethod as keyof typeof deliveryOptions].price;
   const total = subtotal + deliveryCost;
+
+  // Check if cart has posters (to decide on Map visibility)
+  const hasPosters = cart?.items.some(item => !item.productType || item.productType === 'product');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -72,7 +78,7 @@ const Checkout = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate form
     const isPickup = deliveryMethod === "pickup";
     if (!formData.name || !formData.email || !formData.phone || (!isPickup && !formData.address)) {
@@ -84,7 +90,12 @@ const Checkout = () => {
 
     try {
       const baseUrl = window.location.origin;
-      
+
+      // Extract book data from all book items in cart
+      const bookDataArray = cart?.items
+        .filter(item => item.productType === 'book' && item.bookMetadata)
+        .map(item => item.bookMetadata) || [];
+
       // Call edge function to create Yoco checkout
       const { data, error } = await supabase.functions.invoke('create-yoco-checkout', {
         body: {
@@ -92,6 +103,7 @@ const Checkout = () => {
           currency: 'ZAR',
           successUrl: `${baseUrl}/payment-success`,
           cancelUrl: `${baseUrl}/payment-cancelled`,
+          bookData: bookDataArray.length > 0 ? bookDataArray : null, // Send array of books
           metadata: {
             customerName: formData.name,
             customerEmail: formData.email,
@@ -102,6 +114,8 @@ const Checkout = () => {
             subtotal: subtotal,
             deliveryCost: deliveryCost,
             total: total,
+            hasBooks: bookDataArray.length > 0,
+            hasPosters: hasPosters
           },
         },
       });
@@ -121,7 +135,7 @@ const Checkout = () => {
           total,
           orderNumber: data.orderNumber,
         }));
-        
+
         // Redirect to Yoco payment page
         window.location.href = data.redirectUrl;
       } else {
@@ -152,8 +166,8 @@ const Checkout = () => {
         <input name="paid_at" />
       </form>
       <div className="max-w-4xl mx-auto">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => navigate("/")}
           className="mb-6"
           disabled={isProcessing}
@@ -165,23 +179,25 @@ const Checkout = () => {
         <div className="grid md:grid-cols-2 gap-8">
           {/* Order Summary */}
           <div className="space-y-6">
-            {/* Paxi Point Locator */}
-            <Card className="overflow-hidden border-2 border-primary/20">
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
-                <h3 className="font-fredoka font-semibold">Find your nearest Paxi Point</h3>
-                <p className="text-sm font-inter text-muted-foreground">
-                  Click on a marker to see the store name and code
-                </p>
-              </div>
-              <iframe 
-                width="100%" 
-                src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc" 
-                frameBorder="0" 
-                allow="geolocation"
-                className="w-full h-[350px] sm:h-[450px] md:h-[600px]"
-                title="Paxi Point Locator"
-              />
-            </Card>
+            {/* Paxi Point Locator - Show ONLY if there are posters in the cart */}
+            {hasPosters && (
+              <Card className="overflow-hidden border-2 border-primary/20">
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 px-4 py-3 border-b">
+                  <h3 className="font-fredoka font-semibold">Find your nearest Paxi Point</h3>
+                  <p className="text-sm font-inter text-muted-foreground">
+                    Click on a marker to see the store name and code
+                  </p>
+                </div>
+                <iframe
+                  width="100%"
+                  src="https://map.paxi.co.za?size=l,m,s&status=1,3,4&maxordervalue=1000&output=nc"
+                  frameBorder="0"
+                  allow="geolocation"
+                  className="w-full h-[350px] sm:h-[450px] md:h-[600px]"
+                  title="Paxi Point Locator"
+                />
+              </Card>
+            )}
 
             {/* Order Details */}
             <Card className="p-6">
@@ -189,24 +205,38 @@ const Checkout = () => {
                 <ShoppingBag className="w-6 h-6" />
                 Order Summary
               </h2>
-              
+
               <div className="space-y-4 mb-6">
                 {cart?.items.map((item, index) => (
-                  <div key={index} className="flex justify-between items-start">
-                    <div>
+                  <div key={index} className="flex justify-between items-start border-b border-border pb-3 last:border-0 last:pb-0">
+                    <div className="flex-1">
                       <h3 className="font-fredoka font-bold text-lg mb-1">{item.name}</h3>
-                      {cart.purchaseOption === "complete" && (
-                        <>
-                          <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A3 posters</p>
-                          <div className="space-y-1 text-xs text-muted-foreground">
-                            <p>✓ Premium 350mg paper quality</p>
-                            <p>✓ Vibrant, child-friendly colors</p>
-                            <p>✓ Reliable courier delivery</p>
+                      {item.productType === 'book' ? (
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <div className="flex items-center gap-1">
+                            <BookOpen className="w-3 h-3" />
+                            <span>Personalized Book</span>
                           </div>
-                        </>
+                          <p>Character: {item.bookMetadata?.gender}</p>
+                          {/* Add more book details if needed */}
+                        </div>
+                      ) : (
+                        cart.purchaseOption === "complete" && (
+                          <>
+                            <p className="text-sm text-muted-foreground mb-2">9 Christian-themed A3 posters</p>
+                            <div className="space-y-1 text-xs text-muted-foreground">
+                              <p>✓ Premium 350mg paper quality</p>
+                              <p>✓ Vibrant, child-friendly colors</p>
+                            </div>
+                          </>
+                        )
                       )}
+
                     </div>
-                    <p className="font-fredoka text-xl font-bold text-primary">R{item.price}</p>
+                    <div className="text-right ml-4">
+                      <p className="font-fredoka text-xl font-bold text-primary">R{item.price * item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -231,13 +261,13 @@ const Checkout = () => {
           {/* Checkout Form */}
           <Card className="p-6 h-fit">
             <h2 className="font-fredoka text-2xl font-bold mb-6">Your Details</h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="name" className="font-inter font-semibold">Full Name *</Label>
-                <Input 
-                  id="name" 
-                  required 
+                <Input
+                  id="name"
+                  required
                   placeholder="John Doe"
                   className="mt-1.5"
                   value={formData.name}
@@ -248,10 +278,10 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="email" className="font-inter font-semibold">Email Address *</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  required 
+                <Input
+                  id="email"
+                  type="email"
+                  required
                   placeholder="john@example.com"
                   className="mt-1.5"
                   value={formData.email}
@@ -262,10 +292,10 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="phone" className="font-inter font-semibold">Phone Number (WhatsApp) *</Label>
-                <Input 
-                  id="phone" 
-                  type="tel" 
-                  required 
+                <Input
+                  id="phone"
+                  type="tel"
+                  required
                   placeholder="+27 79 117 5714"
                   className="mt-1.5"
                   value={formData.phone}
@@ -276,8 +306,8 @@ const Checkout = () => {
 
               <div>
                 <Label className="font-inter font-semibold">Delivery Method *</Label>
-                <RadioGroup 
-                  value={deliveryMethod} 
+                <RadioGroup
+                  value={deliveryMethod}
                   onValueChange={setDeliveryMethod}
                   className="mt-3 space-y-3"
                   disabled={isProcessing}
@@ -326,12 +356,12 @@ const Checkout = () => {
                 <Label htmlFor="address" className="font-inter font-semibold">
                   {deliveryMethod === "pickup" ? "Pickup Notes (Optional)" : deliveryMethod === "paxi" ? "Paxi Point Details *" : "Delivery Address *"}
                 </Label>
-                <Textarea 
-                  id="address" 
+                <Textarea
+                  id="address"
                   required={deliveryMethod !== "pickup"}
                   placeholder={
-                    deliveryMethod === "pickup" 
-                      ? "Any notes for pickup arrangement" 
+                    deliveryMethod === "pickup"
+                      ? "Any notes for pickup arrangement"
                       : deliveryMethod === "paxi"
                         ? "Paxi Point name (e.g., PEP Store Sandton), your full name & phone number"
                         : "Street address, City, Province, Postal Code"
@@ -345,8 +375,8 @@ const Checkout = () => {
 
               <div>
                 <Label htmlFor="notes" className="font-inter font-semibold">Order Notes (Optional)</Label>
-                <Textarea 
-                  id="notes" 
+                <Textarea
+                  id="notes"
                   placeholder="Any special instructions or requests"
                   className="mt-1.5"
                   value={formData.notes}
@@ -356,9 +386,9 @@ const Checkout = () => {
               </div>
 
               <div className="pt-4">
-                <Button 
-                  type="submit" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  size="lg"
                   className="w-full font-fredoka text-lg py-6"
                   disabled={isProcessing}
                 >

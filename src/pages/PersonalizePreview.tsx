@@ -124,13 +124,42 @@ const PersonalizePreview = () => {
     }
   }, [personalization]);
 
-  const handleCheckout = () => {
+  const handleAddToCart = () => {
+    // Save customization to localStorage first (as backup and for current session)
     localStorage.setItem("customization", JSON.stringify({
       fromField,
       personalMessage,
       dedicationMessage
     }));
-    navigate("/book-checkout");
+
+    // Add to Cart Context
+    const letterCount = personalization.childName.replace(/[^a-zA-Z]/g, '').length;
+    // Calculate page count: (Letters + 6 spreads) * 2 pages/spread
+    const pageCount = (letterCount + 6) * 2;
+
+    addItem({
+      id: Date.now(), // Unique ID for each book instance
+      name: `Book: ${personalization.childName}'s Great Name Chase`,
+      price: 350, // R350
+      quantity: 1,
+      image: `${STORAGE_URL}/${getCharacterFolder(personalization.gender, personalization.skinTone || 'light')}/Cover/cover.jpg`,
+      productType: "book",
+      bookMetadata: {
+        childName: personalization.childName,
+        gender: personalization.gender,
+        skinTone: personalization.skinTone || 'light',
+        fromField,
+        personalMessage,
+        dedicationMessage,
+      }
+    });
+
+    toast.success("Personalized book added to cart!");
+  };
+
+  const handleProceedToCheckout = () => {
+    handleAddToCart(); // Ensure it's in the cart
+    navigate("/cart"); // Go to Cart first, then checkout logic flows from there
   };
 
   // Early return AFTER all hooks
@@ -394,12 +423,22 @@ const PersonalizePreview = () => {
             Message
           </Button>
 
-          {/* Proceed Button */}
+          {/* Add to Cart Button */}
           <Button
-            onClick={handleCheckout}
+            onClick={handleAddToCart}
+            variant="secondary"
             className="font-inter flex-1 md:flex-none md:min-w-[140px]"
           >
-            Proceed
+            Add to Cart
+            <ShoppingCart className="w-4 h-4 ml-2" />
+          </Button>
+
+          {/* Proceed Button */}
+          <Button
+            onClick={handleProceedToCheckout}
+            className="font-inter flex-1 md:flex-none md:min-w-[140px]"
+          >
+            Checkout
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

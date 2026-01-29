@@ -49,7 +49,7 @@ serve(async (req) => {
         delivery_cost: metadata?.deliveryCost ? metadata.deliveryCost * 100 : 0,
         total: amount,
         status: 'pending',
-        order_type: bookData ? 'book' : 'product',
+        order_type: (bookData && (Array.isArray(bookData) ? bookData.length > 0 : true)) ? 'book' : 'product',
         book_data: bookData || null,
       })
       .select()
