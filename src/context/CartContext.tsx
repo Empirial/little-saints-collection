@@ -6,6 +6,16 @@ export interface CartItem {
   price: number;
   quantity: number;
   image?: string;
+  // Metadata for personalized books
+  productType?: "product" | "book";
+  bookMetadata?: {
+    childName: string;
+    gender: string;
+    skinTone: string;
+    fromField?: string;
+    personalMessage?: string;
+    dedicationMessage?: string;
+  };
 }
 
 interface CartContextType {

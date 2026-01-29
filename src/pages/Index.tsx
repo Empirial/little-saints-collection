@@ -34,7 +34,7 @@ const Index = () => {
         structuredData={homeStructuredData}
       />
       <Navbar />
-      
+
       {/* Hero Carousel */}
       <HeroCarousel />
 
@@ -45,9 +45,9 @@ const Index = () => {
             About Us
           </h2>
           <p className="font-inter text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
-            At Little Saint Art Creations, we create beautiful products that inspire and delight children. 
-            Our Christian posters bring God's word and faith into your child's daily environment, while 
-            'The Magic in My Name' personalized books take your child on a magical adventure of self-discovery. 
+            At Little Saint Art Creations, we create beautiful products that inspire and delight children.
+            Our Christian posters bring God's word and faith into your child's daily environment, while
+            'The Magic in My Name' personalized books take your child on a magical adventure of self-discovery.
             Each piece is thoughtfully designed with love and care.
           </p>
         </div>
@@ -59,7 +59,7 @@ const Index = () => {
           <div className="absolute top-10 left-10 w-32 h-32 bg-primary rounded-full blur-3xl"></div>
           <div className="absolute bottom-10 right-10 w-40 h-40 bg-accent rounded-full blur-3xl"></div>
         </div>
-        
+
         <div className="max-w-6xl mx-auto relative z-10">
           <h2 id="products-heading" className="font-fredoka text-4xl md:text-5xl font-bold text-center mb-4">
             What We Offer
@@ -67,7 +67,7 @@ const Index = () => {
           <p className="font-inter text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
             Transform your child's space with beautiful, faith-filled artwork and personalized stories
           </p>
-          
+
           <div className="grid md:grid-cols-2 gap-8 lg:gap-12">
             <article>
               <Card className="group relative p-10 border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 bg-card/50 backdrop-blur-sm overflow-hidden h-full">
@@ -78,7 +78,7 @@ const Index = () => {
                     Christian Posters
                   </h3>
                   <p className="font-inter text-lg text-muted-foreground leading-relaxed mb-4">
-                    Beautiful A3 posters featuring 9 inspiring Bible stories, printed on premium 350gsm paper. 
+                    Beautiful A3 posters featuring 9 inspiring Bible stories, printed on premium 350gsm paper.
                     Perfect for decorating your child's room with colorful, faith-filled artwork.
                   </p>
                   <ul className="font-inter text-muted-foreground space-y-2">
@@ -90,7 +90,7 @@ const Index = () => {
                 </div>
               </Card>
             </article>
-            
+
             <article>
               <Card className="group relative p-10 border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 bg-card/50 backdrop-blur-sm overflow-hidden h-full">
                 <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -100,7 +100,7 @@ const Index = () => {
                     The Magic in My Name
                   </h3>
                   <p className="font-inter text-lg text-muted-foreground leading-relaxed mb-4">
-                    A personalized adventure book where your child becomes the hero, discovering each letter of their name 
+                    A personalized adventure book where your child becomes the hero, discovering each letter of their name
                     on a magical journey. Sparks reading, confidence, and self-love.
                   </p>
                   <ul className="font-inter text-muted-foreground space-y-2">
@@ -126,16 +126,16 @@ const Index = () => {
             Choose faith-filled posters or personalized adventure books - both designed to bring joy to your child's world
           </p>
           <nav className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center" aria-label="Product navigation">
-            <Button 
+            <Button
               onClick={() => navigate("/product")}
-              size="lg" 
+              size="lg"
               className="font-fredoka text-lg sm:text-2xl px-8 sm:px-16 py-6 sm:py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Christian Posters
             </Button>
-            <Button 
+            <Button
               onClick={() => navigate("/personalize-book")}
-              size="lg" 
+              size="lg"
               className="font-fredoka text-lg sm:text-2xl px-8 sm:px-16 py-6 sm:py-8 rounded-full shadow-xl hover:shadow-2xl transition-all"
             >
               Get Personalized Book
@@ -151,8 +151,8 @@ const Index = () => {
             <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
             <p className="font-inter text-sm sm:text-lg">
               Contact us on WhatsApp:{" "}
-              <a 
-                href="https://wa.me/27791175714" 
+              <a
+                href="https://wa.me/27791175714"
                 className="font-fredoka font-bold hover:text-primary transition-colors"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -163,7 +163,13 @@ const Index = () => {
           </div>
           <p className="font-fredoka text-xl sm:text-2xl font-bold mb-2">Little Saints</p>
           <p className="font-inter text-xs sm:text-sm text-muted-foreground">
-            © 2025 Little Saints. Inspiring faith in young hearts.
+            © {new Date().getFullYear()} Little Saints. Inspiring faith in young hearts.
+          </p>
+          <p className="font-inter text-xs opacity-60 mt-3">
+            Made by{" "}
+            <a href="https://www.empirialdesigns.com" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors underline">
+              www.empirialdesigns.com
+            </a>
           </p>
         </div>
       </footer>

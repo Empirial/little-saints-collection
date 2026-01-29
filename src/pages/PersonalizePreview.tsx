@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ArrowRight, PenSquare, ImageOff, MessageSquare } from "lucide-react"; // Removed Info, Sparkles, Palette, User
+import { ArrowLeft, ArrowRight, PenSquare, ImageOff, MessageSquare } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
 import { getLetterImage } from "@/utils/getLetterImage";
+import { useCart } from "@/context/CartContext";
+import { toast } from "sonner";
 
 // Child character imports
 import charBoyLight from "@/assets/personalization/whiteboy/whiteboy.png";
@@ -54,6 +56,7 @@ const getThemeForLetter = (occurrenceIndex: number, gender: string): Theme => {
 
 const PersonalizePreview = () => {
   const navigate = useNavigate();
+  const { addItem } = useCart();
   const [personalization, setPersonalization] = useState<Personalization | null>(null);
   const [fromField, setFromField] = useState("");
   const [personalMessage, setPersonalMessage] = useState("");
@@ -100,6 +103,15 @@ const PersonalizePreview = () => {
       setDedicationMessage(cust.dedicationMessage || "");
     }
   }, [navigate]);
+
+  // Auto-save customization to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("customization", JSON.stringify({
+      fromField,
+      personalMessage,
+      dedicationMessage
+    }));
+  }, [fromField, personalMessage, dedicationMessage]);
 
   // Initialize loading state when personalization changes - must be at top level
   useEffect(() => {
